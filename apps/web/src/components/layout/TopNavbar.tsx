@@ -90,7 +90,6 @@ export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: 
         {NAVBAR_SPECS.map((spec) => {
           if (spec.type === 'link') {
             if (!isViewAllowed(spec.id, role, departemen)) return null;
-            const Icon = spec.icon;
             const isActive = activeId === spec.id;
             return (
               <button
@@ -102,7 +101,6 @@ export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: 
                   setOpenMenuId(null);
                 }}
               >
-                <Icon className="app-navbar__link-icon" />
                 <span>{spec.label}</span>
               </button>
             );
@@ -122,7 +120,6 @@ export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: 
           const visibleItems = menu.items.filter((item) => isViewAllowed(item.id, role, departemen));
           if (visibleItems.length === 0) return null;
 
-          const Icon = spec.icon;
           const hasActiveChild = visibleItems.some((item) => item.id === activeId);
           const isOpen = openMenuId === menu.key;
 
@@ -135,7 +132,6 @@ export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: 
                 aria-expanded={isOpen}
                 aria-haspopup="menu"
               >
-                <Icon className="app-navbar__link-icon" />
                 <span>{menu.label}</span>
                 <span className="app-navbar__caret" aria-hidden>
                   ▾
