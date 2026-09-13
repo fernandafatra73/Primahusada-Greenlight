@@ -1084,6 +1084,20 @@ body.radiolog-work-dark-theme .badge--unpaid,
   font-weight: 700;
 }
 
+/* Fieldset "Data Pasien" di modal Ubah Data Pasien (Radiologi) — aksen abu-abu. */
+.groupbox--abu-abu {
+  border: 2px solid #9ca3af;
+  background: #f8fafc;
+}
+
+.groupbox--abu-abu > legend {
+  color: #ffffff;
+  background: #6b7280;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+}
+
 /* Halaman Pendaftaran Umum — tema biru + hitam menyeluruh, khusus halaman ini. */
 .pendaftaran-umum-page {
   background: linear-gradient(180deg, #bfdbfe, #93c5fd);

@@ -1590,9 +1590,9 @@ export function PasienPage() {
   }, [tanggalLahir, umurYears]);
 
   const patientFields = (
-    <>
+    <fieldset className="legacy-groupbox groupbox--abu-abu form-grid--span-3">
+      <legend>Data Pasien</legend>
       <div
-        className="form-grid--span-3"
         style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.75rem 1.25rem' }}
       >
         <div className="form-field">
@@ -1621,9 +1621,7 @@ export function PasienPage() {
           <input id="alamat" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
         </div>
         <div className="form-field" style={{ gridColumn: '2' }}>
-          <label htmlFor="sharing-select" style={{ fontWeight: 600, color: '#0369a1' }}>
-            Pilihan Nominal Sharing
-          </label>
+          <label htmlFor="sharing-select">Pilihan Nominal Sharing</label>
           <select
             id="sharing-select"
             value={sharingSelectValue}
@@ -1635,14 +1633,6 @@ export function PasienPage() {
               } else if (val !== 'custom') {
                 setSharingAmount(val);
               }
-            }}
-            style={{
-              fontWeight: 600,
-              color: '#0284c7',
-              backgroundColor: '#f0f9ff',
-              border: '1px solid #7dd3fc',
-              padding: '0.45rem',
-              borderRadius: '6px',
             }}
           >
             <option value="auto">
@@ -1676,8 +1666,7 @@ export function PasienPage() {
         </div>
       </div>
       <div
-        className="form-grid--span-3"
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '0.75rem 1.25rem' }}
+        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '0.75rem 1.25rem', marginTop: '0.75rem' }}
       >
         <div className="form-field">
           <label htmlFor="pengirim">Dokter pengirim</label>
@@ -1740,7 +1729,7 @@ export function PasienPage() {
           </select>
         </div>
       </div>
-    </>
+    </fieldset>
   );
 
   const klinisField = (
