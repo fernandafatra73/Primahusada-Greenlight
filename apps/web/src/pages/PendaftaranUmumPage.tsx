@@ -643,7 +643,7 @@ export function PendaftaranUmumPage() {
           type="button"
           className="btn btn--primary"
           onClick={openCreate}
-          style={{ background: 'linear-gradient(135deg, #1d4ed8, #b91c1c)' }}
+          style={{ background: 'linear-gradient(135deg, #1d4ed8, #0f172a)' }}
         >
           + Tambah Pendaftaran
         </button>
@@ -653,24 +653,21 @@ export function PendaftaranUmumPage() {
         <table className="data-table">
           <thead>
             <tr style={{ background: '#93c5fd' }}>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>No. Antrian</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>No Registrasi</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Nama Pasien</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Umur</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Alamat</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Telpon</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Dokter Pengirim</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Ruangan</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Status</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Biaya</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Bayar</th>
-              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Aksi</th>
+              <th style={{ background: '#93c5fd', color: '#0f172a'}}>No. Antrian</th>
+              <th style={{ background: '#93c5fd', color: '#0f172a'}}>Nama Pasien</th>
+              <th style={{ background: '#93c5fd', color: '#0f172a'}}>Umur</th>
+              <th style={{ background: '#93c5fd', color: '#0f172a'}}>Alamat</th>
+              <th style={{ background: '#93c5fd', color: '#0f172a'}}>Telpon</th>
+              <th style={{ background: '#93c5fd', color: '#0f172a'}}>Dokter Pengirim</th>
+              <th style={{ background: '#93c5fd', color: '#0f172a'}}>Status</th>
+              <th style={{ background: '#93c5fd', color: '#0f172a'}}>Bayar</th>
+              <th style={{ background: '#93c5fd', color: '#0f172a'}}>Aksi</th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 ? (
               <tr style={{ background: '#1d4ed8' }}>
-                <td colSpan={12} style={{ textAlign: 'center', padding: '2rem', color: '#ffffff' }}>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: '#ffffff' }}>
                   Belum ada data pendaftaran umum.
                 </td>
               </tr>
@@ -681,9 +678,9 @@ export function PendaftaranUmumPage() {
                 <tr
                   key={item.id}
                   style={{
-                    background: (idx + 1) % 2 === 0 ? '#dbeafe' : '#fef9c3',
-                    borderBottom: '1px solid rgba(30, 58, 138, 0.12)',
-                    color: '#1e293b',
+                    background: (idx + 1) % 2 === 0 ? '#dbeafe' : '#ffffff',
+                    borderBottom: '1px solid rgba(15, 23, 42, 0.18)',
+                    color: '#0f172a',
                   }}
                 >
                   <td style={{ fontWeight: 700, color: '#1e293b' }}>
@@ -712,7 +709,6 @@ export function PendaftaranUmumPage() {
                       )}
                     </div>
                   </td>
-                  <td>{item.noRegistrasi}</td>
                   <td><strong>{item.namaPasien}</strong></td>
                   <td>{item.umur || '-'}</td>
                   <td>{item.alamat || '-'}</td>
@@ -770,7 +766,6 @@ export function PendaftaranUmumPage() {
                     )}
                   </td>
                   <td>{item.dokterPengirim || '-'}</td>
-                  <td>{item.ruangan || '-'}</td>
                   <td>
                     <span
                       style={{
@@ -787,7 +782,6 @@ export function PendaftaranUmumPage() {
                       {item.status === 'SELESAI' ? 'SELESAI' : 'MENUNGGU'}
                     </span>
                   </td>
-                  <td style={{ fontWeight: 700, color: '#1e293b' }}>{formatRupiah(item.biayaPendaftaran)}</td>
                   <td>
                     <span
                       style={{

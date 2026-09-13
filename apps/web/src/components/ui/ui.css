@@ -601,8 +601,8 @@ body.radiolog-work-dark-theme .badge--unpaid,
 }
 
 .modal__header--sky-red {
-  background: linear-gradient(90deg, #7dd3fc 0%, #38bdf8 45%, #ef4444 100%);
-  border-bottom-color: #b91c1c;
+  background: linear-gradient(90deg, #7dd3fc 0%, #38bdf8 45%, #0f172a 100%);
+  border-bottom-color: #0f172a;
 }
 
 .modal__header--sky-red .modal__title {
@@ -616,7 +616,7 @@ body.radiolog-work-dark-theme .badge--unpaid,
 
 .modal__header--sky-red .modal__close:hover {
   background: #ffffff;
-  color: #b91c1c;
+  color: #0f172a;
 }
 
 .modal__body {
@@ -1084,22 +1084,26 @@ body.radiolog-work-dark-theme .badge--unpaid,
   font-weight: 700;
 }
 
-/* Halaman Pendaftaran Umum — latar biru khusus untuk halaman ini saja. */
+/* Halaman Pendaftaran Umum — tema biru + hitam menyeluruh, khusus halaman ini. */
 .pendaftaran-umum-page {
   background: linear-gradient(180deg, #bfdbfe, #93c5fd);
-  border: 1px solid #60a5fa;
+  border: 2px solid #0f172a;
   border-radius: var(--radius-card);
   padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.18);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
 }
 
 .pendaftaran-umum-page .list-page__title {
-  color: #1e3a8a;
+  color: #0f172a;
 }
 
 .pendaftaran-umum-page .data-card {
   background: #eff6ff;
-  border-color: #60a5fa;
+  border: 1px solid #0f172a;
+}
+
+.pendaftaran-umum-page .data-card__table table.data-table {
+  border: 1px solid #0f172a;
 }
 
 .data-card {
