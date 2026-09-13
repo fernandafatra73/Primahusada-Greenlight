@@ -353,8 +353,8 @@ body.radiolog-work-dark-theme .badge--unpaid,
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
-  background: var(--color-bg-page);
+  color: #1e3a8a;
+  background: #bfdbfe;
 }
 
 .data-table tbody tr:hover {
@@ -1142,9 +1142,9 @@ body.radiolog-work-dark-theme .badge--unpaid,
 }
 
 .page-frame .data-table th {
-  background: #f8fafc;
-  color: #334155;
-  border-bottom: 2px solid #e2e8f0;
+  background: #bfdbfe;
+  color: #1e3a8a;
+  border-bottom: 2px solid #93c5fd;
 }
 
 /* Warna aksen per modul. */
