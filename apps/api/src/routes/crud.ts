@@ -2586,6 +2586,9 @@ export async function registerCrudRoutes(app: FastifyInstance) {
       admin?: string;
       foto?: string;
       ruangan?: string;
+      biayaPendaftaran?: number | string;
+      paymentStatus?: 'BELUM_LUNAS' | 'LUNAS';
+      petugasKasir?: string;
     };
   }>('/api/pendaftaran-umum', async (req, reply) => {
     if (!req.body.namaPasien?.trim() || !req.body.tanggalMasuk) {
@@ -2607,6 +2610,10 @@ export async function registerCrudRoutes(app: FastifyInstance) {
           admin: req.body.admin?.trim() || null,
           foto: req.body.foto?.trim() || null,
           ruangan: req.body.ruangan?.trim() || null,
+          biayaPendaftaran:
+            req.body.biayaPendaftaran !== undefined ? new Decimal(req.body.biayaPendaftaran) : new Decimal(0),
+          paymentStatus: req.body.paymentStatus ?? 'BELUM_LUNAS',
+          petugasKasir: req.body.petugasKasir?.trim() || null,
         },
       });
       return reply.status(201).send({ item });
@@ -2637,6 +2644,9 @@ export async function registerCrudRoutes(app: FastifyInstance) {
       foto?: string;
       ruangan?: string;
       status?: 'MENUNGGU' | 'SELESAI';
+      biayaPendaftaran?: number | string;
+      paymentStatus?: 'BELUM_LUNAS' | 'LUNAS';
+      petugasKasir?: string;
     };
   }>('/api/pendaftaran-umum/:id', async (req, reply) => {
     const existing = await prisma.pendaftaranUmum.findUnique({ where: { id: req.params.id } });
@@ -2660,6 +2670,13 @@ export async function registerCrudRoutes(app: FastifyInstance) {
           foto: req.body.foto !== undefined ? req.body.foto?.trim() || null : existing.foto,
           ruangan: req.body.ruangan !== undefined ? req.body.ruangan?.trim() || null : existing.ruangan,
           status: req.body.status ?? existing.status,
+          biayaPendaftaran:
+            req.body.biayaPendaftaran !== undefined
+              ? new Decimal(req.body.biayaPendaftaran)
+              : existing.biayaPendaftaran,
+          paymentStatus: req.body.paymentStatus ?? existing.paymentStatus,
+          petugasKasir:
+            req.body.petugasKasir !== undefined ? req.body.petugasKasir?.trim() || null : existing.petugasKasir,
         },
       });
       return { item };

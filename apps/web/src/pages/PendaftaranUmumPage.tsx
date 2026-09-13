@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { PDFViewer } from '@react-pdf/renderer';
+import { PDFViewer, pdf } from '@react-pdf/renderer';
 import { CetakAmplopPendaftaranModal } from '../components/CetakAmplopPendaftaranModal.tsx';
 import { CetakLabelPendaftaranModal } from '../components/CetakLabelPendaftaranModal.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
@@ -12,10 +12,12 @@ import { useMutationReload } from '../hooks/useMutationReload.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import type { PaginatedResponse } from '../lib/pagination.ts';
+import { formatRupiah } from '../lib/format.ts';
 import { PendaftaranReportDocument } from '../pdf/PendaftaranReportDocument.tsx';
 import { PendaftaranKopSuratDocument } from '../pdf/PendaftaranKopSuratDocument.tsx';
+import { KwitansiReportDocument, type KwitansiReportData } from '../pdf/KwitansiReportDocument.tsx';
 import { loadLogoDataUrl } from '../pdf/loadLogoDataUrl.ts';
-import { angkaKeKata } from '../lib/terbilang.ts';
+import { angkaKeKata, terbilangRupiah } from '../lib/terbilang.ts';
 import { getSpeechRecognitionConstructor, type SpeechRecognitionLike } from '../lib/speechRecognition.ts';
 import { withIndonesianVoice } from '../lib/speechVoice.ts';
 import '../components/ui/ui.css';
@@ -43,6 +45,9 @@ interface PendaftaranUmumItem {
   readonly foto: string | null;
   readonly ruangan: string | null;
   readonly status: 'MENUNGGU' | 'SELESAI';
+  readonly biayaPendaftaran: string;
+  readonly paymentStatus: 'BELUM_LUNAS' | 'LUNAS';
+  readonly petugasKasir: string | null;
 }
 
 const RUANGAN_OPTIONS = ['Radiologi', 'USG', 'Laboratorium'] as const;
@@ -198,6 +203,7 @@ export function PendaftaranUmumPage() {
   const [deleting, setDeleting] = useState<PendaftaranUmumItem | null>(null);
   const [previewItem, setPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [kopSuratPreviewItem, setKopSuratPreviewItem] = useState<PendaftaranUmumItem | null>(null);
+  const [kwitansiPreviewItem, setKwitansiPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [amplopPreviewItem, setAmplopPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [labelPreviewItem, setLabelPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [logoSrc, setLogoSrc] = useState('');
@@ -223,7 +229,10 @@ export function PendaftaranUmumPage() {
     klinis: '',
     admin: '',
     foto: '',
-    ruangan: ''
+    ruangan: '',
+    biayaPendaftaran: '',
+    paymentStatus: 'BELUM_LUNAS' as 'BELUM_LUNAS' | 'LUNAS',
+    petugasKasir: '',
   });
 
   useEffect(() => {
@@ -260,7 +269,10 @@ export function PendaftaranUmumPage() {
       klinis: '',
       admin: '',
       foto: '',
-      ruangan: ''
+      ruangan: '',
+      biayaPendaftaran: '',
+      paymentStatus: 'BELUM_LUNAS',
+      petugasKasir: '',
     });
     setCreateOpen(true);
     setError(null);
@@ -280,7 +292,10 @@ export function PendaftaranUmumPage() {
       klinis: item.klinis || '',
       admin: item.admin || '',
       foto: item.foto || '',
-      ruangan: item.ruangan || ''
+      ruangan: item.ruangan || '',
+      biayaPendaftaran: item.biayaPendaftaran,
+      paymentStatus: item.paymentStatus,
+      petugasKasir: item.petugasKasir || '',
     });
     setError(null);
   }
@@ -429,6 +444,9 @@ export function PendaftaranUmumPage() {
         admin: formData.admin || undefined,
         foto: formData.foto || undefined,
         ruangan: formData.ruangan || undefined,
+        biayaPendaftaran: formData.biayaPendaftaran || undefined,
+        paymentStatus: formData.paymentStatus,
+        petugasKasir: formData.petugasKasir || undefined,
       });
       closeModal();
       await reload();
@@ -458,6 +476,9 @@ export function PendaftaranUmumPage() {
         admin: formData.admin || undefined,
         foto: formData.foto || undefined,
         ruangan: formData.ruangan || undefined,
+        biayaPendaftaran: formData.biayaPendaftaran || undefined,
+        paymentStatus: formData.paymentStatus,
+        petugasKasir: formData.petugasKasir || undefined,
       });
       closeModal();
       await reload();
@@ -506,6 +527,34 @@ export function PendaftaranUmumPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menandai selesai');
     }
+  }
+
+  function buildKwitansiData(item: PendaftaranUmumItem): KwitansiReportData {
+    return {
+      logoSrc,
+      noKwitansi: item.noRegistrasi,
+      tanggal: new Date(item.tanggalMasuk).toLocaleDateString('id-ID'),
+      namaPasien: item.namaPasien,
+      umur: item.umur || '-',
+      alamat: item.alamat || '-',
+      dokterPengirim: item.dokterPengirim || '-',
+      items: [{ nama: 'Biaya Pendaftaran', hargaFormatted: formatRupiah(item.biayaPendaftaran) }],
+      totalFormatted: formatRupiah(item.biayaPendaftaran),
+      terbilang: terbilangRupiah(item.biayaPendaftaran),
+      paymentStatus: item.paymentStatus,
+      kasirNama: item.petugasKasir || '',
+    };
+  }
+
+  async function handleDownloadKwitansi(item: PendaftaranUmumItem) {
+    const data = buildKwitansiData(item);
+    const blob = await pdf(<KwitansiReportDocument data={data} />).toBlob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `Kwitansi_${item.noRegistrasi}.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -613,13 +662,15 @@ export function PendaftaranUmumPage() {
               <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Dokter Pengirim</th>
               <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Ruangan</th>
               <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Status</th>
+              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Biaya</th>
+              <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Bayar</th>
               <th style={{ background: '#93c5fd', color: '#1e3a8a' }}>Aksi</th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 ? (
               <tr style={{ background: '#1d4ed8' }}>
-                <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: '#ffffff' }}>
+                <td colSpan={12} style={{ textAlign: 'center', padding: '2rem', color: '#ffffff' }}>
                   Belum ada data pendaftaran umum.
                 </td>
               </tr>
@@ -736,6 +787,23 @@ export function PendaftaranUmumPage() {
                       {item.status === 'SELESAI' ? 'SELESAI' : 'MENUNGGU'}
                     </span>
                   </td>
+                  <td style={{ fontWeight: 700, color: '#1e293b' }}>{formatRupiah(item.biayaPendaftaran)}</td>
+                  <td>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '999px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: item.paymentStatus === 'LUNAS' ? '#15803d' : '#b91c1c',
+                        background: item.paymentStatus === 'LUNAS' ? '#f0fdf4' : '#fef2f2',
+                        border: `1px solid ${item.paymentStatus === 'LUNAS' ? '#bbf7d0' : '#fecaca'}`,
+                      }}
+                    >
+                      {item.paymentStatus === 'LUNAS' ? 'LUNAS' : 'BELUM LUNAS'}
+                    </span>
+                  </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
                       {item.status === 'MENUNGGU' && (
@@ -775,6 +843,14 @@ export function PendaftaranUmumPage() {
                         style={{ border: '1px solid var(--color-border)' }}
                       >
                         🏷️ Label
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--xs btn--primary"
+                        onClick={() => setKwitansiPreviewItem(item)}
+                        title="Pratinjau & cetak kwitansi biaya pendaftaran"
+                      >
+                        🧾 Kwitansi
                       </button>
                       <TableRowActions
                         onEdit={() => openEdit(item)}
@@ -979,6 +1055,55 @@ export function PendaftaranUmumPage() {
                       placeholder="Keluhan / keterangan medis..."
                     />
                   </div>
+
+                  <div className="legacy-form-row">
+                    <label htmlFor="biayaPendaftaran">Biaya Pendaftaran</label>
+                    <input
+                      id="biayaPendaftaran"
+                      name="biayaPendaftaran"
+                      type="number"
+                      min="0"
+                      step="500"
+                      value={formData.biayaPendaftaran}
+                      onChange={handleChange}
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div className="legacy-form-row">
+                    <label htmlFor="paymentStatus">Status Pembayaran</label>
+                    <select
+                      id="paymentStatus"
+                      name="paymentStatus"
+                      value={formData.paymentStatus}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          paymentStatus: e.target.value as 'BELUM_LUNAS' | 'LUNAS',
+                        }))
+                      }
+                    >
+                      <option value="BELUM_LUNAS">BELUM LUNAS</option>
+                      <option value="LUNAS">LUNAS</option>
+                    </select>
+                  </div>
+
+                  <div className="legacy-form-row">
+                    <label htmlFor="petugasKasir">Petugas Kasir</label>
+                    <select
+                      id="petugasKasir"
+                      name="petugasKasir"
+                      value={formData.petugasKasir}
+                      onChange={handleChange}
+                    >
+                      <option value="">-- Pilih Kasir --</option>
+                      {adminList.map((a) => (
+                        <option key={a.id} value={a.nama}>
+                          {a.nama}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="legacy-photo-panel">
@@ -1127,6 +1252,31 @@ export function PendaftaranUmumPage() {
                   logoSrc,
                 }}
               />
+            </PDFViewer>
+          </div>
+        </Modal>
+      )}
+
+      {kwitansiPreviewItem && (
+        <Modal
+          title={`Pratinjau Kwitansi — ${kwitansiPreviewItem.noRegistrasi}`}
+          open={true}
+          onClose={() => setKwitansiPreviewItem(null)}
+          size="xl"
+        >
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => void handleDownloadKwitansi(kwitansiPreviewItem)}
+              style={{ fontWeight: 600 }}
+            >
+              ⬇️ Unduh / Cetak Kwitansi
+            </button>
+          </div>
+          <div style={{ width: '100%', height: 'calc(100vh - 14rem)', minHeight: '600px' }}>
+            <PDFViewer width="100%" height="100%" className="pdf-viewer">
+              <KwitansiReportDocument data={buildKwitansiData(kwitansiPreviewItem)} />
             </PDFViewer>
           </div>
         </Modal>

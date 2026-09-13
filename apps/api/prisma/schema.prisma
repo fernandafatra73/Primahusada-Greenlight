@@ -929,6 +929,9 @@ model PendaftaranUmum {
   foto           String?
   ruangan        String?
   status         PendaftaranUmumStatus @default(MENUNGGU)
+  biayaPendaftaran Decimal             @default(0)
+  paymentStatus  PaymentStatus         @default(BELUM_LUNAS)
+  petugasKasir   String?
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 }
