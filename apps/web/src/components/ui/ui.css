@@ -1112,8 +1112,7 @@ body.radiolog-work-dark-theme .badge--unpaid,
   --pf-from: #6366f1;
   --pf-to: #8b5cf6;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-top: 6px solid var(--pf-from);
+  border: 2px solid #000000;
   border-radius: 22px;
   padding: 1.5rem;
   box-shadow:
