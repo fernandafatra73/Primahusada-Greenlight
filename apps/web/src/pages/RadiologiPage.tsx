@@ -105,7 +105,7 @@ export function RadiologiPage() {
   const [activeTab, setActiveTab] = useState<RadiologiTabId>('pasien');
 
   return (
-    <div className="frame-biru-hitam">
+    <div className="page-frame">
       <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
         {RADIOLOGI_TABS.map((tab) => (
           <button

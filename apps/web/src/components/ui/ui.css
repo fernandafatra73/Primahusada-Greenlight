@@ -1065,7 +1065,7 @@ body.radiolog-work-dark-theme .badge--unpaid,
 
 /* Fieldset "Data Pendaftaran" di form Pendaftaran Umum — aksen biru + hitam.
    Modal-nya dirender lewat portal ke document.body, jadi tidak bisa discope
-   lewat .frame-biru-hitam — pakai modifier class langsung di fieldset. */
+   lewat .page-frame — pakai modifier class langsung di fieldset. */
 .legacy-groupbox--biru-hitam {
   border: 2px solid #1d4ed8;
   background: #ffffff;
@@ -1098,28 +1098,37 @@ body.radiolog-work-dark-theme .badge--unpaid,
   padding: 0.25rem 0.75rem;
 }
 
-/* Kerangka panel biru + hitam — dipakai di semua halaman modul utama
-   (Pendaftaran Umum, Radiologi, Laboratorium, Keuangan, Dokter, Pengaturan,
-   Farmasi, Mega Data, Sosmed, dst). */
-.frame-biru-hitam {
-  background: linear-gradient(180deg, #bfdbfe, #93c5fd);
-  border: 2px solid #0f172a;
+/* Kerangka panel abu-abu + teks putih — dipakai di semua halaman modul
+   utama (Pendaftaran Umum, Radiologi, Laboratorium, Keuangan, Dokter,
+   Pengaturan, Farmasi, Mega Data, Sosmed, dst). */
+.page-frame {
+  background: linear-gradient(180deg, #6b7280, #4b5563);
+  border: 2px solid #1f2937;
   border-radius: var(--radius-card);
   padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.35);
 }
 
-.frame-biru-hitam .list-page__title {
-  color: #0f172a;
+.page-frame .list-page__title {
+  color: #ffffff;
 }
 
-.frame-biru-hitam .data-card {
-  background: #eff6ff;
-  border: 1px solid #0f172a;
+.page-frame .list-page__subtitle {
+  color: rgba(255, 255, 255, 0.75);
 }
 
-.frame-biru-hitam .data-card__table table.data-table {
-  border: 1px solid #0f172a;
+.page-frame .data-card {
+  background: #f3f4f6;
+  border: 1px solid #1f2937;
+}
+
+.page-frame .data-card__table table.data-table {
+  border: 1px solid #1f2937;
+}
+
+.page-frame .data-table th {
+  background: #d1d5db;
+  color: #1f2937;
 }
 
 .data-card {

@@ -142,7 +142,7 @@ export function TandaTanganElektronikPage() {
   );
 
   return (
-    <div className="frame-biru-hitam">
+    <div className="page-frame">
       <ListPageShell
         title="Manajemen Tanda Tangan Elektronik"
         action={

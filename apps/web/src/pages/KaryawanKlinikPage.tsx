@@ -127,7 +127,7 @@ export function KaryawanKlinikPage() {
   );
 
   return (
-    <div className="frame-biru-hitam">
+    <div className="page-frame">
       <ListPageShell
         title="Manajemen Karyawan Klinik"
         action={

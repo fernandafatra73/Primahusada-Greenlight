@@ -254,7 +254,7 @@ export function FarmasiKwitansiPage() {
   }
 
   return (
-    <div className="frame-biru-hitam">
+    <div className="page-frame">
       <ListPageShell
         title="Kwitansi Farmasi"
         subtitle="Penjualan obat & BHP ke pasien — otomatis mengurangi stok Farmasi & BHP"
