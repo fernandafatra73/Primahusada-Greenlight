@@ -53,9 +53,7 @@ const NAVBAR_SPECS: readonly NavbarSpec[] = [
   { type: 'link', id: 'pengaturan', label: 'Pengaturan', icon: IconSettings },
   { type: 'category', categoryId: 'farmasi', icon: IconDocument },
   { type: 'link', id: 'mega-data', label: 'Mega Data', icon: IconTag },
-  { type: 'link', id: 'hak-akses', label: 'Hak Akses', icon: IconShield },
   { type: 'link', id: 'sosmed', label: 'Sosmed', icon: IconShare },
-  { type: 'link', id: 'expertise', label: 'Expertise', icon: IconClipboard },
 ];
 
 export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: TopNavbarProps) {
@@ -84,7 +82,6 @@ export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: 
         </div>
         <div className="app-navbar__brand-text">
           <span className="app-navbar__title">Klinik Prima Husada</span>
-          <span className="app-navbar__subtitle">Sistem Informasi Klinik Prima Husada</span>
           <span className="app-navbar__credit">By: Fatra. AK</span>
         </div>
       </div>

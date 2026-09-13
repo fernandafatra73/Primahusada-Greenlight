@@ -280,7 +280,7 @@ function renderViewContent(
     case 'admin-klinik':
       return <AdminKlinikPage />;
     case 'pengaturan':
-      return <PengaturanHubPage />;
+      return <PengaturanHubPage role={role} />;
     case 'logo-perusahaan':
       return <LogoPerusahaanPage />;
     case 'autote1':

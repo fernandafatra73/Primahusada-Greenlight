@@ -9,6 +9,7 @@ import { WhatsAppPage } from './WhatsAppPage.tsx';
 import { TelegramPage } from './TelegramPage.tsx';
 import { KalkulatorPage } from './KalkulatorPage.tsx';
 import { AiGeminiPage } from './AiGeminiPage.tsx';
+import { ExpertisePage } from './ExpertisePage.tsx';
 
 const MEGA_DATA_TABS = [
   { id: 'fatra', label: 'Fatra' },
@@ -21,6 +22,7 @@ const MEGA_DATA_TABS = [
   { id: 'telegram', label: 'Telegram' },
   { id: 'kalkulator', label: 'Kalkulator' },
   { id: 'ai-gemini', label: 'AI Gemini' },
+  { id: 'expertise', label: 'Expertise' },
 ] as const;
 
 type MegaDataTabId = (typeof MEGA_DATA_TABS)[number]['id'];
@@ -47,6 +49,8 @@ function renderTabContent(tabId: MegaDataTabId) {
       return <KalkulatorPage />;
     case 'ai-gemini':
       return <AiGeminiPage />;
+    case 'expertise':
+      return <ExpertisePage />;
     default: {
       const exhaustiveCheck: never = tabId;
       return exhaustiveCheck;

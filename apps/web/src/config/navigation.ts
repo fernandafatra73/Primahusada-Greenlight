@@ -106,7 +106,7 @@ export const MAIN_NAV_CATEGORIES: readonly NavCategory[] = [
   },
   {
     id: 'master-sistem',
-    label: 'Dokter & System',
+    label: 'Dokter',
     iconName: 'shield',
     items: [
       { id: 'dokter', label: 'Manajemen Dokter Pengirim', shortLabel: 'Dokter Pengirim' },
@@ -118,7 +118,7 @@ export const MAIN_NAV_CATEGORIES: readonly NavCategory[] = [
   },
   {
     id: 'farmasi',
-    label: 'Farmasi & BHP',
+    label: 'Farmasi',
     iconName: 'pill',
     items: [
       { id: 'farmasi-bhp', label: 'Manajemen Farmasi & BHP', shortLabel: 'Stok Obat & BHP' },
