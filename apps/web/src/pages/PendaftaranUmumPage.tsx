@@ -903,7 +903,7 @@ export function PendaftaranUmumPage() {
                 🔇 Matikan Voice
               </button>
             </div>
-            <fieldset className="legacy-groupbox">
+            <fieldset className="legacy-groupbox legacy-groupbox--biru-hitam">
               <legend>Data Pendaftaran</legend>
               <div className="legacy-form-layout">
                 <div className="legacy-form-fields">

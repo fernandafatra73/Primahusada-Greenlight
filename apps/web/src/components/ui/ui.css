@@ -1063,6 +1063,27 @@ body.radiolog-work-dark-theme .badge--unpaid,
   color: #e11d48;
 }
 
+/* Fieldset "Data Pendaftaran" di form Pendaftaran Umum — aksen biru + hitam.
+   Modal-nya dirender lewat portal ke document.body, jadi tidak bisa discope
+   lewat .pendaftaran-umum-page — pakai modifier class langsung di fieldset. */
+.legacy-groupbox--biru-hitam {
+  border: 2px solid #1d4ed8;
+  background: #ffffff;
+}
+
+.legacy-groupbox--biru-hitam > legend {
+  color: #ffffff;
+  background: #1d4ed8;
+  border: 1px solid #0f172a;
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+}
+
+.legacy-groupbox--biru-hitam .legacy-form-row > label {
+  color: #0f172a;
+  font-weight: 700;
+}
+
 /* Halaman Pendaftaran Umum — latar biru khusus untuk halaman ini saja. */
 .pendaftaran-umum-page {
   background: linear-gradient(180deg, #bfdbfe, #93c5fd);
