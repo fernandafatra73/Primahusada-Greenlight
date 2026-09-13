@@ -45,11 +45,6 @@ export function AppShell({ activeView, authUser, onNavigate, onLogout, children 
 
   return (
     <div className="app-shell">
-      <div className="app-shell__accent-bar" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
       <TopNavbar
         activeId={activeView}
         onNavigate={onNavigate}
@@ -60,6 +55,11 @@ export function AppShell({ activeView, authUser, onNavigate, onLogout, children 
       {getViewFrameColor(activeView) === 'red' && <ReagenReminderBar />}
       <main className="app-content">{children}</main>
       <AutoTextBar text={playingLirik ?? marqueeText} />
+      <div className="app-shell__accent-bar" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
     </div>
   );
 }

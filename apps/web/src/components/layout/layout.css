@@ -6,9 +6,6 @@
 }
 
 .app-shell__accent-bar {
-  position: sticky;
-  top: 0;
-  z-index: 31;
   display: flex;
   height: 6px;
 }
@@ -31,7 +28,7 @@
 
 .app-navbar {
   position: sticky;
-  top: 6px;
+  top: 0;
   z-index: 30;
   display: flex;
   flex-wrap: nowrap;
