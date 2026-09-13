@@ -1128,6 +1128,28 @@ body.radiolog-work-dark-theme .badge--unpaid,
   border: 1px solid #0f172a;
 }
 
+/* Halaman Laboratorium — kerangka biru + hitam yang sama seperti Pendaftaran Umum/Radiologi. */
+.laboratorium-page {
+  background: linear-gradient(180deg, #bfdbfe, #93c5fd);
+  border: 2px solid #0f172a;
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+}
+
+.laboratorium-page .list-page__title {
+  color: #0f172a;
+}
+
+.laboratorium-page .data-card {
+  background: #eff6ff;
+  border: 1px solid #0f172a;
+}
+
+.laboratorium-page .data-card__table table.data-table {
+  border: 1px solid #0f172a;
+}
+
 .data-card {
   border-radius: var(--radius-card);
   background: var(--color-bg-surface);
