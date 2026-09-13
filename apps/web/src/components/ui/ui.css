@@ -1132,7 +1132,7 @@ body.radiolog-work-dark-theme .badge--unpaid,
 
 .page-frame .data-card {
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #0f172a;
   border-radius: 16px;
   box-shadow: none;
 }
@@ -1144,7 +1144,7 @@ body.radiolog-work-dark-theme .badge--unpaid,
 .page-frame .data-table th {
   background: #bfdbfe;
   color: #1e3a8a;
-  border-bottom: 2px solid #93c5fd;
+  border-bottom: 2px solid #0f172a;
 }
 
 /* Warna aksen per modul. */
