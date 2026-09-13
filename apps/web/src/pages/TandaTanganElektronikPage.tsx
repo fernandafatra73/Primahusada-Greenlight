@@ -142,7 +142,7 @@ export function TandaTanganElektronikPage() {
   );
 
   return (
-    <>
+    <div className="frame-biru-hitam">
       <ListPageShell
         title="Manajemen Tanda Tangan Elektronik"
         action={
@@ -233,6 +233,6 @@ export function TandaTanganElektronikPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => void confirmDelete()}
       />
-    </>
+    </div>
   );
 }

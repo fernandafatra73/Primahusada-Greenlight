@@ -411,7 +411,7 @@ export function UsgPage() {
   }
 
   return (
-    <>
+    <div className="frame-biru-hitam">
       <div className="usg-hero" id="usg-form-top">
         <div className="usg-hero__icon">🩻</div>
         <div>
@@ -962,7 +962,7 @@ export function UsgPage() {
         initialMode="amplop"
         examLabel="USG"
       />
-    </>
+    </div>
   );
 }
 

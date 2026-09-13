@@ -88,7 +88,7 @@ export function AdminPage() {
   }
 
   return (
-    <>
+    <div className="frame-biru-hitam">
       <ListPageShell
         title="Manajemen Admin"
         subtitle="Kelola data akun Admin pada sistem"
@@ -188,6 +188,6 @@ export function AdminPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => void confirmDelete()}
       />
-    </>
+    </div>
   );
 }

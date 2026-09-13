@@ -1065,7 +1065,7 @@ body.radiolog-work-dark-theme .badge--unpaid,
 
 /* Fieldset "Data Pendaftaran" di form Pendaftaran Umum — aksen biru + hitam.
    Modal-nya dirender lewat portal ke document.body, jadi tidak bisa discope
-   lewat .pendaftaran-umum-page — pakai modifier class langsung di fieldset. */
+   lewat .frame-biru-hitam — pakai modifier class langsung di fieldset. */
 .legacy-groupbox--biru-hitam {
   border: 2px solid #1d4ed8;
   background: #ffffff;
@@ -1098,8 +1098,10 @@ body.radiolog-work-dark-theme .badge--unpaid,
   padding: 0.25rem 0.75rem;
 }
 
-/* Halaman Pendaftaran Umum — tema biru + hitam menyeluruh, khusus halaman ini. */
-.pendaftaran-umum-page {
+/* Kerangka panel biru + hitam — dipakai di semua halaman modul utama
+   (Pendaftaran Umum, Radiologi, Laboratorium, Keuangan, Dokter, Pengaturan,
+   Farmasi, Mega Data, Sosmed, dst). */
+.frame-biru-hitam {
   background: linear-gradient(180deg, #bfdbfe, #93c5fd);
   border: 2px solid #0f172a;
   border-radius: var(--radius-card);
@@ -1107,60 +1109,16 @@ body.radiolog-work-dark-theme .badge--unpaid,
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
 }
 
-.pendaftaran-umum-page .list-page__title {
+.frame-biru-hitam .list-page__title {
   color: #0f172a;
 }
 
-.pendaftaran-umum-page .data-card {
+.frame-biru-hitam .data-card {
   background: #eff6ff;
   border: 1px solid #0f172a;
 }
 
-.pendaftaran-umum-page .data-card__table table.data-table {
-  border: 1px solid #0f172a;
-}
-
-/* Halaman Radiologi — kerangka biru + hitam yang sama seperti Pendaftaran Umum. */
-.radiologi-page {
-  background: linear-gradient(180deg, #bfdbfe, #93c5fd);
-  border: 2px solid #0f172a;
-  border-radius: var(--radius-card);
-  padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
-}
-
-.radiologi-page .list-page__title {
-  color: #0f172a;
-}
-
-.radiologi-page .data-card {
-  background: #eff6ff;
-  border: 1px solid #0f172a;
-}
-
-.radiologi-page .data-card__table table.data-table {
-  border: 1px solid #0f172a;
-}
-
-/* Halaman Laboratorium — kerangka biru + hitam yang sama seperti Pendaftaran Umum/Radiologi. */
-.laboratorium-page {
-  background: linear-gradient(180deg, #bfdbfe, #93c5fd);
-  border: 2px solid #0f172a;
-  border-radius: var(--radius-card);
-  padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
-}
-
-.laboratorium-page .list-page__title {
-  color: #0f172a;
-}
-
-.laboratorium-page .data-card {
-  background: #eff6ff;
-  border: 1px solid #0f172a;
-}
-
-.laboratorium-page .data-card__table table.data-table {
+.frame-biru-hitam .data-card__table table.data-table {
   border: 1px solid #0f172a;
 }
 

@@ -104,7 +104,7 @@ export function RolePage() {
   }
 
   return (
-    <>
+    <div className="frame-biru-hitam">
       <ListPageShell
         title="Manajemen Role (Staff)"
         subtitle="Akses admin dan karyawan sistem"
@@ -235,6 +235,6 @@ export function RolePage() {
         onConfirm={() => void confirmDelete()}
       />
 
-    </>
+    </div>
   );
 }

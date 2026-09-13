@@ -558,7 +558,7 @@ export function PendaftaranUmumPage() {
   }
 
   return (
-    <div className="pendaftaran-umum-page">
+    <div className="frame-biru-hitam">
     <ListPageShell
       title="Pendaftaran Umum"
       metrics={[

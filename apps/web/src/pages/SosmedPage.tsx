@@ -56,7 +56,7 @@ interface SosmedPageProps {
  * dropdown navbar Sosmed yang sebelumnya membuka daftar tautan terpisah. */
 export function SosmedPage({ onNavigate }: SosmedPageProps) {
   return (
-    <div>
+    <div className="frame-biru-hitam">
       <h2 style={{ margin: '0 0 0.35rem' }}>Sosmed</h2>
       <p style={{ margin: '0 0 1.25rem', color: 'var(--color-text-muted)' }}>
         Tautan cepat ke media sosial &amp; platform resmi klinik.
