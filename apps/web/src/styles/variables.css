@@ -1,0 +1,37 @@
+:root {
+  --header-height: 64px;
+
+  --color-bg-page: #e6f2fb;
+  --color-bg-surface: #ffffff;
+  --color-primary: #000000;
+  --color-primary-soft: #f0f0f0;
+  --color-primary-hover: #262626;
+  --color-primary-muted: #a3a3a3;
+
+  --color-text-heading: #000000;
+  --color-text-body: #1a1a1a;
+  --color-text-muted: #737373;
+  --color-border: #d4d4d4;
+
+  --color-success: #262626;
+  --color-success-soft: #f0f0f0;
+  --color-danger: #000000;
+  --color-danger-soft: #e5e5e5;
+  --color-warning: #404040;
+  --color-warning-soft: #f0f0f0;
+
+  --shadow-header: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 4px 18px rgba(0, 0, 0, 0.1);
+  --radius-card: 16px;
+  --radius-button: 10px;
+
+  font-family:
+    'Segoe UI',
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.5;
+  color: var(--color-text-body);
+  background: var(--color-bg-page);
+}

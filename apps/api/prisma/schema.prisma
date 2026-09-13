@@ -1,0 +1,1008 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum StaffRole {
+  ADMIN
+  KARYAWAN
+  CEO
+}
+
+/// Modul yang boleh diakses staff berdepartemen (KARYAWAN dengan departemen
+/// terkunci hanya ke modulnya sendiri). ADMIN dan CEO tidak dibatasi.
+enum Departemen {
+  PENDAFTARAN
+  RADIOLOGI
+  LABORATORIUM
+  KEUANGAN
+  FARMASI
+}
+
+enum HasilStatus {
+  MENUNGGU_HASIL
+  SELESAI
+}
+
+enum PaymentStatus {
+  BELUM_LUNAS
+  LUNAS
+}
+
+enum SharingType {
+  PERCENT
+  FIXED
+}
+
+enum AsalModul {
+  RADIOLOGI
+  LABORATORIUM
+}
+
+model Dokter {
+  id                    String   @id @default(cuid())
+  nama                  String
+  spesialisasi          String?
+  noTelepon             String?
+  namaBank              String?
+  noRekening            String?
+  defaultSharingAmount  Decimal  @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  pasien                Pasien[]
+}
+
+model KaryawanKlinik {
+  id           String   @id @default(cuid())
+  nama         String
+  spesialisasi String?
+  noTelepon    String?
+  namaBank     String?
+  noRekening   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Radiolog {
+  id              String             @id @default(cuid())
+  nama            String
+  noTelepon       String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  pasien          Pasien[]           @relation("PasienRadiolog")
+  sharingRadiolog SharingRadiolog[]
+}
+
+/// Data sharing radiolog yang diisi manual oleh admin (bukan hasil hitungan
+/// otomatis dari transaksi Pasien) — mis. untuk kesepakatan sharing per
+/// jenis pemeriksaan dengan radiolog tertentu.
+model SharingRadiolog {
+  id                String   @id @default(cuid())
+  namaPemeriksaan   String
+  jumlahPemeriksaan Int      @default(1)
+  sharingNominal    Decimal
+  totalSharing      Decimal
+  radiologId        String
+  radiolog          Radiolog @relation(fields: [radiologId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PetugasLab {
+  id              String   @id @default(cuid())
+  nama            String
+  nip             String?
+  noTelepon       String?
+  logoTandaTangan String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Radiografer {
+  id        String   @id @default(cuid())
+  nama      String
+  noHp      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Daftar staff Admin Klinik gabungan — sebelumnya terpisah jadi Petugas
+/// Kasir, Petugas Admin Klinik, dan Admin Pendaftaran. Satu daftar ini
+/// dipakai sebagai sumber pilihan di semua tempat yang dulu memakai
+/// ketiganya (kwitansi, sharing radiolog, registrasi pasien).
+model AdminKlinik {
+  id            String   @id @default(cuid())
+  nama          String
+  noHp          String?
+  statusHadir   String?
+  statusTanggal String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/// Absensi (jam datang/jam pulang) staff Admin Klinik — tab "Absensi" di
+/// sebelah tab Admin Klinik pada halaman Pendaftaran. `tanggal` selalu diisi
+/// server-side dengan tanggal hari pencatatan dan tidak bisa diubah lagi
+/// (PATCH hanya mengizinkan jamDatang/jamPulang) — satu baris per staff per hari.
+model AbsensiAdminKlinik {
+  id            String   @id @default(cuid())
+  adminKlinikId String
+  namaKaryawan  String
+  tanggal       String
+  jamDatang     String?
+  jamPulang     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([adminKlinikId, tanggal])
+}
+
+/// Surat Peringatan (SP1/SP2/SP3) staff Admin Klinik — dicetak dari tab
+/// Absensi berdasarkan rekap persentase kehadiran tahunan (hari Minggu
+/// dikecualikan dari perhitungan).
+model SuratPeringatanAdminKlinik {
+  id                   String   @id @default(cuid())
+  namaKaryawan         String
+  jabatan              String   @default("Admin Klinik")
+  level                String
+  nomorSurat           String?
+  tanggalSurat         DateTime @default(now())
+  alasan               String
+  tempatSurat          String?
+  namaPenandatangan    String?
+  jabatanPenandatangan String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+/// Kalender tahunan event ekonomi penting (FOMC, NFP, dll) yang biasa
+/// menggerakkan harga XAU/USD — diisi manual oleh pengguna per tahun.
+model TradingJadwal {
+  id          String   @id @default(cuid())
+  tanggal     DateTime
+  namaEvent   String
+  keterangan  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Catatan analisa & level support/resistance sebelum membeli XAU/USD —
+/// jurnal trading pribadi, diisi manual.
+model TradingAnalisa {
+  id          String   @id @default(cuid())
+  tanggal     DateTime @default(now())
+  analisa     String
+  support     String?
+  resistance  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Jejak alert pola candle yang sudah dikirim ke Telegram. Dipakai murni
+/// untuk dedup: satu pola hanya dikirim sekali per candle, sehingga bot tidak
+/// mengulang alert yang sama saat server restart (lihat candlePatternJob).
+model CandleAlert {
+  id         String   @id @default(cuid())
+  symbol     String
+  timeframe  String
+  candleOpen DateTime
+  pola       String
+  createdAt  DateTime @default(now())
+
+  @@unique([symbol, timeframe, candleOpen, pola])
+  @@index([createdAt])
+}
+
+/// Level Resistance/Support yang dipantau otomatis terhadap harga XAU/USD
+/// live di halaman Trading — begitu harga menyentuh salah satu level,
+/// peringatan suara diucapkan berulang di frontend (lihat TradingPage).
+/// Entri terbaru (createdAt terbesar) adalah level aktif yang dipantau.
+model TradingLevel {
+  id         String   @id @default(cuid())
+  resistance Decimal
+  support    Decimal
+  keterangan String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+/// Harga acuan (entry) XAU/USD untuk fitur "MinPlus" di halaman Trading —
+/// begitu harga live bergerak naik/turun kelipatan $10 dari acuan ini,
+/// peringatan suara "santai, santai..." diucapkan di frontend. Entri terbaru
+/// (createdAt terbesar) adalah acuan aktif yang dipantau.
+model TradingMinPlus {
+  id         String   @id @default(cuid())
+  hargaAcuan Decimal
+  keterangan String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+/// Target harga pembelian (beli) XAU/USD yang dipantau otomatis terhadap
+/// harga live — begitu harga live turun menyentuh target ini, peringatan
+/// suara "Beli" diucapkan di frontend (lihat TradingPage). Entri terbaru
+/// (createdAt terbesar) adalah target aktif yang dipantau.
+model TradingHargaBeli {
+  id         String   @id @default(cuid())
+  hargaBeli  Decimal
+  keterangan String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+/// Teks berjalan (marquee) pada band bawah aplikasi. Satu baris singleton,
+/// diisi lewat menu Pengaturan > Autote1.
+model AutoText {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LogoPerusahaan {
+  id               String   @id @default(cuid())
+  namaKlinik       String
+  alamat           String?
+  noTelepon        String?
+  email            String?
+  penanggungJawab  String?
+  logoTandaTangan  String?
+  logoPerusahaan   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model DaftarTelpon {
+  id            String   @id @default(cuid())
+  nama          String
+  telpon        String?
+  admin         String?
+  password      String?
+  noKontrak     String?
+  namaInstansi  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/// Pengaturan pengingat suara stock opname reagen laboratorium — tanggal
+/// pemicu & isi teks suara diubah lewat tombol pengaturan di halaman
+/// Laboratorium (bukan nilai tetap di kode). Singleton, id selalu "default".
+model ReagenReminderSetting {
+  id        String   @id @default("default")
+  tanggal   Int      @default(20)
+  pesan     String   @default("Perhatian, sudah tanggal 20. Segera hitung stock opname laboratorium, dan lakukan pembelian jika stok kurang.")
+  updatedAt DateTime @updatedAt
+}
+
+/// Daftar akun/kredensial (mis. akun sosial media, email, dsb) yang dikelola
+/// pemilik klinik — diakses lewat tombol "Daftar Akun" di halaman Sosmed.
+model DaftarAkun {
+  id            String   @id @default(cuid())
+  namaAkun      String
+  gmail         String?
+  password      String?
+  nomorHp       String?
+  otentikator   String?
+  passwordGmail String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/// Tanggal merah selain hari Minggu & 5 hari libur nasional tanggal tetap
+/// (yang sudah dihitung langsung di kode) — mis. Idul Fitri, Idul Adha, cuti
+/// bersama, dsb. Diinput manual oleh admin sesuai kalender resmi tahun berjalan.
+model HariLibur {
+  id          String   @id @default(cuid())
+  tanggal     DateTime @unique
+  keterangan  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Pilihan nominal sharing dokter (rupiah) pada dropdown Sharing di form
+/// Registrasi Radiologi. Bisa ditambah/diubah/dihapus dari modal Registrasi
+/// Radiologi Baru; isi awalnya diisi oleh migrasi add_pilihan_sharing.
+model PilihanSharing {
+  id          String   @id @default(cuid())
+  nominal     Int      @unique
+  keterangan  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model HitunganLed {
+  id           String   @id @default(cuid())
+  namaPasien   String
+  jenisKelamin String
+  jamPertama   Decimal
+  jamKedua     Decimal
+  tanggal      DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model KondisiAlat {
+  id          String   @id @default(cuid())
+  namaPasien  String
+  kv          Decimal
+  sekon       Decimal
+  mAs         Decimal
+  beratBadan  Decimal?
+  tanggal     DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model GajiKaryawan {
+  id           String   @id @default(cuid())
+  namaKaryawan String
+  jabatan      String?
+  bulan        String
+  tanggal      DateTime @default(now())
+  gajiPokok    Decimal  @default(0)
+  tunjangan    Decimal  @default(0)
+  potongan     Decimal  @default(0)
+  gajiBersih   Decimal  @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Karyawan {
+  id         String   @id @default(cuid())
+  nama       String
+  jabatan    String?
+  noTelepon  String?
+  alamat     String?
+  departemen String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model BhpRadiologi {
+  id           String   @id @default(cuid())
+  tanggal      DateTime @default(now())
+  pemakaian    String
+  harga        Decimal  @default(0)
+  dev          Decimal  @default(0)
+  fixer        Decimal  @default(0)
+  film         Decimal  @default(0)
+  amplopKertas Decimal  @default(0)
+  listrik      Decimal  @default(0)
+  gajiKaryawan Decimal  @default(0)
+  kertasCetak  Decimal  @default(0)
+  amplop       Decimal  @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/// Log harian pemakaian film rontgen. `stok` adalah saldo berjalan yang
+/// dihitung ulang otomatis (bukan diisi manual) setiap kali ada baris
+/// ditambah/diubah/dihapus: stok = akumulasi (jumlahPembelian - pemakaianHarian)
+/// diurutkan dari tanggal paling awal ke terbaru.
+model PemakaianFilm {
+  id               String    @id @default(cuid())
+  tanggal          DateTime  @default(now())
+  pemakaianHarian  Int       @default(0)
+  stok             Int       @default(0)
+  tanggalPembelian DateTime?
+  jumlahPembelian  Int       @default(0)
+  hargaPembelian   Decimal   @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model LaporanPajakOverride {
+  id              String   @id @default(cuid())
+  year            Int
+  bulan           Int
+  modul           AsalModul @default(RADIOLOGI)
+  jumlahPasien    Int
+  harga           Decimal
+  totalPenerimaan Decimal
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([year, bulan, modul])
+}
+
+/// Pembukuan bulanan (Pendapatan Jasa Pelayanan, Beban Usaha, Penyusutan &
+/// mini Neraca) per bulan per tahun. Jumlah Pasien TIDAK disimpan di sini,
+/// selalu dihitung ulang dari arsip Duplikat (sama seperti Laporan Pajak).
+model LaporanPajakBulanan {
+  id                  String    @id @default(cuid())
+  year                Int
+  bulan               Int
+  modul               AsalModul @default(RADIOLOGI)
+
+  harga               Decimal   @default(0)
+
+  biayaSewaTempat     Decimal   @default(0)
+  biayaListrikAir     Decimal   @default(0)
+  gajiFernanda        Decimal   @default(0)
+  gajiChalimatusadiah Decimal   @default(0)
+  gajiRiki            Decimal   @default(0)
+  gajiAgung           Decimal   @default(0)
+  gajiKaryawan1       Decimal   @default(0)
+  gajiKaryawan2       Decimal   @default(0)
+  bahanRoentgen       Decimal   @default(0)
+  peralatanRoentgen   Decimal   @default(0)
+  penyusutanManual    Decimal   @default(0)
+  perbaikanAlat       Decimal   @default(0)
+
+  hargaPeralatan      Decimal   @default(0)
+  tarifPenyusutanTahunanPersen Decimal @default(10)
+
+  piutangUsaha        Decimal   @default(0)
+  perlengkapan        Decimal   @default(0)
+  utangUsaha          Decimal   @default(0)
+
+  /// Hanya dipakai/ditampilkan untuk bulan 1 (Januari) sebagai titik awal
+  /// rantai Modal & Kas berjalan; bulan berikutnya dihitung otomatis.
+  modalAwalTahun               Decimal @default(0)
+  kasAwalTahun                  Decimal @default(0)
+  akumulasiPenyusutanAwalTahun  Decimal @default(0)
+
+  /// Tarif PPh Final UMKM dipakai di Laporan Pajak (default 0.5% sesuai PP
+  /// 23/2018). Sama seperti field *AwalTahun di atas, berlaku satu nilai per
+  /// tahun — hanya dibaca dari baris bulan 1 (Januari).
+  tarifPajakPersen              Decimal @default(0.5)
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([year, bulan, modul])
+}
+
+/// Nama pegawai yang ditampilkan pada baris Beban Gaji di Hasil Perbulan &
+/// Laporan Pajak Bulanan. Terpisah dari LaporanPajakBulanan karena nama
+/// pegawai berlaku untuk semua bulan/tahun (tidak diulang tiap bulan),
+/// sementara nominal gajinya tetap disimpan per bulan seperti sebelumnya.
+model LaporanGajiLabel {
+  id                   String    @id @default(cuid())
+  modul                AsalModul @default(RADIOLOGI)
+  labelFernanda        String    @default("Fernanda")
+  labelChalimatusadiah String    @default("Chalimatusadiah")
+  labelRiki            String    @default("Riki")
+  labelAgung           String    @default("Agung")
+  labelKaryawan1       String    @default("Karyawan 1")
+  labelKaryawan2       String    @default("Karyawan 2")
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([modul])
+}
+
+model LaporanNeraca {
+  id                 String    @id @default(cuid())
+  year               Int
+  modul              AsalModul @default(RADIOLOGI)
+  namaPerusahaan     String    @default("CV. PRIMA MANDIRI NUSANTARA")
+
+  // Aktiva Lancar
+  kas                Decimal  @default(0)
+  bank               Decimal  @default(0)
+  piutang            Decimal  @default(0)
+  persediaan         Decimal  @default(0)
+
+  // Aktiva Tetap
+  tanah              Decimal  @default(0)
+  gedung             Decimal  @default(0)
+  peralatan          Decimal  @default(0)
+  kendaraan          Decimal  @default(0)
+
+  // Pasiva - Utang Jangka Pendek
+  utangUsaha         Decimal  @default(0)
+  utangPajak         Decimal  @default(0)
+  utangLainnya       Decimal  @default(0)
+
+  // Pasiva - Utang Jangka Panjang
+  utangJangkaPanjang Decimal  @default(0)
+
+  // Pasiva - Modal
+  modalUsaha         Decimal  @default(0)
+
+  // Laporan Rugi Laba
+  pendapatan         Decimal  @default(0)
+  biayaGaji          Decimal  @default(0)
+  biayaAtkBahan      Decimal  @default(0)
+  biayaListrik       Decimal  @default(0)
+  biayaTelpon        Decimal  @default(0)
+  biayaTransport     Decimal  @default(0)
+  biayaSewa          Decimal  @default(0)
+  biayaLainLain      Decimal  @default(0)
+  biayaPajakSewa     Decimal  @default(0)
+
+  // Tanda tangan
+  tempatTandaTangan  String   @default("Sukabumi")
+  tanggalTandaTangan DateTime @default(now())
+  namaPenandatangan  String   @default("")
+  logoPerusahaanId   String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([year, modul])
+}
+
+/// Pengaturan kop surat (logo, nama klinik, alamat, telepon) dipakai bersama
+/// oleh template surat (Surat Keterangan Sehat, Surat Keterangan Rujukan).
+/// Singleton: selalu diakses/diubah lewat baris id = "default".
+model KopSurat {
+  id          String   @id @default("default")
+  namaKlinik  String   @default("KLINIK PRIMA HUSADA")
+  alamat      String   @default("Jl. Siliwangi Ruko Palapa No 2 Parung Kuda")
+  telepon     String   @default("0857-1932-5557")
+  logoDataUrl String?
+  updatedAt   DateTime @updatedAt
+}
+
+model SuratKeteranganSehat {
+  id                 String   @id @default(cuid())
+  nomorSurat         String?
+  namaPasien         String
+  tempatTanggalLahir String?
+  jenisKelamin       String   @default("Laki-laki")
+  pekerjaan          String?
+  alamatPasien       String?
+  hasilPemeriksaan   String?
+  keperluan          String?
+  tempatSurat        String?
+  tanggalSurat       DateTime @default(now())
+  namaDokter         String?
+  jabatanDokter      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model SuratKeteranganRujukan {
+  id                 String   @id @default(cuid())
+  nomorSurat         String?
+  namaPasien         String
+  tempatTanggalLahir String?
+  jenisKelamin       String   @default("Laki-laki")
+  alamatPasien       String?
+  dirujukKe          String?
+  diagnosaKeluhan    String?
+  alasanRujukan      String?
+  tempatSurat        String?
+  tanggalSurat       DateTime @default(now())
+  namaDokter         String?
+  jabatanDokter      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+/// Daftar tanda tangan elektronik (nama, gambar tanda tangan, alamat) yang
+/// bisa dipakai untuk kolom penandatangan pada dokumen cetak (kwitansi, surat, dsb).
+model TandaTanganElektronik {
+  id              String   @id @default(cuid())
+  nama            String
+  logoTandaTangan String?
+  alamat          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/// Daftar foto yang bisa ditampilkan pada kotak gambar di halaman Dashboard.
+model FotoDashboard {
+  id        String   @id @default(cuid())
+  nama      String
+  foto      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Arsip foto rontgen pasien beserta kesan/diagnosa — bisa diisi manual atau
+/// lewat draft AI vision (tombol "Start — Analisa Foto dengan AI", sama
+/// seperti AI Radiologi/AI Foto). `isDraftAi` tetap true sampai radiolog/
+/// dokter meninjau ulang dan menyimpan perubahan secara manual.
+model AnalisaFotoRontgen {
+  id               String   @id @default(cuid())
+  namaPasien       String
+  regCode          String?
+  jenisPemeriksaan String?
+  tanggal          DateTime @default(now())
+  fotoDataUrl      String
+  ukuranFoto       String   @default("3 x 4 cm")
+  kesan            String?
+  diagnosa         String?
+  isDraftAi        Boolean  @default(false)
+  radiologNama     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+/// Arsip pemeriksaan USG pasien beserta analisa/kesan yang diisi manual oleh
+/// radiolog/dokter (bukan deteksi otomatis AI).
+model Usg {
+  id               String   @id @default(cuid())
+  namaPasien       String
+  umur             String?
+  alamat           String?
+  regCode          String?
+  jenisPemeriksaan String?
+  tanggal          DateTime @default(now())
+  dokterPengirim   String?
+  fotoDataUrl      String
+  fotoDataUrl2     String?
+  fotoDataUrl3     String?
+  fotoDataUrl4     String?
+  analisa          String?
+  kesan            String?
+  radiologNama     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+/// Catatan hasil bacaan Expertise — dibuat manual (bukan hasil AI, bukan
+/// bagian dari alur Usg/Radiologi), muncul sebagai menu tersendiri di navbar
+/// (di sebelah Sosmed).
+model Expertise {
+  id           String   @id @default(cuid())
+  pemeriksaan  String?
+  klinis       String?
+  namaPenyakit String?
+  fotoDataUrl  String?
+  kesan        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/// Arsip foto (anatomi) yang dianalisa oleh AI vision untuk membuat draft
+/// kemungkinan nama penyakit & kesan. `isDraftAi` tetap true sampai
+/// radiolog/dokter meninjau ulang dan menyimpan perubahan secara manual —
+/// dipakai frontend untuk menampilkan label "draft AI, wajib ditinjau".
+model AnalisaFotoAi {
+  id           String   @id @default(cuid())
+  namaPasien   String
+  pemeriksaan  String?
+  namaPenyakit String?
+  fotoDataUrl  String
+  kesan        String?
+  isDraftAi    Boolean  @default(false)
+  radiologNama String?
+  tanggal      DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/// Arsip foto rontgen yang dianalisa AI vision khusus gaya bacaan radiologi:
+/// "bacaan" (temuan naratif detail) terpisah dari "kesan" (impression ringkas),
+/// meniru struktur laporan radiologi konvensional. `isDraftAi` sama seperti
+/// AnalisaFotoAi — wajib ditinjau radiolog/dokter sebelum dipakai.
+model AnalisaRadiologiAi {
+  id              String   @id @default(cuid())
+  namaPasien      String
+  namaPemeriksaan String?
+  fotoDataUrl     String
+  bacaan          String?
+  kesan           String?
+  isDraftAi       Boolean  @default(false)
+  radiologNama    String?
+  tanggal         DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/// Data master (Grup) untuk fitur AI Radiologi.
+model AiRadiologiGrup {
+  id        String   @id @default(cuid())
+  nama      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model JenisPemeriksaan {
+  id        String              @id @default(cuid())
+  nama      String              @unique
+  jumlahFilm Int                @default(1)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  harga     HargaLayanan?
+  pasienItems PasienPemeriksaan[]
+}
+
+model HargaLayanan {
+  id                 String           @id @default(cuid())
+  jenisPemeriksaanId String           @unique
+  jenisPemeriksaan   JenisPemeriksaan @relation(fields: [jenisPemeriksaanId], references: [id], onDelete: Cascade)
+  harga              Decimal
+  detailLayanan      String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model KesanTemplate {
+  id        String   @id @default(cuid())
+  judul     String
+  isi       String
+  gambar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AnatomiGambar {
+  id         String   @id @default(cuid())
+  regio      String
+  gambar     String
+  thumbnail  String?
+  keterangan String?
+  createdAt  DateTime @default(now())
+
+  @@index([regio])
+}
+
+model PlaylistLagu {
+  id        String   @id @default(cuid())
+  judul     String
+  audioData String
+  lirik     String?
+  createdAt DateTime @default(now())
+}
+
+model KesanBacaanGrup {
+  id        String                @id @default(cuid())
+  nama      String
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  kategori  KesanBacaanKategori[]
+}
+
+model KesanBacaanKategori {
+  id        String          @id @default(cuid())
+  grupId    String
+  grup      KesanBacaanGrup @relation(fields: [grupId], references: [id], onDelete: Cascade)
+  nama      String
+  urutan    Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  bacaan    KesanBacaan[]
+
+  @@index([grupId])
+}
+
+model KesanBacaan {
+  id         String              @id @default(cuid())
+  kategoriId String
+  kategori   KesanBacaanKategori @relation(fields: [kategoriId], references: [id], onDelete: Cascade)
+  teks       String
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@index([kategoriId])
+}
+
+model Staff {
+  id           String      @id @default(cuid())
+  nama         String
+  email        String      @unique
+  passwordHash String      @default("")
+  role         StaffRole   @default(KARYAWAN)
+  /// Jika diisi, staff (biasanya KARYAWAN) hanya boleh membuka modul
+  /// departemen ini. Null = tidak dibatasi (mis. ADMIN, CEO).
+  departemen   Departemen?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Pasien {
+  id              String        @id @default(cuid())
+  regCode         String        @unique
+  nama            String
+  tanggalLahir    DateTime
+  noTelepon       String?
+  alamat          String?
+  pengirimId      String
+  pengirim        Dokter        @relation(fields: [pengirimId], references: [id])
+  asalModul       AsalModul     @default(RADIOLOGI)
+  klinis          String?
+  hasilStatus     HasilStatus   @default(MENUNGGU_HASIL)
+  paymentStatus   PaymentStatus @default(BELUM_LUNAS)
+  sharingType     SharingType   @default(PERCENT)
+  sharingPercent  Decimal       @default(0)
+  sharingAmount   Decimal?
+  totalHarga      Decimal       @default(0)
+  totalSharing    Decimal       @default(0)
+  sharingLocked   Boolean       @default(false)
+  kesan           String?
+  admin           String?
+  petugasKasir    String?
+  foto            String?
+  radiologId      String?
+  radiolog        Radiolog?     @relation("PasienRadiolog", fields: [radiologId], references: [id])
+  pemeriksaan     PasienPemeriksaan[]
+  paketLab        PasienPaketLab[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+/// Salinan arsip Pasien: disinkron setiap kali Pasien dibuat/diubah, dan TIDAK
+/// terhubung lewat foreign key sehingga tetap ada walau data Pasien aslinya dihapus.
+model PasienDuplikat {
+  id              String        @id @default(cuid())
+  sourcePasienId  String        @unique
+  regCode         String
+  nama            String
+  tanggalLahir    DateTime
+  noTelepon       String?
+  alamat          String?
+  pengirimNama    String
+  radiologNama    String?
+  asalModul       AsalModul     @default(RADIOLOGI)
+  klinis          String?
+  kesan           String?
+  hasilStatus     HasilStatus   @default(MENUNGGU_HASIL)
+  paymentStatus   PaymentStatus @default(BELUM_LUNAS)
+  pemeriksaanNama String        @default("")
+  petugasKasir    String?
+  petugasAdminKlinik String?
+  totalHarga      Decimal       @default(0)
+  totalSharing    Decimal       @default(0)
+  registeredAt    DateTime
+  archivedAt      DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Transfer {
+  id             String   @id @default(cuid())
+  namaBank       String
+  noRekening     String
+  jumlah         Decimal
+  namaTransferan String
+  tanggal        DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model PasienPemeriksaan {
+  id                 String           @id @default(cuid())
+  pasienId           String
+  pasien             Pasien           @relation(fields: [pasienId], references: [id], onDelete: Cascade)
+  jenisPemeriksaanId String
+  jenisPemeriksaan   JenisPemeriksaan @relation(fields: [jenisPemeriksaanId], references: [id])
+  hargaSnapshot      Decimal
+
+  @@unique([pasienId, jenisPemeriksaanId])
+}
+
+model PaketLab {
+  id        String           @id @default(cuid())
+  nama      String           @unique
+  harga     Decimal          @default(0)
+  urutan    Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  items     PaketLabItem[]
+  pasien    PasienPaketLab[]
+}
+
+/// Paket Lab yang dipilih untuk seorang Pasien (asalModul LABORATORIUM).
+/// Terpisah dari PasienPemeriksaan karena PaketLab tidak berelasi dengan
+/// JenisPemeriksaan (harga & masternya berbeda dari Jenis Pemeriksaan Radiologi).
+model PasienPaketLab {
+  id            String   @id @default(cuid())
+  pasienId      String
+  pasien        Pasien   @relation(fields: [pasienId], references: [id], onDelete: Cascade)
+  paketLabId    String
+  paketLab      PaketLab @relation(fields: [paketLabId], references: [id])
+  hargaSnapshot Decimal
+  createdAt     DateTime @default(now())
+
+  @@unique([pasienId, paketLabId])
+}
+
+model PaketLabItem {
+  id           String   @id @default(cuid())
+  paketId      String
+  paket        PaketLab @relation(fields: [paketId], references: [id], onDelete: Cascade)
+  grup         String?
+  pemeriksaan  String
+  nilaiRujukan String   @default("")
+  satuan       String   @default("")
+  harga        Decimal  @default(0)
+  urutan       Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum PendaftaranUmumStatus {
+  MENUNGGU
+  SELESAI
+}
+
+model PendaftaranUmum {
+  id             String                @id @default(cuid())
+  noRegistrasi   String                @unique
+  namaPasien     String
+  umur           String?
+  jenisKelamin   String?
+  alamat         String?
+  telpon         String?
+  tanggalMasuk   DateTime              @default(now())
+  dokterPengirim String?
+  klinis         String?
+  admin          String?
+  foto           String?
+  ruangan        String?
+  status         PendaftaranUmumStatus @default(MENUNGGU)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+}
+
+model FarmasiBhp {
+  id             String    @id @default(cuid())
+  kode           String    @unique
+  nama           String
+  kategori       String    @default("OBAT")
+  satuan         String    @default("Pcs")
+  stok           Int       @default(0)
+  stokMin        Int       @default(10)
+  hargaBeli      Decimal   @default(0)
+  hargaJual      Decimal   @default(0)
+  keterangan     String?   @default("")
+  tanggalBeli    DateTime?
+  tanggalExpire  DateTime?
+  penyedia       String?
+  telponPenyedia String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  kwitansiItems  FarmasiKwitansiItem[]
+}
+
+/// Kwitansi penjualan obat/BHP ke pasien — membuat kwitansi otomatis
+/// mengurangi stok FarmasiBhp sesuai jumlah terjual, dan menghapus
+/// kwitansi mengembalikan stok tersebut.
+model FarmasiKwitansi {
+  id            String        @id @default(cuid())
+  noKwitansi    String        @unique
+  namaPasien    String
+  tanggal       DateTime      @default(now())
+  paymentStatus PaymentStatus @default(LUNAS)
+  petugasKasir  String?
+  totalHarga    Decimal       @default(0)
+  items         FarmasiKwitansiItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model FarmasiKwitansiItem {
+  id           String          @id @default(cuid())
+  kwitansiId   String
+  kwitansi     FarmasiKwitansi @relation(fields: [kwitansiId], references: [id], onDelete: Cascade)
+  farmasiBhpId String
+  farmasiBhp   FarmasiBhp      @relation(fields: [farmasiBhpId], references: [id])
+  namaSnapshot String
+  qty          Int
+  hargaSatuan  Decimal
+  subtotal     Decimal
+}
+
+model AbsensiKaryawan {
+  id           String   @id @default(cuid())
+  namaKaryawan String
+  role         String?  @default("KARYAWAN")
+  tanggal      String
+  jamMasuk     String?  @default("08:00")
+  jamPulang    String?  @default("16:00")
+  status       String   @default("HADIR")
+  keterangan   String?  @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model KeuanganTransaksi {
+  id         String   @id @default(cuid())
+  tanggal    String
+  jenis      String   @default("MASUK")
+  kategori   String   @default("LAYANAN")
+  keterangan String
+  nominal    Decimal  @default(0)
+  referensi  String?  @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
