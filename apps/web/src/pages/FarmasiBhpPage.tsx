@@ -228,12 +228,12 @@ export function FarmasiBhpPage() {
   );
 
   return (
-    <div className="page-frame">
+    <div className="page-frame page-frame--rose">
       <div className="list-page">
       <header className="list-page__header" style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#e11d48' }}>
               Manajemen Farmasi &amp; Bahan Habis Pakai (BHP)
             </h1>
             <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.9rem' }}>

@@ -88,7 +88,7 @@ export function AdminPage() {
   }
 
   return (
-    <div className="page-frame">
+    <div className="page-frame page-frame--violet">
       <ListPageShell
         title="Manajemen Admin"
         subtitle="Kelola data akun Admin pada sistem"

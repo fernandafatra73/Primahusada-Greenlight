@@ -127,7 +127,7 @@ export function DokterPage() {
   );
 
   return (
-    <div className="page-frame">
+    <div className="page-frame page-frame--violet">
       <ListPageShell
         title="Manajemen Dokter"
         action={

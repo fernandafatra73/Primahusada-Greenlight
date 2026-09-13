@@ -1063,73 +1063,102 @@ body.radiolog-work-dark-theme .badge--unpaid,
   color: #e11d48;
 }
 
-/* Fieldset "Data Pendaftaran" di form Pendaftaran Umum — aksen biru + hitam.
-   Modal-nya dirender lewat portal ke document.body, jadi tidak bisa discope
-   lewat .page-frame — pakai modifier class langsung di fieldset. */
+/* Fieldset "Data Pendaftaran" di form Pendaftaran Umum — aksen indigo,
+   senada dengan .page-frame--indigo. Modal-nya dirender lewat portal ke
+   document.body, jadi tidak bisa discope lewat .page-frame — pakai
+   modifier class langsung di fieldset. */
 .legacy-groupbox--biru-hitam {
-  border: 2px solid #1d4ed8;
+  border: 1px solid #c7d2fe;
   background: #ffffff;
+  border-radius: 14px;
 }
 
 .legacy-groupbox--biru-hitam > legend {
   color: #ffffff;
-  background: #1d4ed8;
-  border: 1px solid #0f172a;
-  border-radius: 4px;
-  padding: 0.25rem 0.75rem;
-}
-
-.legacy-groupbox--biru-hitam .legacy-form-row > label {
-  color: #0f172a;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none;
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
   font-weight: 700;
 }
 
-/* Fieldset "Data Pasien" di modal Ubah Data Pasien (Radiologi) — aksen abu-abu. */
+.legacy-groupbox--biru-hitam .legacy-form-row > label {
+  color: #3730a3;
+  font-weight: 700;
+}
+
+/* Fieldset "Data Pasien" di modal Ubah Data Pasien (Radiologi) — aksen
+   biru, senada dengan .page-frame--blue. */
 .groupbox--abu-abu {
-  border: 2px solid #9ca3af;
+  border: 1px solid #bfdbfe;
   background: #f8fafc;
+  border-radius: 14px;
 }
 
 .groupbox--abu-abu > legend {
   color: #ffffff;
-  background: #6b7280;
-  border: 1px solid #4b5563;
-  border-radius: 4px;
-  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #2563eb, #06b6d4);
+  border: none;
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
 }
 
-/* Kerangka panel abu-abu + teks putih — dipakai di semua halaman modul
-   utama (Pendaftaran Umum, Radiologi, Laboratorium, Keuangan, Dokter,
-   Pengaturan, Farmasi, Mega Data, Sosmed, dst). */
+/* Kerangka panel modern — dipakai di semua halaman modul utama
+   (Pendaftaran Umum, Radiologi, Laboratorium, Keuangan, Dokter,
+   Pengaturan, Farmasi, Mega Data, Sosmed, USG, dst). Latar putih bersih;
+   tiap modul tetap punya identitas lewat garis aksen di atas + warna
+   judul, diatur lewat modifier .page-frame--<warna> di bawah. */
 .page-frame {
-  background: linear-gradient(180deg, #6b7280, #4b5563);
-  border: 2px solid #1f2937;
-  border-radius: var(--radius-card);
-  padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.35);
+  --pf-from: #6366f1;
+  --pf-to: #8b5cf6;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-top: 6px solid var(--pf-from);
+  border-radius: 22px;
+  padding: 1.5rem;
+  box-shadow:
+    0 20px 40px -24px rgba(15, 23, 42, 0.25),
+    0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .page-frame .list-page__title {
-  color: #ffffff;
+  color: var(--pf-from);
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .page-frame .list-page__subtitle {
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text-muted);
 }
 
 .page-frame .data-card {
-  background: #f3f4f6;
-  border: 1px solid #1f2937;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: none;
 }
 
 .page-frame .data-card__table table.data-table {
-  border: 1px solid #1f2937;
+  border: none;
 }
 
 .page-frame .data-table th {
-  background: #d1d5db;
-  color: #1f2937;
+  background: #f8fafc;
+  color: #334155;
+  border-bottom: 2px solid #e2e8f0;
 }
+
+/* Warna aksen per modul. */
+.page-frame--indigo { --pf-from: #6366f1; --pf-to: #8b5cf6; }
+.page-frame--blue { --pf-from: #2563eb; --pf-to: #06b6d4; }
+.page-frame--emerald { --pf-from: #10b981; --pf-to: #0d9488; }
+.page-frame--amber { --pf-from: #f59e0b; --pf-to: #ea580c; }
+.page-frame--cyan { --pf-from: #06b6d4; --pf-to: #0ea5e9; }
+.page-frame--violet { --pf-from: #7c3aed; --pf-to: #a855f7; }
+.page-frame--slate { --pf-from: #64748b; --pf-to: #334155; }
+.page-frame--rose { --pf-from: #e11d48; --pf-to: #db2777; }
+.page-frame--fuchsia { --pf-from: #c026d3; --pf-to: #9333ea; }
+.page-frame--pink { --pf-from: #f43f5e; --pf-to: #ec4899; }
 
 .data-card {
   border-radius: var(--radius-card);

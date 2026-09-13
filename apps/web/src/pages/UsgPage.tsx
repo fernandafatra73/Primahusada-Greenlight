@@ -411,7 +411,7 @@ export function UsgPage() {
   }
 
   return (
-    <div className="page-frame">
+    <div className="page-frame page-frame--cyan">
       <div className="usg-hero" id="usg-form-top">
         <div className="usg-hero__icon">🩻</div>
         <div>

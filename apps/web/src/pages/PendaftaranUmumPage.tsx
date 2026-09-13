@@ -558,7 +558,7 @@ export function PendaftaranUmumPage() {
   }
 
   return (
-    <div className="page-frame">
+    <div className="page-frame page-frame--indigo">
     <ListPageShell
       title="Pendaftaran Umum"
       metrics={[
@@ -643,7 +643,7 @@ export function PendaftaranUmumPage() {
           type="button"
           className="btn btn--primary"
           onClick={openCreate}
-          style={{ background: 'linear-gradient(135deg, #1d4ed8, #0f172a)' }}
+          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
         >
           + Tambah Pendaftaran
         </button>
@@ -652,16 +652,16 @@ export function PendaftaranUmumPage() {
       <div style={{ overflowX: 'auto' }}>
         <table className="data-table">
           <thead>
-            <tr style={{ background: '#9ca3af' }}>
-              <th style={{ background: '#9ca3af', color: '#0f172a'}}>No. Antrian</th>
-              <th style={{ background: '#9ca3af', color: '#0f172a'}}>Nama Pasien</th>
-              <th style={{ background: '#9ca3af', color: '#0f172a'}}>Umur</th>
-              <th style={{ background: '#9ca3af', color: '#0f172a'}}>Alamat</th>
-              <th style={{ background: '#9ca3af', color: '#0f172a'}}>Telpon</th>
-              <th style={{ background: '#9ca3af', color: '#0f172a'}}>Dokter Pengirim</th>
-              <th style={{ background: '#9ca3af', color: '#0f172a'}}>Status</th>
-              <th style={{ background: '#9ca3af', color: '#0f172a'}}>Bayar</th>
-              <th style={{ background: '#9ca3af', color: '#0f172a'}}>Aksi</th>
+            <tr>
+              <th>No. Antrian</th>
+              <th>Nama Pasien</th>
+              <th>Umur</th>
+              <th>Alamat</th>
+              <th>Telpon</th>
+              <th>Dokter Pengirim</th>
+              <th>Status</th>
+              <th>Bayar</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -678,7 +678,7 @@ export function PendaftaranUmumPage() {
                 <tr
                   key={item.id}
                   style={{
-                    background: (idx + 1) % 2 === 0 ? '#e5e7eb' : '#ffffff',
+                    background: (idx + 1) % 2 === 0 ? '#eef2ff' : '#ffffff',
                     borderBottom: '1px solid rgba(15, 23, 42, 0.18)',
                     color: '#0f172a',
                   }}
@@ -694,10 +694,10 @@ export function PendaftaranUmumPage() {
                           }
                           title={`Umumkan: Nomor antrian ${antrian} atas nama ${item.namaPasien}`}
                           style={{
-                            background: 'rgba(55, 65, 81, 0.1)',
-                            border: '1px solid rgba(55, 65, 81, 0.3)',
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
                             borderRadius: '4px',
-                            color: '#374151',
+                            color: '#4338ca',
                             cursor: 'pointer',
                             padding: '0.15rem 0.4rem',
                             fontSize: '0.8rem',

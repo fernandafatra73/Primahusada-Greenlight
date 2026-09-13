@@ -104,7 +104,7 @@ export function RolePage() {
   }
 
   return (
-    <div className="page-frame">
+    <div className="page-frame page-frame--violet">
       <ListPageShell
         title="Manajemen Role (Staff)"
         subtitle="Akses admin dan karyawan sistem"
