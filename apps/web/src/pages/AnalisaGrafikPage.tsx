@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiPost } from '../lib/api.ts';
-import { formatAnalisaGrafik, type AnalisaGrafikResult } from '../lib/analisaGrafik.ts';
+import { formatAnalisaGrafik, type AnalisaGrafikResult, type PembalikanArah } from '../lib/analisaGrafik.ts';
 import { FOTO_ALLOWED_TYPES, readFileAsDataUrl } from '../lib/fotoUpload.ts';
 import '../components/ui/ui.css';
 
@@ -23,6 +23,49 @@ interface GrafikItem {
   readonly gambarDataUrl: string;
   readonly keterangan: string;
   readonly analisa: string;
+  readonly pembalikan: PembalikanArah | null;
+}
+
+/** Panah penanda candle pembalikan arah di atas gambar grafik: hijau dari
+ * bawah low candle (akan NAIK), merah dari atas high candle (akan TURUN). */
+function ReversalMarker({ pembalikan }: { readonly pembalikan: PembalikanArah }) {
+  const naik = pembalikan.arahSetelah === 'NAIK';
+  const color = naik ? '#16a34a' : '#dc2626';
+  return (
+    <div
+      title={pembalikan.alasan || `Pembalikan arah ${pembalikan.arahSetelah}`}
+      style={{
+        position: 'absolute',
+        left: `${pembalikan.posisiX / 10}%`,
+        top: `${pembalikan.posisiY / 10}%`,
+        transform: naik ? 'translate(-50%, 4px)' : 'translate(-50%, calc(-100% - 4px))',
+        display: 'flex',
+        flexDirection: naik ? 'column' : 'column-reverse',
+        alignItems: 'center',
+        pointerEvents: 'auto',
+        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.45))',
+      }}
+    >
+      <svg width="28" height="40" viewBox="0 0 28 40" aria-hidden="true" style={{ transform: naik ? undefined : 'rotate(180deg)' }}>
+        <path d="M14 0 L28 16 L19 16 L19 40 L9 40 L9 16 L0 16 Z" fill={color} stroke="#fff" strokeWidth="1.5" />
+      </svg>
+      <span
+        style={{
+          marginTop: naik ? 2 : 0,
+          marginBottom: naik ? 0 : 2,
+          padding: '1px 6px',
+          borderRadius: 4,
+          background: color,
+          color: '#fff',
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Pembalikan {naik ? '↑ NAIK' : '↓ TURUN'}
+      </span>
+    </div>
+  );
 }
 
 interface CropRect {
@@ -134,7 +177,7 @@ export function AnalisaGrafikPage() {
   const intervalLabel = INTERVAL_OPTIONS.find((o) => o.id === interval)?.label ?? interval;
 
   const addGambar = useCallback((gambarDataUrl: string, nama: string, keterangan = '') => {
-    const item: GrafikItem = { id: newId(), nama, gambarDataUrl, keterangan, analisa: '' };
+    const item: GrafikItem = { id: newId(), nama, gambarDataUrl, keterangan, analisa: '', pembalikan: null };
     setItems((prev) => [...prev, item]);
     setSelectedId(item.id);
     setError(null);
@@ -177,7 +220,7 @@ export function AnalisaGrafikPage() {
       const nama = `${symbol.split(':').pop() ?? symbol} ${intervalLabel} · ${waktu}`;
       const keterangan = `${symbol} timeframe ${intervalLabel}`;
       if (replaceId && items.some((item) => item.id === replaceId)) {
-        updateItem(replaceId, { gambarDataUrl: dataUrl, nama, keterangan, analisa: '' });
+        updateItem(replaceId, { gambarDataUrl: dataUrl, nama, keterangan, analisa: '', pembalikan: null });
         setSelectedId(replaceId);
       } else {
         addGambar(dataUrl, nama, keterangan);
@@ -215,7 +258,7 @@ export function AnalisaGrafikPage() {
         gambarDataUrl: item.gambarDataUrl,
         keterangan: item.keterangan || undefined,
       });
-      updateItem(item.id, { analisa: formatAnalisaGrafik(res) });
+      updateItem(item.id, { analisa: formatAnalisaGrafik(res), pembalikan: res.pembalikanArah });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menganalisa grafik dengan AI');
     } finally {
@@ -393,11 +436,11 @@ export function AnalisaGrafikPage() {
 
           {selected && (
             <>
-              <img
-                src={selected.gambarDataUrl}
-                alt={selected.nama}
-                style={{ width: '100%', maxHeight: 220, objectFit: 'contain', border: '1px solid var(--color-border)', borderRadius: '6px', background: '#fff' }}
-              />
+              {/* Gambar tanpa objectFit supaya koordinat panah (0-1000) pas dengan area gambar. */}
+              <div style={{ position: 'relative', border: '1px solid var(--color-border)', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
+                <img src={selected.gambarDataUrl} alt={selected.nama} style={{ display: 'block', width: '100%', height: 'auto' }} />
+                {selected.pembalikan && <ReversalMarker pembalikan={selected.pembalikan} />}
+              </div>
               <div className="form-field">
                 <label htmlFor="ag-keterangan">Keterangan (opsional)</label>
                 <input
@@ -441,7 +484,7 @@ export function AnalisaGrafikPage() {
                   title="Kosongkan analisa lalu langsung capture ulang grafik TradingView untuk mengganti gambar grafik ini"
                   onClick={() => {
                     if (!selected) return;
-                    updateItem(selected.id, { analisa: '' });
+                    updateItem(selected.id, { analisa: '', pembalikan: null });
                     // Dipanggil langsung di handler klik: getDisplayMedia butuh gestur pengguna.
                     void handleCapture(selected.id);
                   }}

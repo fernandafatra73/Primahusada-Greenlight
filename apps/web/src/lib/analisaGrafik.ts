@@ -1,3 +1,11 @@
+/** Titik candle pembalikan arah pada gambar grafik; posisi berskala 0-1000 relatif terhadap gambar. */
+export interface PembalikanArah {
+  readonly arahSetelah: 'NAIK' | 'TURUN';
+  readonly posisiX: number;
+  readonly posisiY: number;
+  readonly alasan: string;
+}
+
 export interface AnalisaGrafikResult {
   readonly instrumen: string;
   readonly tren: string;
@@ -7,6 +15,7 @@ export interface AnalisaGrafikResult {
   readonly bias: string;
   readonly prediksiArah5Menit: string;
   readonly prediksi5Menit: string;
+  readonly pembalikanArah: PembalikanArah | null;
   readonly entry: string;
   readonly stopLoss: string;
   readonly takeProfit: string;
@@ -28,6 +37,13 @@ function formatPrediksi5Menit(arah: string, prediksi: string): string | null {
   const icon = ARAH_ICON[arahUpper];
   const label = arahUpper ? `Prediksi 5 menit ke depan (${arahUpper})` : 'Prediksi 5 menit ke depan';
   return `${icon ? `${icon} ` : ''}${label}${text ? `: ${text}` : ''}`;
+}
+
+function formatPembalikanArah(pembalikan: PembalikanArah | null): string | null {
+  if (!pembalikan) return null;
+  const icon = pembalikan.arahSetelah === 'NAIK' ? '⬆️' : '⬇️';
+  const alasan = pembalikan.alasan.trim();
+  return `${icon} Pembalikan arah ${pembalikan.arahSetelah} (ditandai panah di grafik)${alasan ? `: ${alasan}` : ''}`;
 }
 
 /** Menjadikan hasil /api/analisa-grafik/analyze satu teks untuk kolom Analisa; field kosong dilewati. */
@@ -55,8 +71,11 @@ export function formatAnalisaGrafik(result: AnalisaGrafikResult): string {
   if (catatan) {
     lines.push('', `Catatan: ${catatan}`);
   }
-  if (prediksi) {
-    lines.unshift(...(lines.length > 0 ? [prediksi, ''] : [prediksi]));
+  const header = [prediksi, formatPembalikanArah(result.pembalikanArah)].filter(
+    (line): line is string => line !== null,
+  );
+  if (header.length > 0) {
+    lines.unshift(...(lines.length > 0 ? [...header, ''] : header));
   }
   return lines.join('\n');
 }

@@ -57,6 +57,33 @@ const ANALISA_GRAFIK_RESPONSE_SCHEMA = {
       description:
         'Kalimat prediksi 5 menit ke depan, mis. "5 menit ke depan XAU diperkirakan naik sekitar $0.3/menit menuju ±2412.50 (≈ +$1.5)". Sertakan perkiraan perubahan harga per menit dan target harga dalam 5 menit yang dihitung dari kecepatan candle terakhir & jarak ke support/resistance terdekat. Jika tidak terbaca, katakan tidak dapat diprediksi.',
     },
+    pembalikanArah: {
+      type: Type.OBJECT,
+      description:
+        'Candle pada grafik (terutama timeframe 1 jam) yang paling mungkin menjadi titik pembalikan arah, untuk ditandai panah di atas gambar.',
+      properties: {
+        terdeteksi: {
+          type: Type.BOOLEAN,
+          description: 'true hanya jika ada candle dengan tanda pembalikan yang cukup jelas (pin bar, engulfing, doji di S/R, divergence).',
+        },
+        arahSetelah: {
+          type: Type.STRING,
+          enum: ['NAIK', 'TURUN'],
+          description: 'Arah harga setelah pembalikan: NAIK (bullish reversal di bawah) atau TURUN (bearish reversal di atas).',
+        },
+        posisiX: {
+          type: Type.NUMBER,
+          description: 'Posisi horizontal tengah candle pembalikan pada gambar, skala 0 (kiri) sampai 1000 (kanan).',
+        },
+        posisiY: {
+          type: Type.NUMBER,
+          description:
+            'Posisi vertikal pada gambar, skala 0 (atas) sampai 1000 (bawah): ujung low candle jika NAIK, ujung high candle jika TURUN.',
+        },
+        alasan: { type: Type.STRING, description: 'Alasan singkat kenapa candle itu berpotensi pembalikan arah.' },
+      },
+      required: ['terdeteksi', 'arahSetelah', 'posisiX', 'posisiY', 'alasan'],
+    },
     entry: { type: Type.STRING, description: 'Area entry yang masuk akal berdasarkan level di grafik.' },
     stopLoss: { type: Type.STRING, description: 'Level stop loss yang masuk akal.' },
     takeProfit: { type: Type.STRING, description: 'Target take profit (boleh lebih dari satu).' },
@@ -78,6 +105,7 @@ const ANALISA_GRAFIK_RESPONSE_SCHEMA = {
     'bias',
     'prediksiArah5Menit',
     'prediksi5Menit',
+    'pembalikanArah',
     'entry',
     'stopLoss',
     'takeProfit',
@@ -93,6 +121,7 @@ Aturan PENTING:
 - Baca angka level harga dari skala harga di sisi kanan grafik; jangan mengarang angka yang tidak terbaca.
 - Jika gambar bukan grafik harga, buram, atau terlalu kecil untuk dibaca, katakan itu secara eksplisit di setiap field alih-alih menebak.
 - Prediksi 5 menit ke depan adalah estimasi momentum jangka sangat pendek yang sangat tidak pasti; hitung kecepatan per menit dari ukuran candle terakhir dan skala waktu grafik, dan jangan mengklaim pasti terjadi.
+- Untuk pembalikanArah, tunjuk posisi candle yang benar-benar tampak di gambar (koordinat 0-1000 relatif terhadap seluruh gambar). Isi terdeteksi=false jika tidak ada tanda pembalikan yang jelas.
 - confidence maksimal 75.
 - Selalu ingatkan pentingnya stop loss & manajemen risiko di field catatan.
 - Tulis dalam Bahasa Indonesia, ringkas per field.
@@ -105,6 +134,30 @@ function isQuotaOrOverloadError(err: unknown): boolean {
 
 function stringField(value: unknown): string {
   return typeof value === 'string' ? value : '';
+}
+
+interface PembalikanArah {
+  readonly arahSetelah: 'NAIK' | 'TURUN';
+  readonly posisiX: number;
+  readonly posisiY: number;
+  readonly alasan: string;
+}
+
+/** Hanya diteruskan ke frontend bila AI mendeteksi pembalikan dengan koordinat valid. */
+function parsePembalikanArah(value: unknown): PembalikanArah | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const v = value as Record<string, unknown>;
+  if (v.terdeteksi !== true) return null;
+  if (v.arahSetelah !== 'NAIK' && v.arahSetelah !== 'TURUN') return null;
+  if (typeof v.posisiX !== 'number' || typeof v.posisiY !== 'number') return null;
+  if (!Number.isFinite(v.posisiX) || !Number.isFinite(v.posisiY)) return null;
+  const clamp = (n: number): number => Math.min(1000, Math.max(0, n));
+  return {
+    arahSetelah: v.arahSetelah,
+    posisiX: clamp(v.posisiX),
+    posisiY: clamp(v.posisiY),
+    alasan: stringField(v.alasan),
+  };
 }
 
 export async function registerAnalisaGrafikAiRoutes(app: FastifyInstance): Promise<void> {
@@ -189,6 +242,7 @@ export async function registerAnalisaGrafikAiRoutes(app: FastifyInstance): Promi
           bias: stringField(parsed.bias),
           prediksiArah5Menit: stringField(parsed.prediksiArah5Menit),
           prediksi5Menit: stringField(parsed.prediksi5Menit),
+          pembalikanArah: parsePembalikanArah(parsed.pembalikanArah),
           entry: stringField(parsed.entry),
           stopLoss: stringField(parsed.stopLoss),
           takeProfit: stringField(parsed.takeProfit),

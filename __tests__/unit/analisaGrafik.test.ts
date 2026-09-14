@@ -10,6 +10,7 @@ const empty: AnalisaGrafikResult = {
   bias: '',
   prediksiArah5Menit: '',
   prediksi5Menit: '',
+  pembalikanArah: null,
   entry: '',
   stopLoss: '',
   takeProfit: '',
@@ -29,6 +30,7 @@ describe('formatAnalisaGrafik', () => {
         bias: 'BUY',
         prediksiArah5Menit: 'NAIK',
         prediksi5Menit: '5 menit ke depan XAU diperkirakan naik ~$0.3/menit menuju 2411.5',
+        pembalikanArah: null,
         entry: '2410',
         stopLoss: '2395',
         takeProfit: '2450',
@@ -53,6 +55,27 @@ describe('formatAnalisaGrafik', () => {
     expect(formatAnalisaGrafik({ ...empty, prediksi5Menit: 'Tidak dapat diprediksi' })).toBe(
       'Prediksi 5 menit ke depan: Tidak dapat diprediksi',
     );
+  });
+
+  test('adds the reversal line under the prediction', () => {
+    expect(
+      formatAnalisaGrafik({
+        ...empty,
+        prediksiArah5Menit: 'NAIK',
+        prediksi5Menit: 'Naik $1',
+        pembalikanArah: { arahSetelah: 'NAIK', posisiX: 800, posisiY: 700, alasan: ' Hammer di support ' },
+        tren: 'Turun',
+      }),
+    ).toBe(
+      '📈 Prediksi 5 menit ke depan (NAIK): Naik $1\n' +
+        '⬆️ Pembalikan arah NAIK (ditandai panah di grafik): Hammer di support\n\nTren: Turun',
+    );
+    expect(
+      formatAnalisaGrafik({
+        ...empty,
+        pembalikanArah: { arahSetelah: 'TURUN', posisiX: 0, posisiY: 0, alasan: '' },
+      }),
+    ).toBe('⬇️ Pembalikan arah TURUN (ditandai panah di grafik)');
   });
 
   test('skips empty or whitespace-only fields and zero confidence', () => {
