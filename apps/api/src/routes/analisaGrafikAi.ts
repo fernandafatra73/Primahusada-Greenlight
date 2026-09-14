@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { GoogleGenAI, Type } from '@google/genai';
+import { generateContentWithRetry } from './analisaFotoAi.js';
 
 function badRequest(reply: FastifyReply, message: string): FastifyReply {
   return reply.status(400).send({ error: message });
@@ -84,6 +85,11 @@ Aturan PENTING:
 - Tulis dalam Bahasa Indonesia, ringkas per field.
 - Jawab HANYA sesuai skema JSON yang diberikan.`;
 
+function isQuotaOrOverloadError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /"code"\s*:\s*(429|503)|RESOURCE_EXHAUSTED|UNAVAILABLE|high demand/i.test(message);
+}
+
 function stringField(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
@@ -110,8 +116,7 @@ export async function registerAnalisaGrafikAiRoutes(app: FastifyInstance): Promi
 
       try {
         const client = new GoogleGenAI({ apiKey });
-        const response = await client.models.generateContent({
-          model: 'gemini-flash-latest',
+        const params = {
           contents: [
             {
               role: 'user',
@@ -133,7 +138,17 @@ export async function registerAnalisaGrafikAiRoutes(app: FastifyInstance): Promi
             responseMimeType: 'application/json',
             responseSchema: ANALISA_GRAFIK_RESPONSE_SCHEMA,
           },
-        });
+        };
+        // Model utama sering penuh (503) atau kuota free tier-nya habis (429);
+        // model lite biasanya masih tersedia, jadi dipakai sebagai cadangan.
+        let response: Awaited<ReturnType<typeof generateContentWithRetry>>;
+        try {
+          response = await generateContentWithRetry(client, { ...params, model: 'gemini-flash-latest' }, 2);
+        } catch (err) {
+          if (!isQuotaOrOverloadError(err)) throw err;
+          req.log.warn('gemini-flash-latest tidak tersedia; memakai gemini-flash-lite-latest untuk analisa grafik');
+          response = await generateContentWithRetry(client, { ...params, model: 'gemini-flash-lite-latest' });
+        }
 
         const finishReason = response.candidates?.[0]?.finishReason;
         if (finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {

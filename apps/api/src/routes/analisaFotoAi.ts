@@ -48,7 +48,7 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function generateContentWithRetry(
+export async function generateContentWithRetry(
   client: GoogleGenAI,
   params: Parameters<GoogleGenAI['models']['generateContent']>[0],
   maxAttempts = 3,
