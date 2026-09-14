@@ -110,10 +110,10 @@ async function normalizeImageDataUrl(dataUrl: string): Promise<string> {
 }
 
 /** Grafik TradingView ada di iframe lintas-domain sehingga tidak bisa dibaca
- * langsung; jalan satu-satunya adalah capture tab lewat getDisplayMedia lalu
- * memotong frame sesuai posisi iframe. Jika pengguna memilih layar/jendela lain
- * (rasio frame tidak cocok dengan viewport), frame dipakai utuh tanpa dipotong. */
-async function captureElement(element: HTMLElement | null): Promise<string> {
+ * langsung; jalan satu-satunya adalah capture tab lewat getDisplayMedia. Browser
+ * selalu meminta izin untuk itu, jadi stream dibuka sekali lalu dipakai ulang —
+ * capture berikutnya langsung jadi tanpa dialog selama tab masih dibagikan. */
+async function openCaptureVideo(onEnded: () => void): Promise<HTMLVideoElement> {
   if (!navigator.mediaDevices?.getDisplayMedia) {
     throw new Error('Browser ini tidak mendukung capture layar. Gunakan unggah gambar atau tempel (Ctrl+V).');
   }
@@ -123,34 +123,46 @@ async function captureElement(element: HTMLElement | null): Promise<string> {
     preferCurrentTab: true,
   };
   const stream = await navigator.mediaDevices.getDisplayMedia(options);
-  try {
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    video.muted = true;
-    await video.play();
-    // Beri jeda singkat supaya frame pertama bukan frame hitam.
-    await new Promise((resolve) => setTimeout(resolve, 400));
+  stream.getVideoTracks().forEach((track) => track.addEventListener('ended', onEnded));
+  const video = document.createElement('video');
+  video.srcObject = stream;
+  video.muted = true;
+  await video.play();
+  // Beri jeda singkat supaya frame pertama bukan frame hitam.
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  return video;
+}
 
-    const full: CropRect = { x: 0, y: 0, width: video.videoWidth, height: video.videoHeight };
-    const viewportRatio = window.innerWidth / window.innerHeight;
-    const frameRatio = video.videoWidth / video.videoHeight;
-    if (!element || Math.abs(frameRatio - viewportRatio) / viewportRatio > 0.03) {
-      return drawToJpegDataUrl(video, full);
-    }
-    const rect = element.getBoundingClientRect();
-    const scale = video.videoWidth / window.innerWidth;
-    const x = Math.max(0, rect.left * scale);
-    const y = Math.max(0, rect.top * scale);
-    const crop: CropRect = {
-      x,
-      y,
-      width: Math.min(rect.width * scale, video.videoWidth - x),
-      height: Math.min(rect.height * scale, video.videoHeight - y),
-    };
-    return drawToJpegDataUrl(video, crop.width > 0 && crop.height > 0 ? crop : full);
-  } finally {
-    stream.getTracks().forEach((track) => track.stop());
+function stopCaptureVideo(video: HTMLVideoElement | null): void {
+  const stream = video?.srcObject;
+  if (stream instanceof MediaStream) stream.getTracks().forEach((track) => track.stop());
+}
+
+function isCaptureLive(video: HTMLVideoElement | null): video is HTMLVideoElement {
+  const stream = video?.srcObject;
+  return stream instanceof MediaStream && stream.getVideoTracks().some((track) => track.readyState === 'live');
+}
+
+/** Memotong frame sesuai posisi elemen. Jika pengguna membagikan layar/jendela
+ * lain (rasio frame tidak cocok dengan viewport), frame dipakai utuh. */
+function captureElementFrame(video: HTMLVideoElement, element: HTMLElement | null): string {
+  const full: CropRect = { x: 0, y: 0, width: video.videoWidth, height: video.videoHeight };
+  const viewportRatio = window.innerWidth / window.innerHeight;
+  const frameRatio = video.videoWidth / video.videoHeight;
+  if (!element || Math.abs(frameRatio - viewportRatio) / viewportRatio > 0.03) {
+    return drawToJpegDataUrl(video, full);
   }
+  const rect = element.getBoundingClientRect();
+  const scale = video.videoWidth / window.innerWidth;
+  const x = Math.max(0, rect.left * scale);
+  const y = Math.max(0, rect.top * scale);
+  const crop: CropRect = {
+    x,
+    y,
+    width: Math.min(rect.width * scale, video.videoWidth - x),
+    height: Math.min(rect.height * scale, video.videoHeight - y),
+  };
+  return drawToJpegDataUrl(video, crop.width > 0 && crop.height > 0 ? crop : full);
 }
 
 function newId(): string {
@@ -172,6 +184,17 @@ export function AnalisaGrafikPage() {
   const [info, setInfo] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chartBoxRef = useRef<HTMLDivElement>(null);
+  const captureVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [captureAktif, setCaptureAktif] = useState(false);
+
+  // Tutup stream capture saat keluar halaman supaya tab tidak terus dibagikan.
+  useEffect(() => () => stopCaptureVideo(captureVideoRef.current), []);
+
+  function handleStopCapture() {
+    stopCaptureVideo(captureVideoRef.current);
+    captureVideoRef.current = null;
+    setCaptureAktif(false);
+  }
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const intervalLabel = INTERVAL_OPTIONS.find((o) => o.id === interval)?.label ?? interval;
@@ -215,7 +238,16 @@ export function AnalisaGrafikPage() {
     setError(null);
     setCapturing(true);
     try {
-      const dataUrl = await captureElement(chartBoxRef.current);
+      let video = captureVideoRef.current;
+      if (!isCaptureLive(video)) {
+        video = await openCaptureVideo(() => {
+          captureVideoRef.current = null;
+          setCaptureAktif(false);
+        });
+        captureVideoRef.current = video;
+        setCaptureAktif(true);
+      }
+      const dataUrl = captureElementFrame(video, chartBoxRef.current);
       const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       const nama = `${symbol.split(':').pop() ?? symbol} ${intervalLabel} · ${waktu}`;
       const keterangan = `${symbol} timeframe ${intervalLabel}`;
@@ -344,6 +376,11 @@ export function AnalisaGrafikPage() {
             <button type="button" className="btn btn--ghost" style={outlineBtn} onClick={() => fileInputRef.current?.click()}>
               📁 Unggah Gambar
             </button>
+            {captureAktif && (
+              <button type="button" className="btn btn--ghost" style={outlineBtn} onClick={handleStopCapture}>
+                ⏹ Hentikan Capture
+              </button>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -354,8 +391,9 @@ export function AnalisaGrafikPage() {
             />
           </div>
           <small style={{ color: 'var(--color-text-muted)' }}>
-            Saat Capture, pilih tab ini di dialog browser — gambar otomatis dipotong ke area grafik. Bisa juga tempel
-            screenshot dengan Ctrl+V.
+            {captureAktif
+              ? '🟢 Capture aktif — klik Capture Grafik kapan saja, gambar langsung masuk tanpa dialog.'
+              : 'Capture pertama: pilih tab ini di dialog browser (sekali saja). Setelah itu Capture Grafik langsung masuk tanpa dialog. Bisa juga tempel screenshot dengan Ctrl+V.'}
           </small>
         </div>
 
