@@ -357,10 +357,6 @@ export function AnalisaGrafikPage() {
             Saat Capture, pilih tab ini di dialog browser — gambar otomatis dipotong ke area grafik. Bisa juga tempel
             screenshot dengan Ctrl+V.
           </small>
-        </div>
-
-        {/* Kanan: grafik pilihan + hasil analisa */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', minWidth: 0 }}>
           <strong>Grafik Pilihan ({items.length})</strong>
           {items.length === 0 ? (
             <div
@@ -372,7 +368,7 @@ export function AnalisaGrafikPage() {
                 color: 'var(--color-text-muted)',
               }}
             >
-              Belum ada grafik. Klik <strong>Capture Grafik</strong> di sebelah kiri.
+              Belum ada grafik. Klik <strong>Capture Grafik</strong> di atas.
             </div>
           ) : (
             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.3rem' }}>
@@ -433,7 +429,10 @@ export function AnalisaGrafikPage() {
               ))}
             </div>
           )}
+        </div>
 
+        {/* Kanan: hasil analisa grafik terpilih */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', minWidth: 0 }}>
           {selected && (
             <>
               {/* Gambar tanpa objectFit supaya koordinat panah (0-1000) pas dengan area gambar. */}
