@@ -3,6 +3,7 @@ import { apiPost } from '../lib/api.ts';
 import {
   formatAnalisaGrafik,
   sinyalPembalikan,
+  sinyalTerbaru,
   urutkanPembalikanTerbaru,
   type AnalisaGrafikResult,
   type PembalikanArah,
@@ -22,6 +23,14 @@ const INTERVAL_OPTIONS: ReadonlyArray<{ readonly id: string; readonly label: str
 
 /** Screenshot bisa berukuran besar; diperkecil agar request ke AI tetap ringan. */
 const MAX_GAMBAR_WIDTH = 1920;
+
+const OTOMATIS_INTERVAL_MS = 5 * 60 * 1000;
+
+interface CapturedGrafik {
+  readonly id: string;
+  readonly gambarDataUrl: string;
+  readonly keterangan: string;
+}
 
 interface GrafikItem {
   readonly id: string;
@@ -183,6 +192,9 @@ export function AnalisaGrafikPage() {
   const [symbol, setSymbol] = useState('OANDA:XAUUSD');
   const [interval, setInterval_] = useState('60');
   const [items, setItems] = useState<GrafikItem[]>([]);
+  // Siklus otomatis berjalan lintas render; ref ini selalu berisi daftar grafik terbaru.
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
@@ -200,16 +212,20 @@ export function AnalisaGrafikPage() {
     stopCaptureVideo(captureVideoRef.current);
     captureVideoRef.current = null;
     setCaptureAktif(false);
+    // Tanpa stream capture, mode otomatis tidak bisa jalan.
+    setOtomatis(false);
+    setNextRunAt(null);
   }
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const intervalLabel = INTERVAL_OPTIONS.find((o) => o.id === interval)?.label ?? interval;
 
-  const addGambar = useCallback((gambarDataUrl: string, nama: string, keterangan = '') => {
+  const addGambar = useCallback((gambarDataUrl: string, nama: string, keterangan = ''): string => {
     const item: GrafikItem = { id: newId(), nama, gambarDataUrl, keterangan, analisa: '', pembalikan: [] };
     setItems((prev) => [...prev, item]);
     setSelectedId(item.id);
     setError(null);
+    return item.id;
   }, []);
 
   function updateItem(id: string, patch: Partial<Omit<GrafikItem, 'id'>>) {
@@ -238,35 +254,43 @@ export function AnalisaGrafikPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
+  /** Membuka stream capture bila belum ada — hanya boleh dipanggil dari klik pengguna saat stream belum aktif. */
+  async function ensureCaptureVideo(): Promise<HTMLVideoElement> {
+    const current = captureVideoRef.current;
+    if (isCaptureLive(current)) return current;
+    const video = await openCaptureVideo(() => {
+      captureVideoRef.current = null;
+      setCaptureAktif(false);
+    });
+    captureVideoRef.current = video;
+    setCaptureAktif(true);
+    return video;
+  }
+
   /** Tanpa replaceId: grafik baru ditambahkan ke Grafik Pilihan. Dengan
-   * replaceId: gambar grafik itu diganti hasil capture terbaru. */
-  async function handleCapture(replaceId?: string) {
+   * replaceId: gambar grafik itu diganti hasil capture terbaru. Mengembalikan
+   * grafik hasil capture, atau null bila gagal/dibatalkan. */
+  async function handleCapture(replaceId?: string, label = intervalLabel): Promise<CapturedGrafik | null> {
     setError(null);
     setCapturing(true);
     try {
-      let video = captureVideoRef.current;
-      if (!isCaptureLive(video)) {
-        video = await openCaptureVideo(() => {
-          captureVideoRef.current = null;
-          setCaptureAktif(false);
-        });
-        captureVideoRef.current = video;
-        setCaptureAktif(true);
-      }
+      const video = await ensureCaptureVideo();
       const dataUrl = captureElementFrame(video, chartBoxRef.current);
       const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      const nama = `${symbol.split(':').pop() ?? symbol} ${intervalLabel} · ${waktu}`;
-      const keterangan = `${symbol} timeframe ${intervalLabel}`;
-      if (replaceId && items.some((item) => item.id === replaceId)) {
+      const nama = `${symbol.split(':').pop() ?? symbol} ${label} · ${waktu}`;
+      const keterangan = `${symbol} timeframe ${label}`;
+      if (replaceId && itemsRef.current.some((item) => item.id === replaceId)) {
         updateItem(replaceId, { gambarDataUrl: dataUrl, nama, keterangan, analisa: '', pembalikan: [] });
         setSelectedId(replaceId);
-      } else {
-        addGambar(dataUrl, nama, keterangan);
+        return { id: replaceId, gambarDataUrl: dataUrl, keterangan };
       }
+      return { id: addGambar(dataUrl, nama, keterangan), gambarDataUrl: dataUrl, keterangan };
     } catch (err) {
       // Pengguna membatalkan dialog pilih tab — bukan error.
-      if (err instanceof DOMException && err.name === 'NotAllowedError') return;
-      setError(err instanceof Error ? err.message : 'Gagal capture grafik');
+      if (!(err instanceof DOMException && err.name === 'NotAllowedError')) {
+        setError(err instanceof Error ? err.message : 'Gagal capture grafik');
+      }
+      return null;
     } finally {
       setCapturing(false);
     }
@@ -288,7 +312,8 @@ export function AnalisaGrafikPage() {
     return () => window.removeEventListener('paste', onPaste);
   }, [addGambar]);
 
-  async function handleAnalyze(item: GrafikItem) {
+  /** withSinyalHeader: mode otomatis menaruh ringkasan sinyal & jam update di baris paling atas. */
+  async function handleAnalyze(item: CapturedGrafik, withSinyalHeader = false) {
     setAnalyzingId(item.id);
     setError(null);
     try {
@@ -296,13 +321,89 @@ export function AnalisaGrafikPage() {
         gambarDataUrl: item.gambarDataUrl,
         keterangan: item.keterangan || undefined,
       });
-      updateItem(item.id, { analisa: formatAnalisaGrafik(res), pembalikan: res.pembalikanArah });
+      const teks = formatAnalisaGrafik(res);
+      const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      const header = `🔁 OTOMATIS 5 MENIT · update ${waktu} — SINYAL: ${sinyalTerbaru(res.pembalikanArah)}`;
+      updateItem(item.id, {
+        analisa: withSinyalHeader ? `${header}\n\n${teks}` : teks,
+        pembalikan: res.pembalikanArah,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menganalisa grafik dengan AI');
     } finally {
       setAnalyzingId(null);
     }
   }
+
+  // Mode otomatis: tiap 5 menit capture grafik (timeframe 5 menit) lalu analisa,
+  // selalu memperbarui grafik & teks analisa yang sama.
+  const [otomatis, setOtomatis] = useState(false);
+  const [nextRunAt, setNextRunAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const otomatisItemIdRef = useRef<string | null>(null);
+  const siklusBerjalanRef = useRef(false);
+
+  async function jalankanSiklusOtomatis() {
+    if (siklusBerjalanRef.current) return;
+    if (!isCaptureLive(captureVideoRef.current)) {
+      // Stream berhenti (mis. "Stop sharing"); membuka ulang butuh klik pengguna.
+      setOtomatis(false);
+      setNextRunAt(null);
+      setError('Mode otomatis berhenti karena capture tab dihentikan. Klik Otomatis 5 Menit lagi untuk melanjutkan.');
+      return;
+    }
+    siklusBerjalanRef.current = true;
+    try {
+      const captured = await handleCapture(otomatisItemIdRef.current ?? undefined, '5 Menit');
+      if (captured) {
+        otomatisItemIdRef.current = captured.id;
+        await handleAnalyze(captured, true);
+      }
+    } finally {
+      siklusBerjalanRef.current = false;
+      setNextRunAt(Date.now() + OTOMATIS_INTERVAL_MS);
+    }
+  }
+  const siklusRef = useRef(jalankanSiklusOtomatis);
+  siklusRef.current = jalankanSiklusOtomatis;
+
+  async function mulaiOtomatis() {
+    setError(null);
+    try {
+      // Minta izin capture di dalam klik ini, sebelum ada jeda apa pun.
+      await ensureCaptureVideo();
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === 'NotAllowedError')) {
+        setError(err instanceof Error ? err.message : 'Gagal memulai capture');
+      }
+      return;
+    }
+    const perluGantiTimeframe = interval !== '5';
+    setInterval_('5');
+    otomatisItemIdRef.current = null;
+    setOtomatis(true);
+    // Beri waktu grafik TradingView memuat ulang setelah timeframe diganti.
+    setNextRunAt(Date.now() + (perluGantiTimeframe ? 6000 : 1500));
+  }
+
+  function hentikanOtomatis() {
+    setOtomatis(false);
+    setNextRunAt(null);
+  }
+
+  useEffect(() => {
+    if (!otomatis) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [otomatis]);
+
+  useEffect(() => {
+    if (!otomatis || nextRunAt === null || now < nextRunAt || siklusBerjalanRef.current) return;
+    setNextRunAt(null);
+    void siklusRef.current();
+  }, [otomatis, nextRunAt, now]);
+
+  const sisaDetik = nextRunAt === null ? null : Math.max(0, Math.ceil((nextRunAt - now) / 1000));
 
   async function handleCopy(text: string) {
     try {
@@ -347,7 +448,13 @@ export function AnalisaGrafikPage() {
             <button type="submit" className="btn btn--ghost" style={outlineBtn}>
               Tampilkan
             </button>
-            <select aria-label="Timeframe" value={interval} onChange={(e) => setInterval_(e.target.value)}>
+            <select
+              aria-label="Timeframe"
+              value={interval}
+              disabled={otomatis}
+              title={otomatis ? 'Mode otomatis memakai timeframe 5 menit' : undefined}
+              onChange={(e) => setInterval_(e.target.value)}
+            >
               {INTERVAL_OPTIONS.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.label}
@@ -382,6 +489,15 @@ export function AnalisaGrafikPage() {
             <button type="button" className="btn btn--ghost" style={outlineBtn} onClick={() => fileInputRef.current?.click()}>
               📁 Unggah Gambar
             </button>
+            {otomatis ? (
+              <button type="button" className="btn btn--primary" style={{ background: '#dc2626' }} onClick={hentikanOtomatis}>
+                ⏸ Stop Otomatis
+              </button>
+            ) : (
+              <button type="button" className="btn btn--ghost" style={outlineBtn} onClick={() => void mulaiOtomatis()}>
+                🔁 Otomatis 5 Menit
+              </button>
+            )}
             {captureAktif && (
               <button type="button" className="btn btn--ghost" style={outlineBtn} onClick={handleStopCapture}>
                 ⏹ Hentikan Capture
@@ -396,6 +512,15 @@ export function AnalisaGrafikPage() {
               onChange={(e) => void handleFiles(e.target.files)}
             />
           </div>
+          {otomatis && (
+            <div className="alert" role="status" style={{ margin: 0 }}>
+              🔁 <strong>Mode otomatis aktif</strong> (timeframe 5 menit) —{' '}
+              {sisaDetik === null
+                ? 'sedang capture & analisa...'
+                : `capture & analisa berikutnya dalam ${Math.floor(sisaDetik / 60)}:${String(sisaDetik % 60).padStart(2, '0')}`}
+              . Biarkan tab ini tetap terbuka.
+            </div>
+          )}
           <small style={{ color: 'var(--color-text-muted)' }}>
             {captureAktif
               ? '🟢 Capture aktif — klik Capture Grafik kapan saja, gambar langsung masuk tanpa dialog.'

@@ -44,6 +44,12 @@ export function sinyalPembalikan(arahSetelah: PembalikanArah['arahSetelah']): st
   return arahSetelah === 'NAIK' ? 'SAATNYA BELI (BUY)' : 'SAATNYA JUAL (SELL)';
 }
 
+/** Sinyal saat ini = arah pembalikan paling baru (paling kanan); tanpa pembalikan berarti tunggu. */
+export function sinyalTerbaru(daftar: ReadonlyArray<PembalikanArah>): string {
+  const terbaru = urutkanPembalikanTerbaru(daftar)[0];
+  return terbaru ? sinyalPembalikan(terbaru.arahSetelah) : 'TUNGGU (belum ada pembalikan arah)';
+}
+
 /** Titik pembalikan diurutkan dari yang terbaru (paling kanan di grafik) ke yang terlama. */
 export function urutkanPembalikanTerbaru(daftar: ReadonlyArray<PembalikanArah>): PembalikanArah[] {
   return [...daftar].sort((a, b) => b.posisiX - a.posisiX);

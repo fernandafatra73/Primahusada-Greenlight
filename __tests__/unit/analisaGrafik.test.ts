@@ -2,9 +2,23 @@ import { describe, expect, test } from 'vitest';
 import {
   formatAnalisaGrafik,
   sinyalPembalikan,
+  sinyalTerbaru,
   urutkanPembalikanTerbaru,
   type AnalisaGrafikResult,
 } from '../../apps/web/src/lib/analisaGrafik.ts';
+
+describe('sinyalTerbaru', () => {
+  test('follows the newest (rightmost) reversal, or says wait when there is none', () => {
+    expect(
+      sinyalTerbaru([
+        { arahSetelah: 'TURUN', posisiX: 200, posisiY: 0, alasan: '' },
+        { arahSetelah: 'NAIK', posisiX: 850, posisiY: 0, alasan: '' },
+      ]),
+    ).toBe('SAATNYA BELI (BUY)');
+    expect(sinyalTerbaru([{ arahSetelah: 'TURUN', posisiX: 10, posisiY: 0, alasan: '' }])).toBe('SAATNYA JUAL (SELL)');
+    expect(sinyalTerbaru([])).toBe('TUNGGU (belum ada pembalikan arah)');
+  });
+});
 
 describe('urutkanPembalikanTerbaru', () => {
   test('sorts rightmost (newest) first without mutating the input', () => {
