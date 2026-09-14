@@ -39,11 +39,19 @@ function formatPrediksi5Menit(arah: string, prediksi: string): string | null {
   return `${icon ? `${icon} ` : ''}${label}${text ? `: ${text}` : ''}`;
 }
 
+/** Sinyal aksi dari arah pembalikan: berbalik naik berarti saatnya beli, berbalik turun saatnya jual. */
+export function sinyalPembalikan(arahSetelah: PembalikanArah['arahSetelah']): string {
+  return arahSetelah === 'NAIK' ? 'SAATNYA BELI (BUY)' : 'SAATNYA JUAL (SELL)';
+}
+
 function formatPembalikanArah(pembalikan: PembalikanArah | null): string | null {
   if (!pembalikan) return null;
-  const icon = pembalikan.arahSetelah === 'NAIK' ? '⬆️' : '⬇️';
+  const icon = pembalikan.arahSetelah === 'NAIK' ? '🟢' : '🔴';
   const alasan = pembalikan.alasan.trim();
-  return `${icon} Pembalikan arah ${pembalikan.arahSetelah} (ditandai panah di grafik)${alasan ? `: ${alasan}` : ''}`;
+  return (
+    `${icon} ${sinyalPembalikan(pembalikan.arahSetelah)} — pembalikan arah ${pembalikan.arahSetelah} ` +
+    `(ditandai panah di grafik)${alasan ? `: ${alasan}` : ''}`
+  );
 }
 
 /** Menjadikan hasil /api/analisa-grafik/analyze satu teks untuk kolom Analisa; field kosong dilewati. */

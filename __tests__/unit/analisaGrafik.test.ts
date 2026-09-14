@@ -1,5 +1,16 @@
 import { describe, expect, test } from 'vitest';
-import { formatAnalisaGrafik, type AnalisaGrafikResult } from '../../apps/web/src/lib/analisaGrafik.ts';
+import {
+  formatAnalisaGrafik,
+  sinyalPembalikan,
+  type AnalisaGrafikResult,
+} from '../../apps/web/src/lib/analisaGrafik.ts';
+
+describe('sinyalPembalikan', () => {
+  test('reversal up means buy, reversal down means sell', () => {
+    expect(sinyalPembalikan('NAIK')).toBe('SAATNYA BELI (BUY)');
+    expect(sinyalPembalikan('TURUN')).toBe('SAATNYA JUAL (SELL)');
+  });
+});
 
 const empty: AnalisaGrafikResult = {
   instrumen: '',
@@ -68,14 +79,14 @@ describe('formatAnalisaGrafik', () => {
       }),
     ).toBe(
       '📈 Prediksi 5 menit ke depan (NAIK): Naik $1\n' +
-        '⬆️ Pembalikan arah NAIK (ditandai panah di grafik): Hammer di support\n\nTren: Turun',
+        '🟢 SAATNYA BELI (BUY) — pembalikan arah NAIK (ditandai panah di grafik): Hammer di support\n\nTren: Turun',
     );
     expect(
       formatAnalisaGrafik({
         ...empty,
         pembalikanArah: { arahSetelah: 'TURUN', posisiX: 0, posisiY: 0, alasan: '' },
       }),
-    ).toBe('⬇️ Pembalikan arah TURUN (ditandai panah di grafik)');
+    ).toBe('🔴 SAATNYA JUAL (SELL) — pembalikan arah TURUN (ditandai panah di grafik)');
   });
 
   test('skips empty or whitespace-only fields and zero confidence', () => {

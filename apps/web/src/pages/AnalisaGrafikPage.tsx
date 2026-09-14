@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiPost } from '../lib/api.ts';
-import { formatAnalisaGrafik, type AnalisaGrafikResult, type PembalikanArah } from '../lib/analisaGrafik.ts';
+import {
+  formatAnalisaGrafik,
+  sinyalPembalikan,
+  type AnalisaGrafikResult,
+  type PembalikanArah,
+} from '../lib/analisaGrafik.ts';
 import { FOTO_ALLOWED_TYPES, readFileAsDataUrl } from '../lib/fotoUpload.ts';
 import '../components/ui/ui.css';
 
@@ -62,7 +67,7 @@ function ReversalMarker({ pembalikan }: { readonly pembalikan: PembalikanArah })
           whiteSpace: 'nowrap',
         }}
       >
-        Pembalikan {naik ? '↑ NAIK' : '↓ TURUN'}
+        {naik ? '↑' : '↓'} {sinyalPembalikan(pembalikan.arahSetelah)}
       </span>
     </div>
   );
@@ -474,6 +479,26 @@ export function AnalisaGrafikPage() {
 
           {selected && (
             <>
+              {selected.pembalikan && (
+                <div
+                  role="status"
+                  style={{
+                    padding: '0.6rem 0.8rem',
+                    borderRadius: '6px',
+                    background: selected.pembalikan.arahSetelah === 'NAIK' ? '#16a34a' : '#dc2626',
+                    color: '#fff',
+                  }}
+                >
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800 }}>
+                    {selected.pembalikan.arahSetelah === 'NAIK' ? '🟢 ' : '🔴 '}
+                    {sinyalPembalikan(selected.pembalikan.arahSetelah)}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', opacity: 0.95 }}>
+                    Pembalikan arah {selected.pembalikan.arahSetelah}
+                    {selected.pembalikan.alasan ? ` — ${selected.pembalikan.alasan}` : ''}. Estimasi AI, tetap pakai stop loss.
+                  </div>
+                </div>
+              )}
               {/* Gambar tanpa objectFit supaya koordinat panah (0-1000) pas dengan area gambar. */}
               <div style={{ position: 'relative', border: '1px solid var(--color-border)', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
                 <img src={selected.gambarDataUrl} alt={selected.nama} style={{ display: 'block', width: '100%', height: 'auto' }} />
