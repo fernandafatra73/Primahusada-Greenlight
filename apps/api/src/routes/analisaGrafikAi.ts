@@ -1,0 +1,176 @@
+import type { FastifyInstance, FastifyReply } from 'fastify';
+import { GoogleGenAI, Type } from '@google/genai';
+
+function badRequest(reply: FastifyReply, message: string): FastifyReply {
+  return reply.status(400).send({ error: message });
+}
+
+const ALLOWED_IMAGE_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
+type AllowedImageMediaType = (typeof ALLOWED_IMAGE_MEDIA_TYPES)[number];
+
+function parseImageDataUrl(
+  dataUrl: string,
+): { readonly mediaType: AllowedImageMediaType; readonly data: string } | null {
+  const match = /^data:([a-zA-Z0-9/+.-]+);base64,(.+)$/s.exec(dataUrl);
+  if (!match) return null;
+  const [, mediaType, data] = match;
+  if (!ALLOWED_IMAGE_MEDIA_TYPES.includes(mediaType as AllowedImageMediaType)) return null;
+  return { mediaType: mediaType as AllowedImageMediaType, data: data! };
+}
+
+const ANALISA_GRAFIK_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    instrumen: {
+      type: Type.STRING,
+      description:
+        'Instrumen/pair dan timeframe yang terbaca dari grafik (mis. "XAUUSD 1H"). Isi "Tidak terbaca" jika tidak tampak.',
+    },
+    tren: {
+      type: Type.STRING,
+      description: 'Arah tren yang tampak (naik/turun/sideways) beserta alasan singkat dari struktur harga di grafik.',
+    },
+    polaCandle: {
+      type: Type.STRING,
+      description: 'Pola candle/chart pattern yang benar-benar tampak pada grafik. Sebutkan jika tidak ada pola jelas.',
+    },
+    supportResistance: {
+      type: Type.STRING,
+      description: 'Level support & resistance penting yang terbaca dari skala harga grafik.',
+    },
+    indikator: {
+      type: Type.STRING,
+      description: 'Bacaan indikator yang tampak di grafik (MA, RSI, MACD, volume, dsb). Isi "Tidak ada indikator" jika tidak ada.',
+    },
+    bias: {
+      type: Type.STRING,
+      description: 'Bias arah: BUY, SELL, atau WAIT/NETRAL, dengan alasan singkat.',
+    },
+    entry: { type: Type.STRING, description: 'Area entry yang masuk akal berdasarkan level di grafik.' },
+    stopLoss: { type: Type.STRING, description: 'Level stop loss yang masuk akal.' },
+    takeProfit: { type: Type.STRING, description: 'Target take profit (boleh lebih dari satu).' },
+    confidence: {
+      type: Type.NUMBER,
+      description: 'Skor keyakinan 0-100. Jangan di atas 75 karena hanya berdasarkan satu gambar.',
+    },
+    catatan: {
+      type: Type.STRING,
+      description: 'Catatan risiko: ingatkan ini estimasi AI dari gambar, wajib konfirmasi & pakai manajemen risiko.',
+    },
+  },
+  required: [
+    'instrumen',
+    'tren',
+    'polaCandle',
+    'supportResistance',
+    'indikator',
+    'bias',
+    'entry',
+    'stopLoss',
+    'takeProfit',
+    'confidence',
+    'catatan',
+  ],
+};
+
+const ANALISA_GRAFIK_SYSTEM_PROMPT = `Anda adalah asisten edukasi trading yang membaca screenshot grafik (umumnya dari TradingView) dan menyusun analisa teknikal untuk tujuan pembelajaran, BUKAN nasihat keuangan profesional.
+
+Aturan PENTING:
+- Analisa HANYA berdasarkan apa yang benar-benar tampak di gambar: candle, skala harga, garis, indikator, dan label yang terbaca.
+- Baca angka level harga dari skala harga di sisi kanan grafik; jangan mengarang angka yang tidak terbaca.
+- Jika gambar bukan grafik harga, buram, atau terlalu kecil untuk dibaca, katakan itu secara eksplisit di setiap field alih-alih menebak.
+- confidence maksimal 75.
+- Selalu ingatkan pentingnya stop loss & manajemen risiko di field catatan.
+- Tulis dalam Bahasa Indonesia, ringkas per field.
+- Jawab HANYA sesuai skema JSON yang diberikan.`;
+
+function stringField(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+export async function registerAnalisaGrafikAiRoutes(app: FastifyInstance): Promise<void> {
+  app.post<{ Body: { gambarDataUrl?: string; keterangan?: string } }>(
+    '/api/analisa-grafik/analyze',
+    async (req, reply) => {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return reply.status(503).send({
+          error: 'Fitur analisa AI belum dikonfigurasi. Admin perlu mengatur GEMINI_API_KEY di server.',
+        });
+      }
+
+      const { gambarDataUrl, keterangan } = req.body ?? {};
+      if (!gambarDataUrl?.trim()) {
+        return badRequest(reply, 'gambarDataUrl wajib diisi');
+      }
+      const parsedImage = parseImageDataUrl(gambarDataUrl);
+      if (!parsedImage) {
+        return badRequest(reply, 'Format gambar tidak didukung. Gunakan JPEG, PNG, GIF, atau WEBP.');
+      }
+
+      try {
+        const client = new GoogleGenAI({ apiKey });
+        const response = await client.models.generateContent({
+          model: 'gemini-flash-latest',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { inlineData: { mimeType: parsedImage.mediaType, data: parsedImage.data } },
+                {
+                  text: [
+                    keterangan?.trim() ? `Keterangan dari trader: ${keterangan.trim()}` : null,
+                    'Analisa grafik trading di atas sesuai skema JSON.',
+                  ]
+                    .filter((line): line is string => Boolean(line))
+                    .join('\n'),
+                },
+              ],
+            },
+          ],
+          config: {
+            systemInstruction: ANALISA_GRAFIK_SYSTEM_PROMPT,
+            responseMimeType: 'application/json',
+            responseSchema: ANALISA_GRAFIK_RESPONSE_SCHEMA,
+          },
+        });
+
+        const finishReason = response.candidates?.[0]?.finishReason;
+        if (finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {
+          return reply.status(502).send({ error: 'AI menolak menganalisa gambar ini.' });
+        }
+
+        const text = response.text;
+        if (!text) {
+          return reply.status(502).send({ error: 'AI tidak mengembalikan hasil analisa yang valid.' });
+        }
+
+        let parsed: Record<string, unknown>;
+        try {
+          parsed = JSON.parse(text) as Record<string, unknown>;
+        } catch {
+          return reply.status(502).send({ error: 'AI mengembalikan format hasil yang tidak valid.' });
+        }
+
+        return {
+          instrumen: stringField(parsed.instrumen),
+          tren: stringField(parsed.tren),
+          polaCandle: stringField(parsed.polaCandle),
+          supportResistance: stringField(parsed.supportResistance),
+          indikator: stringField(parsed.indikator),
+          bias: stringField(parsed.bias),
+          entry: stringField(parsed.entry),
+          stopLoss: stringField(parsed.stopLoss),
+          takeProfit: stringField(parsed.takeProfit),
+          confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0,
+          catatan: stringField(parsed.catatan),
+        };
+      } catch (err) {
+        req.log.error(err, 'Gagal memanggil AI vision untuk analisa grafik');
+        return reply.status(502).send({
+          error: err instanceof Error ? `Gagal menghubungi layanan AI: ${err.message}` : 'Gagal menghubungi layanan AI',
+        });
+      }
+    },
+  );
+}
