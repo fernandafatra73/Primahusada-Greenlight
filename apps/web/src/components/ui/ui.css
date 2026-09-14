@@ -5,10 +5,8 @@
   box-shadow: var(--shadow-card);
 }
 
-/* Tema gelap navy ala PACS/RIS (sama seperti tampilan Radiologi2) — dipasang
-   di <body> lewat class ini selagi halaman Pekerjaan Radiolog aktif, supaya
-   modal (yang di-portal ke document.body) ikut ikut berubah warna juga. */
-body.radiolog-work-dark-theme,
+/* Tema gelap navy ala PACS/RIS, dipakai khusus modal Registrasi Radiologi
+   Baru (lihat PasienPage.tsx) — halaman lain tetap tema terang. */
 .radiolog-work-dark-scope {
   --color-bg-page: #0f1620;
   --color-bg-surface: #17202b;
@@ -37,8 +35,6 @@ body.radiolog-work-dark-theme,
 
 /* .badge--pending/.badge--unpaid pakai warna tetap (bukan var(--color-*)),
    jadi perlu di-override manual supaya tidak nabrak dengan tema gelap ini. */
-body.radiolog-work-dark-theme .badge--pending,
-body.radiolog-work-dark-theme .badge--unpaid,
 .radiolog-work-dark-scope .badge--pending,
 .radiolog-work-dark-scope .badge--unpaid {
   background: #7f1d1d;

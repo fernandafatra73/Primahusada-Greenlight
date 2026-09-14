@@ -127,7 +127,7 @@ export function KaryawanKlinikPage() {
   );
 
   return (
-    <div className="page-frame page-frame--violet">
+    <>
       <ListPageShell
         title="Manajemen Karyawan Klinik"
         action={
@@ -212,6 +212,6 @@ export function KaryawanKlinikPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => void confirmDelete()}
       />
-    </div>
+    </>
   );
 }

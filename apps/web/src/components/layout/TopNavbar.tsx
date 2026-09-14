@@ -49,9 +49,9 @@ const NAVBAR_SPECS: readonly NavbarSpec[] = [
   { type: 'link', id: 'usg', label: 'USG', icon: IconStethoscope },
   { type: 'link', id: 'laboratorium', label: 'Laboratorium', icon: IconTag },
   { type: 'link', id: 'keuangan', label: 'Keuangan', icon: IconCurrency },
-  { type: 'category', categoryId: 'master-sistem', icon: IconShield },
+  { type: 'link', id: 'master-sistem', label: 'Dokter', icon: IconShield },
   { type: 'link', id: 'pengaturan', label: 'Pengaturan', icon: IconSettings },
-  { type: 'category', categoryId: 'farmasi', icon: IconDocument },
+  { type: 'link', id: 'farmasi', label: 'Farmasi', icon: IconDocument },
   { type: 'link', id: 'mega-data', label: 'Mega Data', icon: IconTag },
   { type: 'link', id: 'sosmed', label: 'Sosmed', icon: IconShare },
 ];

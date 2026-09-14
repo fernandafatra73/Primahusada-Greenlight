@@ -127,7 +127,7 @@ export function DokterPage() {
   );
 
   return (
-    <div className="page-frame page-frame--violet">
+    <>
       <ListPageShell
         title="Manajemen Dokter"
         action={
@@ -212,6 +212,6 @@ export function DokterPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => void confirmDelete()}
       />
-    </div>
+    </>
   );
 }

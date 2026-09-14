@@ -38,7 +38,6 @@ export const MAIN_NAV_CATEGORIES: readonly NavCategory[] = [
     items: [
       { id: 'radiologi', label: 'Radiologi', shortLabel: 'Radiologi' },
       { id: 'pasien', label: 'Data & Registrasi Radiologi', shortLabel: 'Registrasi Radiologi' },
-      { id: 'radiolog', label: 'Pekerjaan Radiolog', shortLabel: 'Pekerjaan Radiolog' },
       { id: 'radiolog-duplikat', label: 'Duplikat Radiologi', shortLabel: 'Duplikat Radiologi' },
       { id: 'kwitansi-radiologi', label: 'Kwitansi', shortLabel: 'Kwitansi' },
       { id: 'sharing-radiologi', label: 'Sharing Radiologi', shortLabel: 'Sharing Radiologi' },
@@ -109,6 +108,7 @@ export const MAIN_NAV_CATEGORIES: readonly NavCategory[] = [
     label: 'Dokter',
     iconName: 'shield',
     items: [
+      { id: 'master-sistem', label: 'Dokter', shortLabel: 'Dokter' },
       { id: 'dokter', label: 'Manajemen Dokter Pengirim', shortLabel: 'Dokter Pengirim' },
       { id: 'karyawan-klinik', label: 'Manajemen Karyawan Klinik', shortLabel: 'Karyawan Klinik' },
       { id: 'tanda-tangan-elektronik', label: 'Tanda Tangan Elektronik', shortLabel: 'Tanda Tangan Elektronik' },
@@ -121,6 +121,7 @@ export const MAIN_NAV_CATEGORIES: readonly NavCategory[] = [
     label: 'Farmasi',
     iconName: 'pill',
     items: [
+      { id: 'farmasi', label: 'Farmasi', shortLabel: 'Farmasi' },
       { id: 'farmasi-bhp', label: 'Manajemen Farmasi & BHP', shortLabel: 'Stok Obat & BHP' },
       { id: 'kwitansi-farmasi', label: 'Kwitansi Farmasi', shortLabel: 'Kwitansi Farmasi' },
     ],
@@ -145,6 +146,8 @@ export const MAIN_NAV_ITEMS: readonly NavItem[] = [
   { id: 'usg', label: 'USG', shortLabel: 'USG' },
   { id: 'pasien', label: 'Data & Registrasi Radiologi', shortLabel: 'Registrasi Radiologi' },
   { id: 'laboratorium', label: 'Laboratorium', shortLabel: 'Laboratorium' },
+  { id: 'master-sistem', label: 'Dokter', shortLabel: 'Dokter' },
+  { id: 'farmasi', label: 'Farmasi', shortLabel: 'Farmasi' },
   { id: 'sosmed', label: 'Sosmed', shortLabel: 'Sosmed' },
   { id: 'global-warm', label: 'Global Warm', shortLabel: 'Global Warm' },
   { id: 'daftar-akun', label: 'Daftar Akun', shortLabel: 'Daftar Akun' },
@@ -201,7 +204,6 @@ export const MAIN_NAV_ITEMS: readonly NavItem[] = [
   { id: 'laporan-pajak-bulanan-lab', label: 'Laporan Pajak Bulanan Lab', shortLabel: 'Laporan Pajak Bulanan Lab' },
   { id: 'laporan-neraca', label: 'Laporan Neraca', shortLabel: 'Laporan Neraca' },
   { id: 'neracarad', label: 'Neracarad', shortLabel: 'Neracarad' },
-  { id: 'radiolog', label: 'Pekerjaan Radiolog', shortLabel: 'Pekerjaan Radiolog' },
   { id: 'radiolog-duplikat', label: 'Duplikat Radiologi', shortLabel: 'Duplikat Radiologi' },
   { id: 'kwitansi-radiologi', label: 'Kwitansi Radiologi', shortLabel: 'Kwitansi' },
   { id: 'sharing-radiologi', label: 'Sharing Radiologi', shortLabel: 'Sharing Radiologi' },

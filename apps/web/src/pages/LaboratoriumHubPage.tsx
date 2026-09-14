@@ -79,7 +79,7 @@ export function LaboratoriumHubPage() {
   const [activeTab, setActiveTab] = useState<LaboratoriumTabId>('lab');
 
   return (
-    <div className="page-frame page-frame--emerald">
+    <div className="page-frame page-frame--pink">
       <div
         style={{
           display: 'flex',

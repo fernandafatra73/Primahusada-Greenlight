@@ -15,6 +15,7 @@ import { clearStoredAuthUser, loadStoredAuthUser, storeAuthUser, type AuthUser }
 import { withIndonesianVoice } from './lib/speechVoice.ts';
 import { DashboardPage } from './pages/DashboardPage.tsx';
 import { DokterPage } from './pages/DokterPage.tsx';
+import { DokterHubPage } from './pages/DokterHubPage.tsx';
 import { KaryawanKlinikPage } from './pages/KaryawanKlinikPage.tsx';
 import { TandaTanganElektronikPage } from './pages/TandaTanganElektronikPage.tsx';
 import { FotoDashboardPage } from './pages/FotoDashboardPage.tsx';
@@ -66,7 +67,6 @@ import { KaryawanPage } from './pages/KaryawanPage.tsx';
 import { AdvantagePage } from './pages/AdvantagePage.tsx';
 import { BhpRadiologiPage } from './pages/BhpRadiologiPage.tsx';
 import { RadiologDuplikatPage } from './pages/RadiologDuplikatPage.tsx';
-import { RadiologWorkPage } from './pages/RadiologWorkPage.tsx';
 import { CetakALPage } from './pages/CetakALPage.tsx';
 import { CetakLabLabPage } from './pages/CetakLabLabPage.tsx';
 import { KwitansiRadiologiPage } from './pages/KwitansiRadiologiPage.tsx';
@@ -85,6 +85,7 @@ import { UsgPage } from './pages/UsgPage.tsx';
 import { AdminPage } from './pages/AdminPage.tsx';
 import { FarmasiBhpPage } from './pages/FarmasiBhpPage.tsx';
 import { FarmasiKwitansiPage } from './pages/FarmasiKwitansiPage.tsx';
+import { FarmasiHubPage } from './pages/FarmasiHubPage.tsx';
 import { AbsensiPage } from './pages/AbsensiPage.tsx';
 import { KeuanganPembukuanPage } from './pages/KeuanganPembukuanPage.tsx';
 import { KeuanganHubPage } from './pages/KeuanganHubPage.tsx';
@@ -205,8 +206,6 @@ function renderViewContent(
       return <LaporanNeracaPage />;
     case 'neracarad':
       return <LaporanNeracaPage modul="RADIOLOGI" />;
-    case 'radiolog':
-      return <RadiologWorkPage />;
     case 'radiolog-duplikat':
       return <RadiologDuplikatPage />;
     case 'kwitansi-radiologi':
@@ -221,6 +220,8 @@ function renderViewContent(
       return <CetakLabLabPage mode="amplop" />;
     case 'cetak-label-lab':
       return <CetakLabLabPage mode="label" />;
+    case 'master-sistem':
+      return <DokterHubPage />;
     case 'dokter':
       return <DokterPage />;
     case 'karyawan-klinik':
@@ -263,6 +264,8 @@ function renderViewContent(
       return <AdminPage />;
     case 'hak-akses':
       return <HakAksesPage />;
+    case 'farmasi':
+      return <FarmasiHubPage />;
     case 'farmasi-bhp':
       return <FarmasiBhpPage />;
     case 'kwitansi-farmasi':

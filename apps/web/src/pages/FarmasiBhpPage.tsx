@@ -228,8 +228,7 @@ export function FarmasiBhpPage() {
   );
 
   return (
-    <div className="page-frame page-frame--rose">
-      <div className="list-page">
+    <div className="list-page">
       <header className="list-page__header" style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
@@ -876,7 +875,6 @@ export function FarmasiBhpPage() {
           </div>
         </Modal>
       )}
-    </div>
     </div>
   );
 }
