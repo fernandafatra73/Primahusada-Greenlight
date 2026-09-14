@@ -166,13 +166,22 @@ export function AnalisaGrafikPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  async function handleCapture() {
+  /** Tanpa replaceId: grafik baru ditambahkan ke Grafik Pilihan. Dengan
+   * replaceId: gambar grafik itu diganti hasil capture terbaru. */
+  async function handleCapture(replaceId?: string) {
     setError(null);
     setCapturing(true);
     try {
       const dataUrl = await captureElement(chartBoxRef.current);
       const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      addGambar(dataUrl, `${symbol.split(':').pop() ?? symbol} ${intervalLabel} · ${waktu}`, `${symbol} timeframe ${intervalLabel}`);
+      const nama = `${symbol.split(':').pop() ?? symbol} ${intervalLabel} · ${waktu}`;
+      const keterangan = `${symbol} timeframe ${intervalLabel}`;
+      if (replaceId && items.some((item) => item.id === replaceId)) {
+        updateItem(replaceId, { gambarDataUrl: dataUrl, nama, keterangan, analisa: '' });
+        setSelectedId(replaceId);
+      } else {
+        addGambar(dataUrl, nama, keterangan);
+      }
     } catch (err) {
       // Pengguna membatalkan dialog pilih tab — bukan error.
       if (err instanceof DOMException && err.name === 'NotAllowedError') return;
@@ -414,15 +423,32 @@ export function AnalisaGrafikPage() {
               <label htmlFor="ag-analisa" style={{ margin: 0 }}>
                 Analisa
               </label>
-              <button
-                type="button"
-                className="btn btn--sm btn--ghost"
-                style={outlineBtn}
-                disabled={!selected?.analisa}
-                onClick={() => selected && void handleCopy(selected.analisa)}
-              >
-                📋 Salin
-              </button>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--ghost"
+                  style={outlineBtn}
+                  disabled={!selected?.analisa}
+                  onClick={() => selected && void handleCopy(selected.analisa)}
+                >
+                  📋 Salin
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--ghost"
+                  style={outlineBtn}
+                  disabled={!selected || capturing}
+                  title="Kosongkan analisa lalu langsung capture ulang grafik TradingView untuk mengganti gambar grafik ini"
+                  onClick={() => {
+                    if (!selected) return;
+                    updateItem(selected.id, { analisa: '' });
+                    // Dipanggil langsung di handler klik: getDisplayMedia butuh gestur pengguna.
+                    void handleCapture(selected.id);
+                  }}
+                >
+                  🧹 Bersihkan Analisa
+                </button>
+              </div>
             </div>
             <textarea
               id="ag-analisa"

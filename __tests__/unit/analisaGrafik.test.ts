@@ -8,6 +8,8 @@ const empty: AnalisaGrafikResult = {
   supportResistance: '',
   indikator: '',
   bias: '',
+  prediksiArah5Menit: '',
+  prediksi5Menit: '',
   entry: '',
   stopLoss: '',
   takeProfit: '',
@@ -16,7 +18,7 @@ const empty: AnalisaGrafikResult = {
 };
 
 describe('formatAnalisaGrafik', () => {
-  test('lists every filled field, confidence and catatan', () => {
+  test('puts the 5-minute prediction first, then every filled field, confidence and catatan', () => {
     expect(
       formatAnalisaGrafik({
         instrumen: 'XAUUSD 1H',
@@ -25,6 +27,8 @@ describe('formatAnalisaGrafik', () => {
         supportResistance: 'S 2400, R 2450',
         indikator: 'RSI 60',
         bias: 'BUY',
+        prediksiArah5Menit: 'NAIK',
+        prediksi5Menit: '5 menit ke depan XAU diperkirakan naik ~$0.3/menit menuju 2411.5',
         entry: '2410',
         stopLoss: '2395',
         takeProfit: '2450',
@@ -32,9 +36,22 @@ describe('formatAnalisaGrafik', () => {
         catatan: 'Pakai stop loss.',
       }),
     ).toBe(
-      'Instrumen: XAUUSD 1H\nTren: Naik\nPola Candle: Bullish engulfing\nSupport/Resistance: S 2400, R 2450\n' +
+      '📈 Prediksi 5 menit ke depan (NAIK): 5 menit ke depan XAU diperkirakan naik ~$0.3/menit menuju 2411.5\n\n' +
+        'Instrumen: XAUUSD 1H\nTren: Naik\nPola Candle: Bullish engulfing\nSupport/Resistance: S 2400, R 2450\n' +
         'Indikator: RSI 60\nBias: BUY\nEntry: 2410\nStop Loss: 2395\nTake Profit: 2450\nConfidence: 65%\n\n' +
         'Catatan: Pakai stop loss.',
+    );
+  });
+
+  test('uses the matching icon per direction and tolerates lowercase or unknown directions', () => {
+    expect(formatAnalisaGrafik({ ...empty, prediksiArah5Menit: 'turun', prediksi5Menit: 'Turun $1' })).toBe(
+      '📉 Prediksi 5 menit ke depan (TURUN): Turun $1',
+    );
+    expect(formatAnalisaGrafik({ ...empty, prediksiArah5Menit: 'SIDEWAYS', tren: 'Datar' })).toBe(
+      '➡️ Prediksi 5 menit ke depan (SIDEWAYS)\n\nTren: Datar',
+    );
+    expect(formatAnalisaGrafik({ ...empty, prediksi5Menit: 'Tidak dapat diprediksi' })).toBe(
+      'Prediksi 5 menit ke depan: Tidak dapat diprediksi',
     );
   });
 

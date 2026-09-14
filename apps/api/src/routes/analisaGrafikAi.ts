@@ -47,6 +47,16 @@ const ANALISA_GRAFIK_RESPONSE_SCHEMA = {
       type: Type.STRING,
       description: 'Bias arah: BUY, SELL, atau WAIT/NETRAL, dengan alasan singkat.',
     },
+    prediksiArah5Menit: {
+      type: Type.STRING,
+      enum: ['NAIK', 'TURUN', 'SIDEWAYS'],
+      description: 'Perkiraan arah harga 5 menit ke depan berdasarkan momentum candle terakhir di grafik.',
+    },
+    prediksi5Menit: {
+      type: Type.STRING,
+      description:
+        'Kalimat prediksi 5 menit ke depan, mis. "5 menit ke depan XAU diperkirakan naik sekitar $0.3/menit menuju ±2412.50 (≈ +$1.5)". Sertakan perkiraan perubahan harga per menit dan target harga dalam 5 menit yang dihitung dari kecepatan candle terakhir & jarak ke support/resistance terdekat. Jika tidak terbaca, katakan tidak dapat diprediksi.',
+    },
     entry: { type: Type.STRING, description: 'Area entry yang masuk akal berdasarkan level di grafik.' },
     stopLoss: { type: Type.STRING, description: 'Level stop loss yang masuk akal.' },
     takeProfit: { type: Type.STRING, description: 'Target take profit (boleh lebih dari satu).' },
@@ -66,6 +76,8 @@ const ANALISA_GRAFIK_RESPONSE_SCHEMA = {
     'supportResistance',
     'indikator',
     'bias',
+    'prediksiArah5Menit',
+    'prediksi5Menit',
     'entry',
     'stopLoss',
     'takeProfit',
@@ -80,6 +92,7 @@ Aturan PENTING:
 - Analisa HANYA berdasarkan apa yang benar-benar tampak di gambar: candle, skala harga, garis, indikator, dan label yang terbaca.
 - Baca angka level harga dari skala harga di sisi kanan grafik; jangan mengarang angka yang tidak terbaca.
 - Jika gambar bukan grafik harga, buram, atau terlalu kecil untuk dibaca, katakan itu secara eksplisit di setiap field alih-alih menebak.
+- Prediksi 5 menit ke depan adalah estimasi momentum jangka sangat pendek yang sangat tidak pasti; hitung kecepatan per menit dari ukuran candle terakhir dan skala waktu grafik, dan jangan mengklaim pasti terjadi.
 - confidence maksimal 75.
 - Selalu ingatkan pentingnya stop loss & manajemen risiko di field catatan.
 - Tulis dalam Bahasa Indonesia, ringkas per field.
@@ -174,6 +187,8 @@ export async function registerAnalisaGrafikAiRoutes(app: FastifyInstance): Promi
           supportResistance: stringField(parsed.supportResistance),
           indikator: stringField(parsed.indikator),
           bias: stringField(parsed.bias),
+          prediksiArah5Menit: stringField(parsed.prediksiArah5Menit),
+          prediksi5Menit: stringField(parsed.prediksi5Menit),
           entry: stringField(parsed.entry),
           stopLoss: stringField(parsed.stopLoss),
           takeProfit: stringField(parsed.takeProfit),
