@@ -15,7 +15,7 @@ export interface AnalisaGrafikResult {
   readonly bias: string;
   readonly prediksiArah5Menit: string;
   readonly prediksi5Menit: string;
-  readonly pembalikanArah: PembalikanArah | null;
+  readonly pembalikanArah: ReadonlyArray<PembalikanArah>;
   readonly entry: string;
   readonly stopLoss: string;
   readonly takeProfit: string;
@@ -44,13 +44,17 @@ export function sinyalPembalikan(arahSetelah: PembalikanArah['arahSetelah']): st
   return arahSetelah === 'NAIK' ? 'SAATNYA BELI (BUY)' : 'SAATNYA JUAL (SELL)';
 }
 
-function formatPembalikanArah(pembalikan: PembalikanArah | null): string | null {
-  if (!pembalikan) return null;
+/** Titik pembalikan diurutkan dari yang terbaru (paling kanan di grafik) ke yang terlama. */
+export function urutkanPembalikanTerbaru(daftar: ReadonlyArray<PembalikanArah>): PembalikanArah[] {
+  return [...daftar].sort((a, b) => b.posisiX - a.posisiX);
+}
+
+function formatPembalikanArah(pembalikan: PembalikanArah, terbaru: boolean): string {
   const icon = pembalikan.arahSetelah === 'NAIK' ? '🟢' : '🔴';
   const alasan = pembalikan.alasan.trim();
   return (
-    `${icon} ${sinyalPembalikan(pembalikan.arahSetelah)} — pembalikan arah ${pembalikan.arahSetelah} ` +
-    `(ditandai panah di grafik)${alasan ? `: ${alasan}` : ''}`
+    `${icon} ${sinyalPembalikan(pembalikan.arahSetelah)}${terbaru ? ' [TERBARU]' : ''} — pembalikan arah ` +
+    `${pembalikan.arahSetelah} (ditandai panah di grafik)${alasan ? `: ${alasan}` : ''}`
   );
 }
 
@@ -79,9 +83,10 @@ export function formatAnalisaGrafik(result: AnalisaGrafikResult): string {
   if (catatan) {
     lines.push('', `Catatan: ${catatan}`);
   }
-  const header = [prediksi, formatPembalikanArah(result.pembalikanArah)].filter(
-    (line): line is string => line !== null,
+  const pembalikanLines = urutkanPembalikanTerbaru(result.pembalikanArah).map((p, i) =>
+    formatPembalikanArah(p, i === 0 && result.pembalikanArah.length > 1),
   );
+  const header = [...(prediksi ? [prediksi] : []), ...pembalikanLines];
   if (header.length > 0) {
     lines.unshift(...(lines.length > 0 ? [...header, ''] : header));
   }

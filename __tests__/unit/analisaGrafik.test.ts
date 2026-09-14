@@ -2,8 +2,20 @@ import { describe, expect, test } from 'vitest';
 import {
   formatAnalisaGrafik,
   sinyalPembalikan,
+  urutkanPembalikanTerbaru,
   type AnalisaGrafikResult,
 } from '../../apps/web/src/lib/analisaGrafik.ts';
+
+describe('urutkanPembalikanTerbaru', () => {
+  test('sorts rightmost (newest) first without mutating the input', () => {
+    const input = [
+      { arahSetelah: 'NAIK', posisiX: 100, posisiY: 0, alasan: '' },
+      { arahSetelah: 'TURUN', posisiX: 900, posisiY: 0, alasan: '' },
+    ] as const;
+    expect(urutkanPembalikanTerbaru(input).map((p) => p.posisiX)).toEqual([900, 100]);
+    expect(input[0].posisiX).toBe(100);
+  });
+});
 
 describe('sinyalPembalikan', () => {
   test('reversal up means buy, reversal down means sell', () => {
@@ -21,7 +33,7 @@ const empty: AnalisaGrafikResult = {
   bias: '',
   prediksiArah5Menit: '',
   prediksi5Menit: '',
-  pembalikanArah: null,
+  pembalikanArah: [],
   entry: '',
   stopLoss: '',
   takeProfit: '',
@@ -41,7 +53,7 @@ describe('formatAnalisaGrafik', () => {
         bias: 'BUY',
         prediksiArah5Menit: 'NAIK',
         prediksi5Menit: '5 menit ke depan XAU diperkirakan naik ~$0.3/menit menuju 2411.5',
-        pembalikanArah: null,
+        pembalikanArah: [],
         entry: '2410',
         stopLoss: '2395',
         takeProfit: '2450',
@@ -68,13 +80,13 @@ describe('formatAnalisaGrafik', () => {
     );
   });
 
-  test('adds the reversal line under the prediction', () => {
+  test('adds a single reversal line under the prediction', () => {
     expect(
       formatAnalisaGrafik({
         ...empty,
         prediksiArah5Menit: 'NAIK',
         prediksi5Menit: 'Naik $1',
-        pembalikanArah: { arahSetelah: 'NAIK', posisiX: 800, posisiY: 700, alasan: ' Hammer di support ' },
+        pembalikanArah: [{ arahSetelah: 'NAIK', posisiX: 800, posisiY: 700, alasan: ' Hammer di support ' }],
         tren: 'Turun',
       }),
     ).toBe(
@@ -84,9 +96,24 @@ describe('formatAnalisaGrafik', () => {
     expect(
       formatAnalisaGrafik({
         ...empty,
-        pembalikanArah: { arahSetelah: 'TURUN', posisiX: 0, posisiY: 0, alasan: '' },
+        pembalikanArah: [{ arahSetelah: 'TURUN', posisiX: 0, posisiY: 0, alasan: '' }],
       }),
     ).toBe('🔴 SAATNYA JUAL (SELL) — pembalikan arah TURUN (ditandai panah di grafik)');
+  });
+
+  test('lists both buy and sell reversals, newest (rightmost) first and marked TERBARU', () => {
+    expect(
+      formatAnalisaGrafik({
+        ...empty,
+        pembalikanArah: [
+          { arahSetelah: 'NAIK', posisiX: 300, posisiY: 850, alasan: 'Hammer' },
+          { arahSetelah: 'TURUN', posisiX: 750, posisiY: 120, alasan: 'Shooting star' },
+        ],
+      }),
+    ).toBe(
+      '🔴 SAATNYA JUAL (SELL) [TERBARU] — pembalikan arah TURUN (ditandai panah di grafik): Shooting star\n' +
+        '🟢 SAATNYA BELI (BUY) — pembalikan arah NAIK (ditandai panah di grafik): Hammer',
+    );
   });
 
   test('skips empty or whitespace-only fields and zero confidence', () => {

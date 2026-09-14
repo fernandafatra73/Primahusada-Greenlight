@@ -58,31 +58,33 @@ const ANALISA_GRAFIK_RESPONSE_SCHEMA = {
         'Kalimat prediksi 5 menit ke depan, mis. "5 menit ke depan XAU diperkirakan naik sekitar $0.3/menit menuju ±2412.50 (≈ +$1.5)". Sertakan perkiraan perubahan harga per menit dan target harga dalam 5 menit yang dihitung dari kecepatan candle terakhir & jarak ke support/resistance terdekat. Jika tidak terbaca, katakan tidak dapat diprediksi.',
     },
     pembalikanArah: {
-      type: Type.OBJECT,
+      type: Type.ARRAY,
       description:
-        'Candle pada grafik (terutama timeframe 1 jam) yang paling mungkin menjadi titik pembalikan arah, untuk ditandai panah di atas gambar.',
-      properties: {
-        terdeteksi: {
-          type: Type.BOOLEAN,
-          description: 'true hanya jika ada candle dengan tanda pembalikan yang cukup jelas (pin bar, engulfing, doji di S/R, divergence).',
+        'Semua candle pada grafik (terutama timeframe 1 jam) yang menjadi titik pembalikan arah, untuk ditandai panah di atas gambar. Cari KEDUA jenis: pembalikan NAIK (sinyal beli, di dasar/support) DAN pembalikan TURUN (sinyal jual, di puncak/resistance). Maksimal 6 titik paling jelas. Kosongkan array jika tidak ada.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          arahSetelah: {
+            type: Type.STRING,
+            enum: ['NAIK', 'TURUN'],
+            description: 'Arah harga setelah pembalikan: NAIK (bullish reversal di bawah = beli) atau TURUN (bearish reversal di atas = jual).',
+          },
+          posisiX: {
+            type: Type.NUMBER,
+            description: 'Posisi horizontal tengah candle pembalikan pada gambar, skala 0 (kiri) sampai 1000 (kanan).',
+          },
+          posisiY: {
+            type: Type.NUMBER,
+            description:
+              'Posisi vertikal pada gambar, skala 0 (atas) sampai 1000 (bawah): ujung low candle jika NAIK, ujung high candle jika TURUN.',
+          },
+          alasan: {
+            type: Type.STRING,
+            description: 'Alasan singkat (pin bar, engulfing, doji di S/R, shooting star, dsb.) kenapa candle itu pembalikan arah.',
+          },
         },
-        arahSetelah: {
-          type: Type.STRING,
-          enum: ['NAIK', 'TURUN'],
-          description: 'Arah harga setelah pembalikan: NAIK (bullish reversal di bawah) atau TURUN (bearish reversal di atas).',
-        },
-        posisiX: {
-          type: Type.NUMBER,
-          description: 'Posisi horizontal tengah candle pembalikan pada gambar, skala 0 (kiri) sampai 1000 (kanan).',
-        },
-        posisiY: {
-          type: Type.NUMBER,
-          description:
-            'Posisi vertikal pada gambar, skala 0 (atas) sampai 1000 (bawah): ujung low candle jika NAIK, ujung high candle jika TURUN.',
-        },
-        alasan: { type: Type.STRING, description: 'Alasan singkat kenapa candle itu berpotensi pembalikan arah.' },
+        required: ['arahSetelah', 'posisiX', 'posisiY', 'alasan'],
       },
-      required: ['terdeteksi', 'arahSetelah', 'posisiX', 'posisiY', 'alasan'],
     },
     entry: { type: Type.STRING, description: 'Area entry yang masuk akal berdasarkan level di grafik.' },
     stopLoss: { type: Type.STRING, description: 'Level stop loss yang masuk akal.' },
@@ -121,7 +123,7 @@ Aturan PENTING:
 - Baca angka level harga dari skala harga di sisi kanan grafik; jangan mengarang angka yang tidak terbaca.
 - Jika gambar bukan grafik harga, buram, atau terlalu kecil untuk dibaca, katakan itu secara eksplisit di setiap field alih-alih menebak.
 - Prediksi 5 menit ke depan adalah estimasi momentum jangka sangat pendek yang sangat tidak pasti; hitung kecepatan per menit dari ukuran candle terakhir dan skala waktu grafik, dan jangan mengklaim pasti terjadi.
-- Untuk pembalikanArah, tunjuk posisi candle yang benar-benar tampak di gambar (koordinat 0-1000 relatif terhadap seluruh gambar). Isi terdeteksi=false jika tidak ada tanda pembalikan yang jelas.
+- Untuk pembalikanArah, periksa puncak (calon pembalikan TURUN/jual) dan dasar (calon pembalikan NAIK/beli) secara terpisah, lalu tunjuk posisi candle yang benar-benar tampak di gambar (koordinat 0-1000 relatif terhadap seluruh gambar). Jangan hanya melaporkan satu arah jika pembalikan arah lain juga tampak jelas. Kosongkan array jika tidak ada tanda pembalikan yang jelas.
 - confidence maksimal 75.
 - Selalu ingatkan pentingnya stop loss & manajemen risiko di field catatan.
 - Tulis dalam Bahasa Indonesia, ringkas per field.
@@ -143,11 +145,21 @@ interface PembalikanArah {
   readonly alasan: string;
 }
 
-/** Hanya diteruskan ke frontend bila AI mendeteksi pembalikan dengan koordinat valid. */
+const MAX_TITIK_PEMBALIKAN = 6;
+
+/** Hanya titik dengan arah & koordinat valid yang diteruskan, urut dari kiri ke kanan (lama ke terbaru). */
+function parseDaftarPembalikanArah(value: unknown): PembalikanArah[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(parsePembalikanArah)
+    .filter((p): p is PembalikanArah => p !== null)
+    .slice(0, MAX_TITIK_PEMBALIKAN)
+    .sort((a, b) => a.posisiX - b.posisiX);
+}
+
 function parsePembalikanArah(value: unknown): PembalikanArah | null {
   if (typeof value !== 'object' || value === null) return null;
   const v = value as Record<string, unknown>;
-  if (v.terdeteksi !== true) return null;
   if (v.arahSetelah !== 'NAIK' && v.arahSetelah !== 'TURUN') return null;
   if (typeof v.posisiX !== 'number' || typeof v.posisiY !== 'number') return null;
   if (!Number.isFinite(v.posisiX) || !Number.isFinite(v.posisiY)) return null;
@@ -242,7 +254,7 @@ export async function registerAnalisaGrafikAiRoutes(app: FastifyInstance): Promi
           bias: stringField(parsed.bias),
           prediksiArah5Menit: stringField(parsed.prediksiArah5Menit),
           prediksi5Menit: stringField(parsed.prediksi5Menit),
-          pembalikanArah: parsePembalikanArah(parsed.pembalikanArah),
+          pembalikanArah: parseDaftarPembalikanArah(parsed.pembalikanArah),
           entry: stringField(parsed.entry),
           stopLoss: stringField(parsed.stopLoss),
           takeProfit: stringField(parsed.takeProfit),

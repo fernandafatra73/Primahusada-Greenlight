@@ -3,6 +3,7 @@ import { apiPost } from '../lib/api.ts';
 import {
   formatAnalisaGrafik,
   sinyalPembalikan,
+  urutkanPembalikanTerbaru,
   type AnalisaGrafikResult,
   type PembalikanArah,
 } from '../lib/analisaGrafik.ts';
@@ -28,7 +29,7 @@ interface GrafikItem {
   readonly gambarDataUrl: string;
   readonly keterangan: string;
   readonly analisa: string;
-  readonly pembalikan: PembalikanArah | null;
+  readonly pembalikan: ReadonlyArray<PembalikanArah>;
 }
 
 /** Panah penanda candle pembalikan arah di atas gambar grafik: hijau dari
@@ -205,7 +206,7 @@ export function AnalisaGrafikPage() {
   const intervalLabel = INTERVAL_OPTIONS.find((o) => o.id === interval)?.label ?? interval;
 
   const addGambar = useCallback((gambarDataUrl: string, nama: string, keterangan = '') => {
-    const item: GrafikItem = { id: newId(), nama, gambarDataUrl, keterangan, analisa: '', pembalikan: null };
+    const item: GrafikItem = { id: newId(), nama, gambarDataUrl, keterangan, analisa: '', pembalikan: [] };
     setItems((prev) => [...prev, item]);
     setSelectedId(item.id);
     setError(null);
@@ -257,7 +258,7 @@ export function AnalisaGrafikPage() {
       const nama = `${symbol.split(':').pop() ?? symbol} ${intervalLabel} · ${waktu}`;
       const keterangan = `${symbol} timeframe ${intervalLabel}`;
       if (replaceId && items.some((item) => item.id === replaceId)) {
-        updateItem(replaceId, { gambarDataUrl: dataUrl, nama, keterangan, analisa: '', pembalikan: null });
+        updateItem(replaceId, { gambarDataUrl: dataUrl, nama, keterangan, analisa: '', pembalikan: [] });
         setSelectedId(replaceId);
       } else {
         addGambar(dataUrl, nama, keterangan);
@@ -479,30 +480,36 @@ export function AnalisaGrafikPage() {
 
           {selected && (
             <>
-              {selected.pembalikan && (
+              {urutkanPembalikanTerbaru(selected.pembalikan).map((p, i) => (
                 <div
+                  key={`${p.arahSetelah}-${p.posisiX}-${p.posisiY}`}
                   role="status"
                   style={{
-                    padding: '0.6rem 0.8rem',
+                    padding: i === 0 ? '0.6rem 0.8rem' : '0.4rem 0.8rem',
                     borderRadius: '6px',
-                    background: selected.pembalikan.arahSetelah === 'NAIK' ? '#16a34a' : '#dc2626',
+                    background: p.arahSetelah === 'NAIK' ? '#16a34a' : '#dc2626',
                     color: '#fff',
+                    opacity: i === 0 ? 1 : 0.85,
                   }}
                 >
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800 }}>
-                    {selected.pembalikan.arahSetelah === 'NAIK' ? '🟢 ' : '🔴 '}
-                    {sinyalPembalikan(selected.pembalikan.arahSetelah)}
+                  <div style={{ fontSize: i === 0 ? '1.15rem' : '0.95rem', fontWeight: 800 }}>
+                    {p.arahSetelah === 'NAIK' ? '🟢 ' : '🔴 '}
+                    {sinyalPembalikan(p.arahSetelah)}
+                    {i === 0 && selected.pembalikan.length > 1 ? ' — TERBARU' : ''}
                   </div>
                   <div style={{ fontSize: '0.8rem', opacity: 0.95 }}>
-                    Pembalikan arah {selected.pembalikan.arahSetelah}
-                    {selected.pembalikan.alasan ? ` — ${selected.pembalikan.alasan}` : ''}. Estimasi AI, tetap pakai stop loss.
+                    Pembalikan arah {p.arahSetelah}
+                    {p.alasan ? ` — ${p.alasan}` : ''}
+                    {i === 0 ? '. Estimasi AI, tetap pakai stop loss.' : ''}
                   </div>
                 </div>
-              )}
+              ))}
               {/* Gambar tanpa objectFit supaya koordinat panah (0-1000) pas dengan area gambar. */}
               <div style={{ position: 'relative', border: '1px solid var(--color-border)', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
                 <img src={selected.gambarDataUrl} alt={selected.nama} style={{ display: 'block', width: '100%', height: 'auto' }} />
-                {selected.pembalikan && <ReversalMarker pembalikan={selected.pembalikan} />}
+                {selected.pembalikan.map((p) => (
+                  <ReversalMarker key={`${p.arahSetelah}-${p.posisiX}-${p.posisiY}`} pembalikan={p} />
+                ))}
               </div>
               <div className="form-field">
                 <label htmlFor="ag-keterangan">Keterangan (opsional)</label>
@@ -547,7 +554,7 @@ export function AnalisaGrafikPage() {
                   title="Kosongkan analisa lalu langsung capture ulang grafik TradingView untuk mengganti gambar grafik ini"
                   onClick={() => {
                     if (!selected) return;
-                    updateItem(selected.id, { analisa: '', pembalikan: null });
+                    updateItem(selected.id, { analisa: '', pembalikan: [] });
                     // Dipanggil langsung di handler klik: getDisplayMedia butuh gestur pengguna.
                     void handleCapture(selected.id);
                   }}
