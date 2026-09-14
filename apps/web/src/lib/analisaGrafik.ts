@@ -19,6 +19,8 @@ export interface AnalisaGrafikResult {
   readonly entry: string;
   readonly stopLoss: string;
   readonly takeProfit: string;
+  /** 0-100; persentase SELL = 100 - persenBuy. */
+  readonly persenBuy: number;
   readonly confidence: number;
   readonly catatan: string;
 }
@@ -42,6 +44,12 @@ function formatPrediksi5Menit(arah: string, prediksi: string): string | null {
 /** Sinyal aksi dari arah pembalikan: berbalik naik berarti saatnya beli, berbalik turun saatnya jual. */
 export function sinyalPembalikan(arahSetelah: PembalikanArah['arahSetelah']): string {
   return arahSetelah === 'NAIK' ? 'SAATNYA BELI (BUY)' : 'SAATNYA JUAL (SELL)';
+}
+
+/** Membulatkan & membatasi persen BUY ke 0-100; SELL selalu pelengkapnya supaya totalnya 100. */
+export function persenBuySell(persenBuy: number): { readonly buy: number; readonly sell: number } {
+  const buy = Number.isFinite(persenBuy) ? Math.round(Math.min(100, Math.max(0, persenBuy))) : 50;
+  return { buy, sell: 100 - buy };
 }
 
 /** Sinyal saat ini = arah pembalikan paling baru (paling kanan); tanpa pembalikan berarti tunggu. */
@@ -81,6 +89,8 @@ export function formatAnalisaGrafik(result: AnalisaGrafikResult): string {
     .map(([label, value]) => [label, value.trim()] as const)
     .filter(([, value]) => value.length > 0)
     .map(([label, value]) => `${label}: ${value}`);
+  const { buy, sell } = persenBuySell(result.persenBuy);
+  lines.push(`Kekuatan: BUY ${buy}% · SELL ${sell}%`);
   if (result.confidence > 0) {
     lines.push(`Confidence: ${Math.round(result.confidence)}%`);
   }

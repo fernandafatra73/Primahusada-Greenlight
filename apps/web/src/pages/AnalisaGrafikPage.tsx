@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiPost } from '../lib/api.ts';
 import {
   formatAnalisaGrafik,
+  persenBuySell,
   sinyalPembalikan,
   sinyalTerbaru,
   urutkanPembalikanTerbaru,
@@ -39,6 +40,7 @@ interface GrafikItem {
   readonly keterangan: string;
   readonly analisa: string;
   readonly pembalikan: ReadonlyArray<PembalikanArah>;
+  readonly persenBuy: number | null;
 }
 
 /** Panah penanda candle pembalikan arah di atas gambar grafik: hijau dari
@@ -79,6 +81,39 @@ function ReversalMarker({ pembalikan }: { readonly pembalikan: PembalikanArah })
       >
         {naik ? '↑' : '↓'} {sinyalPembalikan(pembalikan.arahSetelah)}
       </span>
+    </div>
+  );
+}
+
+const BUY_BLUE = '#2563eb';
+const SELL_RED = '#dc2626';
+
+/** Batang persentase BUY (biru) vs SELL (merah) dari analisa grafik terpilih; abu-abu bila belum dianalisa. */
+function BuySellMeter({ persenBuy }: { readonly persenBuy: number | null }) {
+  const ada = persenBuy !== null;
+  const { buy, sell } = persenBuySell(persenBuy ?? 50);
+  return (
+    <div
+      role="meter"
+      aria-label="Persentase BUY dan SELL"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={ada ? buy : undefined}
+      title={ada ? `BUY ${buy}% · SELL ${sell}%` : 'Analisa grafik untuk melihat persentase BUY/SELL'}
+      style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 180, flex: '1 1 180px', justifyContent: 'center' }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', fontWeight: 800 }}>
+        <span style={{ color: ada ? BUY_BLUE : 'var(--color-text-muted)' }}>BUY {ada ? `${buy}%` : '–'}</span>
+        <span style={{ color: ada ? SELL_RED : 'var(--color-text-muted)' }}>SELL {ada ? `${sell}%` : '–'}</span>
+      </div>
+      <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', background: '#e5e7eb' }}>
+        {ada && (
+          <>
+            <div style={{ width: `${buy}%`, background: BUY_BLUE, transition: 'width 0.4s' }} />
+            <div style={{ width: `${sell}%`, background: SELL_RED, transition: 'width 0.4s' }} />
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -221,7 +256,7 @@ export function AnalisaGrafikPage() {
   const intervalLabel = INTERVAL_OPTIONS.find((o) => o.id === interval)?.label ?? interval;
 
   const addGambar = useCallback((gambarDataUrl: string, nama: string, keterangan = ''): string => {
-    const item: GrafikItem = { id: newId(), nama, gambarDataUrl, keterangan, analisa: '', pembalikan: [] };
+    const item: GrafikItem = { id: newId(), nama, gambarDataUrl, keterangan, analisa: '', pembalikan: [], persenBuy: null };
     setItems((prev) => [...prev, item]);
     setSelectedId(item.id);
     setError(null);
@@ -280,7 +315,7 @@ export function AnalisaGrafikPage() {
       const nama = `${symbol.split(':').pop() ?? symbol} ${label} · ${waktu}`;
       const keterangan = `${symbol} timeframe ${label}`;
       if (replaceId && itemsRef.current.some((item) => item.id === replaceId)) {
-        updateItem(replaceId, { gambarDataUrl: dataUrl, nama, keterangan, analisa: '', pembalikan: [] });
+        updateItem(replaceId, { gambarDataUrl: dataUrl, nama, keterangan, analisa: '', pembalikan: [], persenBuy: null });
         setSelectedId(replaceId);
         return { id: replaceId, gambarDataUrl: dataUrl, keterangan };
       }
@@ -327,6 +362,7 @@ export function AnalisaGrafikPage() {
       updateItem(item.id, {
         analisa: withSinyalHeader ? `${header}\n\n${teks}` : teks,
         pembalikan: res.pembalikanArah,
+        persenBuy: res.persenBuy,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menganalisa grafik dengan AI');
@@ -489,6 +525,7 @@ export function AnalisaGrafikPage() {
             <button type="button" className="btn btn--ghost" style={outlineBtn} onClick={() => fileInputRef.current?.click()}>
               📁 Unggah Gambar
             </button>
+            <BuySellMeter persenBuy={selected?.persenBuy ?? null} />
             {otomatis ? (
               <button type="button" className="btn btn--primary" style={{ background: '#dc2626' }} onClick={hentikanOtomatis}>
                 ⏸ Stop Otomatis
@@ -679,7 +716,7 @@ export function AnalisaGrafikPage() {
                   title="Kosongkan analisa lalu langsung capture ulang grafik TradingView untuk mengganti gambar grafik ini"
                   onClick={() => {
                     if (!selected) return;
-                    updateItem(selected.id, { analisa: '', pembalikan: [] });
+                    updateItem(selected.id, { analisa: '', pembalikan: [], persenBuy: null });
                     // Dipanggil langsung di handler klik: getDisplayMedia butuh gestur pengguna.
                     void handleCapture(selected.id);
                   }}

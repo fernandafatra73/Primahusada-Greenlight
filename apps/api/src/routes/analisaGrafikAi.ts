@@ -89,6 +89,11 @@ const ANALISA_GRAFIK_RESPONSE_SCHEMA = {
     entry: { type: Type.STRING, description: 'Area entry yang masuk akal berdasarkan level di grafik.' },
     stopLoss: { type: Type.STRING, description: 'Level stop loss yang masuk akal.' },
     takeProfit: { type: Type.STRING, description: 'Target take profit (boleh lebih dari satu).' },
+    persenBuy: {
+      type: Type.NUMBER,
+      description:
+        'Persentase kekuatan pembeli (BUY) 0-100 berdasarkan dominasi candle naik vs turun, momentum candle terakhir, dan posisi harga terhadap support/resistance. Persentase SELL dianggap 100 - persenBuy. Isi 50 jika seimbang atau tidak terbaca.',
+    },
     confidence: {
       type: Type.NUMBER,
       description: 'Skor keyakinan 0-100. Jangan di atas 75 karena hanya berdasarkan satu gambar.',
@@ -111,6 +116,7 @@ const ANALISA_GRAFIK_RESPONSE_SCHEMA = {
     'entry',
     'stopLoss',
     'takeProfit',
+    'persenBuy',
     'confidence',
     'catatan',
   ],
@@ -258,6 +264,10 @@ export async function registerAnalisaGrafikAiRoutes(app: FastifyInstance): Promi
           entry: stringField(parsed.entry),
           stopLoss: stringField(parsed.stopLoss),
           takeProfit: stringField(parsed.takeProfit),
+          persenBuy:
+            typeof parsed.persenBuy === 'number' && Number.isFinite(parsed.persenBuy)
+              ? Math.round(Math.min(100, Math.max(0, parsed.persenBuy)))
+              : 50,
           confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0,
           catatan: stringField(parsed.catatan),
         };

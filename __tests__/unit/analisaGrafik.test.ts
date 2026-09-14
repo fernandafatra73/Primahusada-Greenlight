@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   formatAnalisaGrafik,
+  persenBuySell,
   sinyalPembalikan,
   sinyalTerbaru,
   urutkanPembalikanTerbaru,
@@ -51,9 +52,21 @@ const empty: AnalisaGrafikResult = {
   entry: '',
   stopLoss: '',
   takeProfit: '',
+  persenBuy: 50,
   confidence: 0,
   catatan: '',
 };
+
+const KEKUATAN_50 = 'Kekuatan: BUY 50% · SELL 50%';
+
+describe('persenBuySell', () => {
+  test('rounds and clamps buy to 0-100 and makes sell its complement', () => {
+    expect(persenBuySell(62.4)).toEqual({ buy: 62, sell: 38 });
+    expect(persenBuySell(140)).toEqual({ buy: 100, sell: 0 });
+    expect(persenBuySell(-5)).toEqual({ buy: 0, sell: 100 });
+    expect(persenBuySell(Number.NaN)).toEqual({ buy: 50, sell: 50 });
+  });
+});
 
 describe('formatAnalisaGrafik', () => {
   test('puts the 5-minute prediction first, then every filled field, confidence and catatan', () => {
@@ -71,26 +84,27 @@ describe('formatAnalisaGrafik', () => {
         entry: '2410',
         stopLoss: '2395',
         takeProfit: '2450',
+        persenBuy: 62,
         confidence: 64.6,
         catatan: 'Pakai stop loss.',
       }),
     ).toBe(
       '📈 Prediksi 5 menit ke depan (NAIK): 5 menit ke depan XAU diperkirakan naik ~$0.3/menit menuju 2411.5\n\n' +
         'Instrumen: XAUUSD 1H\nTren: Naik\nPola Candle: Bullish engulfing\nSupport/Resistance: S 2400, R 2450\n' +
-        'Indikator: RSI 60\nBias: BUY\nEntry: 2410\nStop Loss: 2395\nTake Profit: 2450\nConfidence: 65%\n\n' +
+        'Indikator: RSI 60\nBias: BUY\nEntry: 2410\nStop Loss: 2395\nTake Profit: 2450\nKekuatan: BUY 62% · SELL 38%\nConfidence: 65%\n\n' +
         'Catatan: Pakai stop loss.',
     );
   });
 
   test('uses the matching icon per direction and tolerates lowercase or unknown directions', () => {
     expect(formatAnalisaGrafik({ ...empty, prediksiArah5Menit: 'turun', prediksi5Menit: 'Turun $1' })).toBe(
-      '📉 Prediksi 5 menit ke depan (TURUN): Turun $1',
+      `📉 Prediksi 5 menit ke depan (TURUN): Turun $1\n\n${KEKUATAN_50}`,
     );
     expect(formatAnalisaGrafik({ ...empty, prediksiArah5Menit: 'SIDEWAYS', tren: 'Datar' })).toBe(
-      '➡️ Prediksi 5 menit ke depan (SIDEWAYS)\n\nTren: Datar',
+      `➡️ Prediksi 5 menit ke depan (SIDEWAYS)\n\nTren: Datar\n${KEKUATAN_50}`,
     );
     expect(formatAnalisaGrafik({ ...empty, prediksi5Menit: 'Tidak dapat diprediksi' })).toBe(
-      'Prediksi 5 menit ke depan: Tidak dapat diprediksi',
+      `Prediksi 5 menit ke depan: Tidak dapat diprediksi\n\n${KEKUATAN_50}`,
     );
   });
 
@@ -105,14 +119,15 @@ describe('formatAnalisaGrafik', () => {
       }),
     ).toBe(
       '📈 Prediksi 5 menit ke depan (NAIK): Naik $1\n' +
-        '🟢 SAATNYA BELI (BUY) — pembalikan arah NAIK (ditandai panah di grafik): Hammer di support\n\nTren: Turun',
+        '🟢 SAATNYA BELI (BUY) — pembalikan arah NAIK (ditandai panah di grafik): Hammer di support\n\nTren: Turun\n' +
+        KEKUATAN_50,
     );
     expect(
       formatAnalisaGrafik({
         ...empty,
         pembalikanArah: [{ arahSetelah: 'TURUN', posisiX: 0, posisiY: 0, alasan: '' }],
       }),
-    ).toBe('🔴 SAATNYA JUAL (SELL) — pembalikan arah TURUN (ditandai panah di grafik)');
+    ).toBe(`🔴 SAATNYA JUAL (SELL) — pembalikan arah TURUN (ditandai panah di grafik)\n\n${KEKUATAN_50}`);
   });
 
   test('lists both buy and sell reversals, newest (rightmost) first and marked TERBARU', () => {
@@ -126,12 +141,13 @@ describe('formatAnalisaGrafik', () => {
       }),
     ).toBe(
       '🔴 SAATNYA JUAL (SELL) [TERBARU] — pembalikan arah TURUN (ditandai panah di grafik): Shooting star\n' +
-        '🟢 SAATNYA BELI (BUY) — pembalikan arah NAIK (ditandai panah di grafik): Hammer',
+        '🟢 SAATNYA BELI (BUY) — pembalikan arah NAIK (ditandai panah di grafik): Hammer\n\n' +
+        KEKUATAN_50,
     );
   });
 
   test('skips empty or whitespace-only fields and zero confidence', () => {
-    expect(formatAnalisaGrafik({ ...empty, tren: ' Sideways ', entry: '   ' })).toBe('Tren: Sideways');
-    expect(formatAnalisaGrafik(empty)).toBe('');
+    expect(formatAnalisaGrafik({ ...empty, tren: ' Sideways ', entry: '   ' })).toBe(`Tren: Sideways\n${KEKUATAN_50}`);
+    expect(formatAnalisaGrafik(empty)).toBe(KEKUATAN_50);
   });
 });
