@@ -10,18 +10,28 @@ interface KesanTemplateRow {
   readonly isi: string;
 }
 
-interface Rad2KesanModalProps {
+interface KesanEditorModalProps {
   readonly nama: string;
   readonly initialKesan: string;
   readonly saving: boolean;
   readonly error: string | null;
   readonly onClose: () => void;
   readonly onSave: (kesan: string) => void;
+  /** Label tombol simpan, mis. "Pakai Kesan" bila hasilnya hanya mengisi form. */
+  readonly submitLabel?: string;
 }
 
-/** Editor khusus kolom Kesan Rad2: klik baris Master Kesan di tabel bawah untuk
+/** Editor kesan (dipakai Rad2 dan USG): klik baris Master Kesan di tabel bawah untuk
  * menyisipkan isinya ke posisi kursor pada kotak teks. */
-export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onSave }: Rad2KesanModalProps) {
+export function KesanEditorModal({
+  nama,
+  initialKesan,
+  saving,
+  error,
+  onClose,
+  onSave,
+  submitLabel = 'Simpan Kesan',
+}: KesanEditorModalProps) {
   const [kesan, setKesan] = useState(initialKesan);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
@@ -140,7 +150,7 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
         </div>
         <div className="form-actions form-actions--end form-grid--full">
           <button type="submit" className="btn btn--primary" disabled={saving}>
-            {saving ? 'Menyimpan…' : 'Simpan Kesan'}
+            {saving ? 'Menyimpan…' : submitLabel}
           </button>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
             Batal

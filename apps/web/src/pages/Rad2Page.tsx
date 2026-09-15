@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { CetakALModal, type CetakALPasien } from '../components/CetakALModal.tsx';
-import { Rad2KesanModal } from '../components/Rad2KesanModal.tsx';
+import { KesanEditorModal } from '../components/KesanEditorModal.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
@@ -586,7 +586,7 @@ export function Rad2Page() {
       />
 
       {kesanTarget && (
-        <Rad2KesanModal
+        <KesanEditorModal
           key={kesanTarget.id}
           nama={kesanTarget.nama}
           initialKesan={kesanTarget.kesan ?? ''}

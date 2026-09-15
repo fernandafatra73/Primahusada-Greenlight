@@ -4,6 +4,7 @@ import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { UsgIdentifikasiModal } from '../components/UsgIdentifikasiModal.tsx';
 import { CetakALModal, type CetakALPasien } from '../components/CetakALModal.tsx';
+import { KesanEditorModal } from '../components/KesanEditorModal.tsx';
 import { IconPencil, IconPrint, IconTrash } from '../components/icons/ActionIcons.tsx';
 import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.ts';
 import { useMutationReload } from '../hooks/useMutationReload.ts';
@@ -137,6 +138,12 @@ export function UsgPage() {
   const [printChoice, setPrintChoice] = useState<UsgItem | null>(null);
   const [printingKesanId, setPrintingKesanId] = useState<string | null>(null);
   const [amplopItem, setAmplopItem] = useState<UsgItem | null>(null);
+  /** Kartu USG yang kesannya sedang diedit langsung (disimpan ke server). */
+  const [kesanTarget, setKesanTarget] = useState<UsgItem | null>(null);
+  const [kesanSaving, setKesanSaving] = useState(false);
+  const [kesanError, setKesanError] = useState<string | null>(null);
+  /** Editor kesan untuk form tambah/ubah; hasilnya hanya mengisi form. */
+  const [formKesanOpen, setFormKesanOpen] = useState(false);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewBlobKecil, setPreviewBlobKecil] = useState<Blob | null>(null);
   const [previewBlobNoSignature, setPreviewBlobNoSignature] = useState<Blob | null>(null);
@@ -351,6 +358,22 @@ export function UsgPage() {
       setPreviewFilename(`USG_${item.namaPasien}.pdf`);
     } finally {
       setPrintingId(null);
+    }
+  }
+
+  async function handleKesanSave(kesan: string) {
+    if (!kesanTarget) return;
+    setKesanSaving(true);
+    setKesanError(null);
+    try {
+      // API USG mengabaikan field yang tidak dikirim, jadi cukup kirim kesan.
+      await apiPatch(`/api/usg/${kesanTarget.id}`, { kesan });
+      setKesanTarget(null);
+      await reload();
+    } catch (err: unknown) {
+      setKesanError(err instanceof Error ? err.message : 'Gagal menyimpan kesan');
+    } finally {
+      setKesanSaving(false);
     }
   }
 
@@ -727,9 +750,19 @@ export function UsgPage() {
               </div>
 
               <div className="form-field form-field--full">
-                <label htmlFor="usg-kesan" style={{ color: '#2b4c9b', fontWeight: 700 }}>
-                  Kesan:
-                </label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                  <label htmlFor="usg-kesan" style={{ color: '#2b4c9b', fontWeight: 700 }}>
+                    Kesan:
+                  </label>
+                  <button
+                    type="button"
+                    className="btn btn--xs btn--secondary"
+                    onClick={() => setFormKesanOpen(true)}
+                    title="Edit kesan dengan Master Kesan"
+                  >
+                    ✏️ Edit
+                  </button>
+                </div>
                 <textarea
                   id="usg-kesan"
                   rows={3}
@@ -903,6 +936,18 @@ export function UsgPage() {
                   <button
                     type="button"
                     className="btn btn--sm btn--ghost"
+                    style={{ border: '1px solid var(--color-border)' }}
+                    onClick={() => {
+                      setKesanError(null);
+                      setKesanTarget(item);
+                    }}
+                    title="Edit kesan"
+                  >
+                    ✏️ Edit Kesan
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--sm btn--ghost"
                     style={{ border: '1px solid var(--color-border)', color: 'var(--color-danger, #dc2626)' }}
                     onClick={() => setDeleting(item)}
                   >
@@ -923,6 +968,33 @@ export function UsgPage() {
         onClose={() => setDeleting(null)}
         onConfirm={() => void handleDeleteConfirm()}
       />
+
+      {kesanTarget && (
+        <KesanEditorModal
+          key={kesanTarget.id}
+          nama={kesanTarget.namaPasien}
+          initialKesan={kesanTarget.kesan ?? ''}
+          saving={kesanSaving}
+          error={kesanError}
+          onClose={() => setKesanTarget(null)}
+          onSave={(kesan) => void handleKesanSave(kesan)}
+        />
+      )}
+
+      {formKesanOpen && (
+        <KesanEditorModal
+          nama={form.namaPasien || (editing ? editing.namaPasien : 'Pasien USG')}
+          initialKesan={form.kesan}
+          saving={false}
+          error={null}
+          submitLabel="Pakai Kesan"
+          onClose={() => setFormKesanOpen(false)}
+          onSave={(kesan) => {
+            setForm((f) => ({ ...f, kesan }));
+            setFormKesanOpen(false);
+          }}
+        />
+      )}
 
       <UsgIdentifikasiModal
         open={identifikasiOpen}
