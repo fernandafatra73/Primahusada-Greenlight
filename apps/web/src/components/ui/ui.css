@@ -1155,6 +1155,46 @@
 .page-frame--fuchsia { --pf-from: #c026d3; --pf-to: #9333ea; }
 .page-frame--pink { --pf-from: #f43f5e; --pf-to: #ec4899; }
 
+/* Tema warna ala Claude: latar krem hangat, aksen terakota, teks gelap hangat.
+   Variabel warna global ditimpa hanya di dalam halaman yang memakai kelas ini. */
+.page-frame--claude {
+  --pf-from: #d97757;
+  --pf-to: #c15f3c;
+  --color-bg-page: #f0eee6;
+  --color-bg-surface: #faf9f5;
+  --color-primary: #d97757;
+  --color-primary-hover: #c15f3c;
+  --color-primary-soft: #f5e6de;
+  --color-text-heading: #141413;
+  --color-text-body: #3d3d3a;
+  --color-text-muted: #73726c;
+  --color-border: #dedcd1;
+  --color-danger: #b4442a;
+  --color-danger-soft: #fbeae5;
+  background: #f5f4ef;
+  border-color: #d97757;
+  color: var(--color-text-body);
+}
+
+.page-frame--claude h2,
+.page-frame--claude h3 {
+  color: var(--color-text-heading);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 600;
+}
+
+.page-frame--claude h2::before {
+  content: '✳ ';
+  color: #d97757;
+}
+
+.page-frame--claude select,
+.page-frame--claude .btn--ghost {
+  background: var(--color-bg-surface);
+  color: var(--color-text-body);
+  border-color: var(--color-border);
+}
+
 .data-card {
   border-radius: var(--radius-card);
   background: var(--color-bg-surface);

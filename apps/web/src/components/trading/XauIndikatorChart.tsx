@@ -149,7 +149,7 @@ export function XauIndikatorChart({ candles, lastCandleRunning }: Props) {
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       role="img"
       aria-label="Grafik XAU/USD dengan RSI 14, MA 50, FVG, dan sinyal pembalikan arah"
-      style={{ width: '100%', height: 'auto', display: 'block', background: '#fff', fontFamily: 'inherit' }}
+      style={{ width: '100%', height: 'auto', display: 'block', background: 'var(--color-bg-surface, #fff)', fontFamily: 'inherit' }}
     >
       {/* Grid & skala harga */}
       {priceTicks.map((p) => (

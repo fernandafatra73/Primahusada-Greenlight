@@ -182,7 +182,7 @@ export function AlternatifExnessPage() {
       : null;
 
   return (
-    <div className="page-frame page-frame--pink">
+    <div className="page-frame page-frame--claude">
       <h2 style={{ margin: '0 0 0.35rem' }}>Alternatif Exness</h2>
       <p style={{ margin: '0 0 1rem', color: 'var(--color-text-muted)' }}>
         Grafik XAU/USD dengan RSI 14, MA 50, FVG (Fair Value Gap), dan sinyal pembalikan arah. Harga mengikuti Binance
@@ -328,7 +328,7 @@ export function AlternatifExnessPage() {
         </div>
       </div>
 
-      <div style={{ border: '1px solid var(--color-border)', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
+      <div style={{ border: '1px solid var(--color-border)', borderRadius: '6px', overflow: 'hidden', background: 'var(--color-bg-surface)' }}>
         {candles.length > 0 ? (
           <XauIndikatorChart candles={candles} lastCandleRunning={lastCandleRunning} />
         ) : (
@@ -403,7 +403,7 @@ export function AlternatifExnessPage() {
           border: '1px solid var(--color-border)',
           borderRadius: '6px',
           overflow: 'hidden',
-          background: '#fff',
+          background: 'var(--color-bg-surface)',
         }}
       >
         <iframe
