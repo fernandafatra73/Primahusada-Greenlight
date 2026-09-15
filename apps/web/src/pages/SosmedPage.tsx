@@ -25,6 +25,12 @@ const SOSMED_LINKS: readonly SosmedLink[] = [
     icon: '💹',
   },
   {
+    id: 'indikator-ch5',
+    label: 'Indikator CH5',
+    url: 'https://claude.ai/artifact/J4GUk1DRMmxEoUUBZCzCwp',
+    icon: '📊',
+  },
+  {
     id: 'binance',
     label: 'Binance',
     url: 'https://www.binance.bh/en/futures/PAXGUSDT',
