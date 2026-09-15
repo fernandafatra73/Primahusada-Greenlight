@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { CetakALModal, type CetakALPasien } from '../components/CetakALModal.tsx';
+import { Rad2KesanModal } from '../components/Rad2KesanModal.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
@@ -117,6 +118,10 @@ export function Rad2Page() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<Rad2Form>(emptyForm);
 
+  const [kesanTarget, setKesanTarget] = useState<Rad2Item | null>(null);
+  const [kesanSaving, setKesanSaving] = useState(false);
+  const [kesanError, setKesanError] = useState<string | null>(null);
+
   const [cetakPasien, setCetakPasien] = useState<CetakALPasien | null>(null);
   const [cetakMode, setCetakMode] = useState<'amplop' | 'label'>('amplop');
 
@@ -225,6 +230,34 @@ export function Rad2Page() {
     }
   }
 
+  async function handleKesanSave(kesan: string) {
+    if (!kesanTarget) return;
+    setKesanSaving(true);
+    setKesanError(null);
+    try {
+      // API update memvalidasi seluruh field, jadi field lain dikirim apa adanya.
+      await apiPatch(`/api/rad2/${kesanTarget.id}`, {
+        nama: kesanTarget.nama,
+        umur: kesanTarget.umur,
+        alamat: kesanTarget.alamat,
+        tanggal: kesanTarget.tanggal.slice(0, 10),
+        pemeriksaan: kesanTarget.pemeriksaan,
+        pengirim: kesanTarget.pengirim,
+        klinis: kesanTarget.klinis,
+        kesan,
+        radiologi: kesanTarget.radiologi,
+        harga: Math.round(Number(kesanTarget.harga)),
+        sharing: Math.round(Number(kesanTarget.sharing)),
+      });
+      setKesanTarget(null);
+      await reload();
+    } catch (err: unknown) {
+      setKesanError(err instanceof Error ? err.message : 'Gagal menyimpan kesan');
+    } finally {
+      setKesanSaving(false);
+    }
+  }
+
   async function handlePrint(item: Rad2Item, rowNo: number) {
     setError(null);
     try {
@@ -313,7 +346,22 @@ export function Rad2Page() {
                     <td>{item.pemeriksaan}</td>
                     <td>{item.pengirim}</td>
                     <td style={{ whiteSpace: 'pre-wrap' }}>{item.klinis || '—'}</td>
-                    <td style={{ whiteSpace: 'pre-wrap' }}>{item.kesan || '—'}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'flex-start' }}>
+                        <span style={{ whiteSpace: 'pre-wrap', flex: 1 }}>{item.kesan || '—'}</span>
+                        <button
+                          type="button"
+                          className="btn btn--xs btn--secondary"
+                          onClick={() => {
+                            setKesanError(null);
+                            setKesanTarget(item);
+                          }}
+                          title="Edit kesan"
+                        >
+                          ✏️ Edit
+                        </button>
+                      </div>
+                    </td>
                     <td>{item.radiologi || '—'}</td>
                     <td style={{ textAlign: 'right' }}>{formatRupiah(item.harga)}</td>
                     <td style={{ textAlign: 'right' }}>{formatRupiah(item.sharing)}</td>
@@ -503,6 +551,18 @@ export function Rad2Page() {
         onClose={() => setDeleting(null)}
         onConfirm={() => void handleDeleteConfirm()}
       />
+
+      {kesanTarget && (
+        <Rad2KesanModal
+          key={kesanTarget.id}
+          nama={kesanTarget.nama}
+          initialKesan={kesanTarget.kesan ?? ''}
+          saving={kesanSaving}
+          error={kesanError}
+          onClose={() => setKesanTarget(null)}
+          onSave={(kesan) => void handleKesanSave(kesan)}
+        />
+      )}
 
       {/* Dipasang ulang tiap dibuka: CetakALModal hanya membaca initialMode saat mount. */}
       {cetakPasien && (
