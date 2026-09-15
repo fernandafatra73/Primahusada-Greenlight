@@ -188,6 +188,42 @@ async function fetchFromTwelveData(
   return candles;
 }
 
+/** Kline Binance: [openTime, open, high, low, close, volume, closeTime, ...] dengan harga berupa string. */
+type BinanceKline = readonly [number, string, string, string, string, ...unknown[]];
+
+function isBinanceKline(value: unknown): value is BinanceKline {
+  return Array.isArray(value) && value.length >= 5 && typeof value[0] === 'number';
+}
+
+/** Domain utama Binance diblokir dari jaringan Indonesia, tetapi mirror data
+ * publik resminya (data-api.binance.vision) bisa diakses tanpa API key.
+ * Candle yang masih berjalan ikut dikembalikan. */
+export async function fetchBinanceCandles(symbol: string, interval: string, limit: number): Promise<Candle[]> {
+  const url =
+    'https://data-api.binance.vision/api/v3/klines' +
+    `?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&limit=${limit}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  if (!res.ok) {
+    throw new Error(`Binance merespons status ${res.status}`);
+  }
+  const data: unknown = await res.json();
+  if (!Array.isArray(data)) {
+    throw new Error(`Binance tidak mengembalikan kline untuk ${symbol}`);
+  }
+  const candles: Candle[] = [];
+  for (const row of data) {
+    if (!isBinanceKline(row)) continue;
+    const [openTime, o, h, l, c] = row;
+    const open = Number(o);
+    const high = Number(h);
+    const low = Number(l);
+    const close = Number(c);
+    if (![open, high, low, close].every(Number.isFinite)) continue;
+    candles.push({ openTime, open, high, low, close });
+  }
+  return candles;
+}
+
 export interface FetchCandlesResult {
   readonly candles: readonly Candle[];
   readonly sumber: 'yahoo' | 'twelvedata';

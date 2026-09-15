@@ -25,6 +25,8 @@ const REFRESH_MS = 60_000;
 
 interface ChartCandlesResponse {
   readonly symbol: string;
+  /** "binance" normalnya; "yahoo" bila Binance gagal dan API memakai cadangan futures COMEX. */
+  readonly sumber: 'binance' | 'yahoo';
   readonly interval: string;
   readonly intervalMinutes: number;
   readonly candles: ReadonlyArray<OhlcCandle>;
@@ -34,7 +36,8 @@ interface ChartCandlesResponse {
 function tradingViewSrc(interval: string): string {
   const config = {
     autosize: true,
-    symbol: 'OANDA:XAUUSD',
+    // Sama dengan sumber grafik indikator: harga emas Binance (PAXG/USDT).
+    symbol: 'BINANCE:PAXGUSDT',
     interval,
     timezone: 'Asia/Jakarta',
     theme: 'light',
@@ -182,9 +185,15 @@ export function AlternatifExnessPage() {
     <div className="page-frame page-frame--pink">
       <h2 style={{ margin: '0 0 0.35rem' }}>Alternatif Exness</h2>
       <p style={{ margin: '0 0 1rem', color: 'var(--color-text-muted)' }}>
-        Grafik XAU/USD dengan RSI 14, MA 50, FVG (Fair Value Gap), dan sinyal pembalikan arah. Data dari futures emas
-        COMEX (GC=F) — selisih beberapa dolar dengan harga spot Exness. Untuk order, buka terminal Exness.
+        Grafik XAU/USD dengan RSI 14, MA 50, FVG (Fair Value Gap), dan sinyal pembalikan arah. Harga mengikuti Binance
+        (PAXG/USDT, token emas 1 troy ounce). Untuk order, buka terminal Exness.
       </p>
+      {data?.sumber === 'yahoo' && (
+        <p className="alert alert--error">
+          ⚠️ Data Binance sedang tidak bisa diambil — sementara memakai futures emas COMEX (GC=F), harganya bisa selisih
+          puluhan dolar dari Binance.
+        </p>
+      )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
         <select aria-label="Timeframe" value={interval} onChange={(e) => setInterval_(e.target.value)}>

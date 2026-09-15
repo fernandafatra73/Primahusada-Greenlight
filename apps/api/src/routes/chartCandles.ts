@@ -1,15 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import type { Candle } from '../lib/candlePatterns.js';
-import { fetchYahooCandles } from '../lib/marketCandles.js';
+import { fetchBinanceCandles, fetchYahooCandles } from '../lib/marketCandles.js';
 
-/** Interval grafik yang didukung, dipetakan ke rentang data Yahoo yang cukup
- * untuk MA 50 + RSI 14 dengan ruang tampil ~150 candle. */
+/** Interval grafik yang didukung (format sama untuk Binance & Yahoo), dengan
+ * rentang Yahoo cadangan yang cukup untuk MA 50 + RSI 14 dan ~150 candle tampil. */
 const CHART_INTERVALS = {
-  '1m': { range: '1d', minutes: 1 },
-  '5m': { range: '5d', minutes: 5 },
-  '15m': { range: '5d', minutes: 15 },
-  '30m': { range: '1mo', minutes: 30 },
-  '1h': { range: '1mo', minutes: 60 },
+  '1m': { yahooRange: '1d', minutes: 1 },
+  '5m': { yahooRange: '5d', minutes: 5 },
+  '15m': { yahooRange: '5d', minutes: 15 },
+  '30m': { yahooRange: '1mo', minutes: 30 },
+  '1h': { yahooRange: '1mo', minutes: 60 },
 } as const;
 
 type ChartInterval = keyof typeof CHART_INTERVALS;
@@ -18,13 +18,22 @@ function isChartInterval(value: string): value is ChartInterval {
   return Object.hasOwn(CHART_INTERVALS, value);
 }
 
-/** Emas diambil dari futures COMEX (GC=F) — mengikuti XAU/USD spot, selisih beberapa dolar. */
-const GOLD_YAHOO_SYMBOL = 'GC=F';
+/** Harga emas disamakan dengan Binance (PAXG/USDT, token emas 1 troy ounce).
+ * Yahoo GC=F (futures COMEX, bisa selisih puluhan dolar) hanya dipakai bila Binance gagal. */
+const BINANCE_SYMBOL = 'PAXGUSDT';
+const YAHOO_FALLBACK_SYMBOL = 'GC=F';
 const MAX_CANDLES = 220;
-/** Grafik di-refresh tiap menit oleh banyak tab; cache singkat mencegah Yahoo dipanggil berulang. */
+/** Grafik di-refresh tiap menit oleh banyak tab; cache singkat mencegah sumber data dipanggil berulang. */
 const CACHE_MS = 20_000;
 
-const cache = new Map<ChartInterval, { readonly at: number; readonly candles: readonly Candle[] }>();
+interface ChartData {
+  readonly at: number;
+  readonly candles: readonly Candle[];
+  readonly symbol: string;
+  readonly sumber: 'binance' | 'yahoo';
+}
+
+const cache = new Map<ChartInterval, ChartData>();
 
 export async function registerChartCandlesRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Querystring: { interval?: string } }>('/api/chart-candles/xauusd', async (req, reply) => {
@@ -33,29 +42,35 @@ export async function registerChartCandlesRoutes(app: FastifyInstance): Promise<
       return reply.status(400).send({ error: `interval wajib salah satu dari: ${Object.keys(CHART_INTERVALS).join(', ')}` });
     }
 
-    const cached = cache.get(interval);
-    let candles: readonly Candle[];
-    if (cached && Date.now() - cached.at < CACHE_MS) {
-      candles = cached.candles;
-    } else {
+    let chart = cache.get(interval);
+    if (!chart || Date.now() - chart.at >= CACHE_MS) {
       try {
-        candles = (await fetchYahooCandles(GOLD_YAHOO_SYMBOL, interval, CHART_INTERVALS[interval].range)).slice(
-          -MAX_CANDLES,
-        );
-      } catch (err) {
-        req.log.error(err, 'Gagal mengambil candle grafik XAU/USD');
-        return reply.status(502).send({
-          error: err instanceof Error ? `Gagal mengambil data grafik: ${err.message}` : 'Gagal mengambil data grafik',
-        });
+        const candles = await fetchBinanceCandles(BINANCE_SYMBOL, interval, MAX_CANDLES);
+        if (candles.length === 0) throw new Error('Binance tidak mengembalikan candle');
+        chart = { at: Date.now(), candles, symbol: BINANCE_SYMBOL, sumber: 'binance' };
+      } catch (binanceErr) {
+        req.log.warn(binanceErr, 'Candle Binance gagal; memakai cadangan Yahoo GC=F');
+        try {
+          const candles = (
+            await fetchYahooCandles(YAHOO_FALLBACK_SYMBOL, interval, CHART_INTERVALS[interval].yahooRange)
+          ).slice(-MAX_CANDLES);
+          chart = { at: Date.now(), candles, symbol: YAHOO_FALLBACK_SYMBOL, sumber: 'yahoo' };
+        } catch (err) {
+          req.log.error(err, 'Gagal mengambil candle grafik XAU/USD');
+          return reply.status(502).send({
+            error: err instanceof Error ? `Gagal mengambil data grafik: ${err.message}` : 'Gagal mengambil data grafik',
+          });
+        }
       }
-      cache.set(interval, { at: Date.now(), candles });
+      cache.set(interval, chart);
     }
 
     return {
-      symbol: GOLD_YAHOO_SYMBOL,
+      symbol: chart.symbol,
+      sumber: chart.sumber,
       interval,
       intervalMinutes: CHART_INTERVALS[interval].minutes,
-      candles,
+      candles: chart.candles,
     };
   });
 }
