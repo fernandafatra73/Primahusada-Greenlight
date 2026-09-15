@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { apiGet, apiPost } from '../lib/api.ts';
+import { apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { insertTextAt } from '../lib/insertText.ts';
 import { Modal } from './ui/Modal.tsx';
 import { ModalFormFooter } from './ui/ModalFormFooter.tsx';
@@ -32,6 +32,8 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
   const [templateError, setTemplateError] = useState<string | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
+  /** Template yang sedang diubah; null berarti form dipakai untuk menambah. */
+  const [editingTemplate, setEditingTemplate] = useState<KesanTemplateRow | null>(null);
   const [newJudul, setNewJudul] = useState('');
   const [newIsi, setNewIsi] = useState('');
   const [adding, setAdding] = useState(false);
@@ -76,8 +78,22 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
     setNewJudul('');
     // Isi awal diambil dari kotak teks supaya kesan yang baru diketik bisa langsung dijadikan template.
     setNewIsi(kesan);
+    setEditingTemplate(null);
     setAddError(null);
     setAddOpen(true);
+  }
+
+  function openEditTemplate(template: KesanTemplateRow) {
+    setNewJudul(template.judul);
+    setNewIsi(template.isi);
+    setEditingTemplate(template);
+    setAddError(null);
+    setAddOpen(true);
+  }
+
+  function closeTemplateForm() {
+    setAddOpen(false);
+    setEditingTemplate(null);
   }
 
   async function handleAdd() {
@@ -88,11 +104,16 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
     setAdding(true);
     setAddError(null);
     try {
-      await apiPost('/api/kesan-template', { judul: newJudul.trim(), isi: newIsi.trim() });
-      setAddOpen(false);
+      const body = { judul: newJudul.trim(), isi: newIsi.trim() };
+      if (editingTemplate) {
+        await apiPatch(`/api/kesan-template/${editingTemplate.id}`, body);
+      } else {
+        await apiPost('/api/kesan-template', body);
+      }
+      closeTemplateForm();
       await loadTemplates();
     } catch (err: unknown) {
-      setAddError(err instanceof Error ? err.message : 'Gagal menambah kesan');
+      setAddError(err instanceof Error ? err.message : editingTemplate ? 'Gagal mengubah kesan' : 'Gagal menambah kesan');
     } finally {
       setAdding(false);
     }
@@ -133,6 +154,9 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
             className="form-grid--full"
             style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '0.75rem' }}
           >
+            <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+              {editingTemplate ? 'Ubah Kesan' : 'Tambah Kesan'}
+            </div>
             {addError && (
               <p className="alert alert--error" style={{ marginTop: 0 }}>
                 {addError}
@@ -147,11 +171,11 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
               <textarea id="rad2-kesan-baru-isi" rows={4} value={newIsi} onChange={(e) => setNewIsi(e.target.value)} />
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-              <button type="button" className="btn btn--sm btn--ghost" onClick={() => setAddOpen(false)} disabled={adding}>
+              <button type="button" className="btn btn--sm btn--ghost" onClick={closeTemplateForm} disabled={adding}>
                 Batal
               </button>
               <button type="button" className="btn btn--sm btn--primary" onClick={() => void handleAdd()} disabled={adding}>
-                {adding ? 'Menyimpan...' : 'Simpan Kesan Baru'}
+                {adding ? 'Menyimpan...' : editingTemplate ? 'Simpan Perubahan' : 'Simpan Kesan Baru'}
               </button>
             </div>
           </div>
@@ -164,24 +188,25 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
                 <th style={{ width: '48px' }}>No</th>
                 <th style={{ width: '30%' }}>Judul</th>
                 <th>Isi</th>
+                <th style={{ width: '80px', textAlign: 'center' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {templateError ? (
                 <tr>
-                  <td colSpan={3} style={{ textAlign: 'center', padding: '1rem', color: '#b91c1c' }}>
+                  <td colSpan={4} style={{ textAlign: 'center', padding: '1rem', color: '#b91c1c' }}>
                     {templateError}
                   </td>
                 </tr>
               ) : loadingTemplates && templates.length === 0 ? (
                 <tr>
-                  <td colSpan={3} style={{ textAlign: 'center', padding: '1rem' }}>
+                  <td colSpan={4} style={{ textAlign: 'center', padding: '1rem' }}>
                     Memuat...
                   </td>
                 </tr>
               ) : templates.length === 0 ? (
                 <tr>
-                  <td colSpan={3} style={{ textAlign: 'center', padding: '1rem' }}>
+                  <td colSpan={4} style={{ textAlign: 'center', padding: '1rem' }}>
                     Belum ada kesan.
                   </td>
                 </tr>
@@ -196,6 +221,20 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
                     <td>{idx + 1}</td>
                     <td style={{ fontWeight: 600 }}>{t.judul}</td>
                     <td style={{ whiteSpace: 'pre-wrap' }}>{t.isi}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button
+                        type="button"
+                        className="btn btn--xs btn--secondary"
+                        title="Ubah kesan ini"
+                        onClick={(e) => {
+                          // Jangan ikut menyisipkan teks seperti klik baris.
+                          e.stopPropagation();
+                          openEditTemplate(t);
+                        }}
+                      >
+                        ✏️ Edit
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
