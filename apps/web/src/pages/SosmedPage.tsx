@@ -80,6 +80,10 @@ export function SosmedPage({ onNavigate }: SosmedPageProps) {
           <span style={{ fontSize: '2rem' }}>📊</span>
           <span>Analisa Grafik</span>
         </button>
+        <button type="button" onClick={() => onNavigate('alternatif-exness')} style={cardStyle}>
+          <span style={{ fontSize: '2rem' }}>📉</span>
+          <span>Alternatif Exness</span>
+        </button>
         <button type="button" onClick={() => onNavigate('video-modul')} style={cardStyle}>
           <span style={{ fontSize: '2rem' }}>🎬</span>
           <span>Video Modul</span>

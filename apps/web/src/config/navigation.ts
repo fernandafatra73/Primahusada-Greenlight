@@ -155,6 +155,7 @@ export const MAIN_NAV_ITEMS: readonly NavItem[] = [
   { id: 'trading', label: 'Trading XAU/USD', shortLabel: 'Trading' },
   { id: 'trading-candle', label: 'Trading Candle', shortLabel: 'Trading Candle' },
   { id: 'analisa-grafik', label: 'Analisa Grafik', shortLabel: 'Analisa Grafik' },
+  { id: 'alternatif-exness', label: 'Alternatif Exness', shortLabel: 'Alternatif Exness' },
   { id: 'bullish-engulfing', label: 'Bullish Engulfing', shortLabel: 'Bullish Engulfing' },
   { id: 'bearish-engulfing', label: 'Bearish Engulfing', shortLabel: 'Bearish Engulfing' },
   { id: 'hammer', label: 'Hammer', shortLabel: 'Hammer' },

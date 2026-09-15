@@ -52,6 +52,7 @@ import { ExpertisePage } from './pages/ExpertisePage.tsx';
 import { TradingPage } from './pages/TradingPage.tsx';
 import { TradingCandlePage } from './pages/TradingCandlePage.tsx';
 import { AnalisaGrafikPage } from './pages/AnalisaGrafikPage.tsx';
+import { AlternatifExnessPage } from './pages/AlternatifExnessPage.tsx';
 import { TradingTopicPage } from './pages/TradingTopicPage.tsx';
 import { VideoModulPage } from './pages/VideoModulPage.tsx';
 import { LoginPage } from './pages/LoginPage.tsx';
@@ -305,6 +306,8 @@ function renderViewContent(
       return <TradingCandlePage onNavigate={navigate} />;
     case 'analisa-grafik':
       return <AnalisaGrafikPage />;
+    case 'alternatif-exness':
+      return <AlternatifExnessPage />;
     case 'bullish-engulfing':
     case 'bearish-engulfing':
     case 'hammer':
