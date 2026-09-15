@@ -1,10 +1,16 @@
 import { useMemo } from 'react';
 import {
   detectFvg,
+  detectPolaCandle,
   detectSinyalPembalikan,
+  INFO_POLA,
+  levelTerdekat,
   rsi,
   sma,
+  swingLevels,
+  type JenisPola,
   type OhlcCandle,
+  type SinyalPembalikan,
 } from '../../lib/indikatorTrading.ts';
 
 const WIDTH = 1000;
@@ -29,33 +35,56 @@ interface Props {
   readonly lastCandleRunning: boolean;
 }
 
+export interface SinyalTerakhir extends SinyalPembalikan {
+  /** Waktu buka candle konfirmasi; dipakai juga sebagai kunci unik untuk notifikasi sinyal baru. */
+  readonly waktu: number;
+}
+
+export interface PolaTerbaru {
+  readonly jenis: JenisPola;
+  readonly waktu: number;
+  readonly harga: number;
+}
+
 export interface XauIndikatorSummary {
   readonly hargaTerakhir: number | null;
   readonly ma50: number | null;
   readonly rsi14: number | null;
   readonly fvgAktif: number;
-  readonly sinyalTerakhir: { readonly arah: 'BELI' | 'JUAL'; readonly pola: string; readonly waktu: number } | null;
+  readonly support: number | null;
+  readonly resistance: number | null;
+  readonly sinyalTerakhir: SinyalTerakhir | null;
+  /** Pola candle terbaru, paling baru di depan. */
+  readonly polaTerbaru: ReadonlyArray<PolaTerbaru>;
 }
 
 /** Dihitung terpisah supaya halaman bisa menampilkan ringkasan tanpa menggambar ulang grafik. */
 export function hitungIndikator(candles: ReadonlyArray<OhlcCandle>, lastCandleRunning: boolean) {
+  const closedCount = lastCandleRunning ? candles.length - 1 : candles.length;
   const closes = candles.map((c) => c.close);
   const ma50 = sma(closes, 50);
   const rsi14 = rsi(closes, 14);
   const fvg = detectFvg(candles);
-  const sinyal = detectSinyalPembalikan(candles, rsi14, lastCandleRunning ? candles.length - 1 : candles.length);
+  const pola = detectPolaCandle(candles, closedCount);
+  const sinyal = detectSinyalPembalikan(candles, closedCount);
   const last = candles.length - 1;
-  const sinyalTerakhir = sinyal[sinyal.length - 1];
+  const hargaTerakhir = last >= 0 ? candles[last]!.close : null;
+  const sr = hargaTerakhir === null ? { supports: [], resistances: [] } : levelTerdekat(swingLevels(candles), hargaTerakhir, 1);
+  const s = sinyal[sinyal.length - 1];
   const summary: XauIndikatorSummary = {
-    hargaTerakhir: last >= 0 ? candles[last]!.close : null,
+    hargaTerakhir,
     ma50: last >= 0 ? (ma50[last] ?? null) : null,
     rsi14: last >= 0 ? (rsi14[last] ?? null) : null,
     fvgAktif: fvg.filter((g) => g.filledIndex === null).length,
-    sinyalTerakhir: sinyalTerakhir
-      ? { arah: sinyalTerakhir.arah, pola: sinyalTerakhir.pola, waktu: candles[sinyalTerakhir.index]!.openTime }
-      : null,
+    support: sr.supports[0]?.harga ?? null,
+    resistance: sr.resistances[0]?.harga ?? null,
+    sinyalTerakhir: s ? { ...s, waktu: candles[s.index]!.openTime } : null,
+    polaTerbaru: pola
+      .slice(-6)
+      .reverse()
+      .map((p) => ({ jenis: p.jenis, waktu: candles[p.index]!.openTime, harga: candles[p.index]!.close })),
   };
-  return { ma50, rsi14, fvg, sinyal, summary };
+  return { ma50, rsi14, fvg, pola, sinyal, sr, summary };
 }
 
 function formatJam(ms: number): string {
@@ -64,7 +93,7 @@ function formatJam(ms: number): string {
 
 /** Grafik candlestick XAU/USD dengan MA 50, zona FVG, panah sinyal pembalikan, dan panel RSI 14. */
 export function XauIndikatorChart({ candles, lastCandleRunning }: Props) {
-  const { ma50, rsi14, fvg, sinyal } = useMemo(
+  const { ma50, rsi14, fvg, pola, sinyal, sr } = useMemo(
     () => hitungIndikator(candles, lastCandleRunning),
     [candles, lastCandleRunning],
   );
@@ -104,6 +133,16 @@ export function XauIndikatorChart({ candles, lastCandleRunning }: Props) {
 
   const last = candles[candles.length - 1]!;
   const lastRsi = rsi14[candles.length - 1];
+
+  // Urutan tumpukan emoji pola per candle & sisi (BUY bawah, SELL atas).
+  const stackCount = new Map<string, number>();
+  const stackOrder = new Map<string, number>();
+  for (const p of pola) {
+    const side = `${p.index}-${INFO_POLA[p.jenis].arah}`;
+    const n = stackCount.get(side) ?? 0;
+    stackOrder.set(`${side}-${p.jenis}`, n);
+    stackCount.set(side, n + 1);
+  }
 
   return (
     <svg
@@ -149,6 +188,30 @@ export function XauIndikatorChart({ candles, lastCandleRunning }: Props) {
           );
         })}
 
+      {/* Support & resistance terdekat (swing low/high) */}
+      {[...sr.supports, ...sr.resistances]
+        .filter((l) => l.harga >= min && l.harga <= max)
+        .map((l) => {
+          const support = l.jenis === 'SUPPORT';
+          const color = support ? '#0f766e' : '#b91c1c';
+          return (
+            <g key={`sr-${l.jenis}-${l.index}`}>
+              <line
+                x1={Math.max(PLOT_LEFT, xOf(Math.max(l.index, start)) - step / 2)}
+                x2={PLOT_RIGHT}
+                y1={yOf(l.harga)}
+                y2={yOf(l.harga)}
+                stroke={color}
+                strokeWidth={1.2}
+                strokeDasharray="8 4"
+              />
+              <text x={PLOT_RIGHT - 4} y={yOf(l.harga) + (support ? 12 : -4)} fontSize="10" textAnchor="end" fill={color} fontWeight={700}>
+                {support ? 'Support' : 'Resistance'} {l.harga.toFixed(2)}
+              </text>
+            </g>
+          );
+        })}
+
       {/* Candle */}
       {visible.map((c, k) => {
         const i = k + start;
@@ -177,7 +240,24 @@ export function XauIndikatorChart({ candles, lastCandleRunning }: Props) {
         {last.close.toFixed(2)}
       </text>
 
-      {/* Sinyal pembalikan arah */}
+      {/* Penanda pola candle: pola BUY di bawah candle, pola SELL di atas; beberapa pola ditumpuk. */}
+      {pola
+        .filter((p) => p.index >= start)
+        .map((p) => {
+          const info = INFO_POLA[p.jenis];
+          const c = candles[p.index]!;
+          const buy = info.arah === 'BUY';
+          const urutan = stackOrder.get(`${p.index}-${info.arah}-${p.jenis}`) ?? 0;
+          const y = buy ? yOf(c.low) + 14 + urutan * 14 : yOf(c.high) - 5 - urutan * 14;
+          return (
+            <text key={`pola-${p.index}-${p.jenis}`} x={xOf(p.index)} y={y} fontSize="12" textAnchor="middle">
+              <title>{`${info.emoji} ${info.nama} — ${info.peluang} (${formatJam(c.openTime)})`}</title>
+              {info.emoji}
+            </text>
+          );
+        })}
+
+      {/* Sinyal BUY/SELL terkonfirmasi, digeser melewati penanda pola di candle yang sama */}
       {sinyal
         .filter((s) => s.index >= start)
         .map((s) => {
@@ -185,11 +265,12 @@ export function XauIndikatorChart({ candles, lastCandleRunning }: Props) {
           const x = xOf(s.index);
           const beli = s.arah === 'BELI';
           const color = beli ? GREEN : RED;
-          const tipY = beli ? yOf(c.low) + 4 : yOf(c.high) - 4;
+          const geser = (stackCount.get(`${s.index}-${beli ? 'BUY' : 'SELL'}`) ?? 0) * 14;
+          const tipY = beli ? yOf(c.low) + 4 + geser : yOf(c.high) - 4 - geser;
           const dir = beli ? 1 : -1;
           return (
             <g key={`s-${s.index}`}>
-              <title>{`${beli ? 'SAATNYA BELI' : 'SAATNYA JUAL'} — ${s.pola} (${formatJam(c.openTime)})`}</title>
+              <title>{`${beli ? 'SAATNYA BELI' : 'SAATNYA JUAL'} — konfirmasi ${s.emoji} ${s.pola} di ${beli ? 'support' : 'resistance'} ${s.level.toFixed(2)} (${formatJam(c.openTime)})`}</title>
               <path
                 d={`M ${x} ${tipY} L ${x - 7} ${tipY + 10 * dir} L ${x - 2.5} ${tipY + 10 * dir} L ${x - 2.5} ${tipY + 22 * dir} L ${x + 2.5} ${tipY + 22 * dir} L ${x + 2.5} ${tipY + 10 * dir} L ${x + 7} ${tipY + 10 * dir} Z`}
                 fill={color}

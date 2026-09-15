@@ -1,7 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { hitungIndikator, XauIndikatorChart } from '../components/trading/XauIndikatorChart.tsx';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  hitungIndikator,
+  XauIndikatorChart,
+  type SinyalTerakhir,
+} from '../components/trading/XauIndikatorChart.tsx';
 import { apiGet } from '../lib/api.ts';
-import type { OhlcCandle } from '../lib/indikatorTrading.ts';
+import { INFO_POLA, type OhlcCandle } from '../lib/indikatorTrading.ts';
+import { withIndonesianVoice } from '../lib/speechVoice.ts';
 import '../components/ui/ui.css';
 
 const EXNESS_WEBTRADING_URL =
@@ -44,6 +49,17 @@ function tradingViewSrc(interval: string): string {
     ],
   };
   return `https://s.tradingview.com/embed-widget/advanced-chart/?locale=id#${encodeURIComponent(JSON.stringify(config))}`;
+}
+
+function speakSinyal(text: string): void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  withIndonesianVoice((voice) => {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = voice?.lang ?? 'id-ID';
+    if (voice) utter.voice = voice;
+    window.speechSynthesis.speak(utter);
+  });
 }
 
 function formatJam(ms: number): string {
@@ -105,6 +121,42 @@ export function AlternatifExnessPage() {
   }, [candles, data]);
   const summary = useMemo(() => hitungIndikator(candles, lastCandleRunning).summary, [candles, lastCandleRunning]);
 
+  // Peringatan otomatis saat refresh menemukan sinyal BUY/SELL baru. Sinyal yang
+  // sudah ada saat halaman/timeframe pertama dimuat tidak diumumkan.
+  const [alertBaru, setAlertBaru] = useState<SinyalTerakhir | null>(null);
+  const [suaraAktif, setSuaraAktif] = useState(true);
+  const [izinNotifikasi, setIzinNotifikasi] = useState<NotificationPermission | 'unsupported'>(() =>
+    typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
+  );
+  const sinyalDikenalRef = useRef<{ interval: string; key: string | null } | null>(null);
+
+  useEffect(() => {
+    if (candles.length === 0 || !data) return;
+    const s = summary.sinyalTerakhir;
+    const key = s ? `${s.arah}-${s.waktu}` : null;
+    const dikenal = sinyalDikenalRef.current;
+    sinyalDikenalRef.current = { interval, key };
+    if (!dikenal || dikenal.interval !== interval || !s || key === dikenal.key) return;
+    // Hanya sinyal segar (konfirmasi dalam 3 candle terakhir) yang diumumkan.
+    if (Date.now() - s.waktu > 3 * data.intervalMinutes * 60_000) return;
+
+    setAlertBaru(s);
+    const beli = s.arah === 'BELI';
+    const judul = beli ? 'SAATNYA BELI (BUY) XAU/USD' : 'SAATNYA JUAL (SELL) XAU/USD';
+    const isi = `Konfirmasi ${s.pola} di ${beli ? 'support' : 'resistance'} ${s.level.toFixed(2)} · ${formatJam(s.waktu)}`;
+    if (suaraAktif) {
+      speakSinyal(beli ? 'Sinyal baru. Saatnya beli emas.' : 'Sinyal baru. Saatnya jual emas.');
+    }
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification(judul, { body: isi, tag: 'sinyal-xauusd' });
+    }
+  }, [summary.sinyalTerakhir, candles.length, data, interval, suaraAktif]);
+
+  async function mintaIzinNotifikasi() {
+    if (typeof Notification === 'undefined') return;
+    setIzinNotifikasi(await Notification.requestPermission());
+  }
+
   function bukaExness() {
     const width = Math.min(1400, window.screen.availWidth);
     const height = Math.min(900, window.screen.availHeight);
@@ -154,12 +206,68 @@ export function AlternatifExnessPage() {
         <button type="button" className="btn btn--primary" onClick={bukaExness}>
           💹 Buka Terminal Exness
         </button>
+        <button
+          type="button"
+          className="btn btn--ghost"
+          style={{ border: '1px solid var(--color-border)' }}
+          onClick={() => setSuaraAktif((v) => !v)}
+        >
+          {suaraAktif ? '🔊 Suara sinyal: ON' : '🔇 Suara sinyal: OFF'}
+        </button>
+        {izinNotifikasi === 'default' && (
+          <button
+            type="button"
+            className="btn btn--ghost"
+            style={{ border: '1px solid var(--color-border)' }}
+            onClick={() => void mintaIzinNotifikasi()}
+          >
+            🔔 Aktifkan Notifikasi
+          </button>
+        )}
+        {izinNotifikasi === 'granted' && <small style={{ color: '#16a34a' }}>🔔 Notifikasi aktif</small>}
         {updatedAt !== null && (
-          <small style={{ color: 'var(--color-text-muted)' }}>Update {formatJam(updatedAt)} · otomatis tiap 1 menit</small>
+          <small style={{ color: 'var(--color-text-muted)' }}>
+            Update {formatJam(updatedAt)} · cek sinyal otomatis tiap 1 menit
+          </small>
         )}
       </div>
 
       {error && <p className="alert alert--error">{error}</p>}
+
+      {alertBaru && (
+        <div
+          role="alert"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: '0.75rem',
+            padding: '0.75rem 1rem',
+            marginBottom: '0.75rem',
+            borderRadius: '8px',
+            background: alertBaru.arah === 'BELI' ? '#16a34a' : '#dc2626',
+            color: '#fff',
+          }}
+        >
+          <div style={{ flex: '1 1 260px' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>
+              🚨 SINYAL BARU: {alertBaru.arah === 'BELI' ? 'SAATNYA BELI (BUY)' : 'SAATNYA JUAL (SELL)'}
+            </div>
+            <div style={{ fontSize: '0.85rem' }}>
+              {alertBaru.emoji} {alertBaru.pola} di {alertBaru.arah === 'BELI' ? 'support' : 'resistance'}{' '}
+              {alertBaru.level.toFixed(2)} + candle konfirmasi · {formatJam(alertBaru.waktu)}. Tetap pakai stop loss.
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn btn--sm"
+            style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.6)' }}
+            onClick={() => setAlertBaru(null)}
+          >
+            Tutup
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
         <div style={statStyle}>
@@ -184,6 +292,12 @@ export function AlternatifExnessPage() {
           <small style={{ color: 'var(--color-text-muted)' }}>FVG aktif</small>
           <strong>{summary.fvgAktif}</strong>
         </div>
+        <div style={statStyle}>
+          <small style={{ color: '#0f766e', fontWeight: 700 }}>Support</small>
+          <strong>{summary.support?.toFixed(2) ?? '–'}</strong>
+          <small style={{ color: '#b91c1c', fontWeight: 700 }}>Resistance</small>
+          <strong>{summary.resistance?.toFixed(2) ?? '–'}</strong>
+        </div>
         <div
           style={{
             ...statStyle,
@@ -192,13 +306,14 @@ export function AlternatifExnessPage() {
             color: sinyal ? '#fff' : undefined,
           }}
         >
-          <small style={{ opacity: 0.9 }}>Sinyal pembalikan arah terakhir</small>
+          <small style={{ opacity: 0.9 }}>Sinyal BUY/SELL terakhir (sudah terkonfirmasi)</small>
           <strong style={{ fontSize: '1.05rem' }}>
-            {sinyal ? (sinyal.arah === 'BELI' ? '🟢 SAATNYA BELI (BUY)' : '🔴 SAATNYA JUAL (SELL)') : 'Belum ada sinyal'}
+            {sinyal ? (sinyal.arah === 'BELI' ? '🟢 SAATNYA BELI (BUY)' : '🔴 SAATNYA JUAL (SELL)') : 'Belum ada sinyal — tunggu'}
           </strong>
           {sinyal && (
             <small>
-              {sinyal.pola} · {formatJam(sinyal.waktu)}
+              {sinyal.emoji} {sinyal.pola} di {sinyal.arah === 'BELI' ? 'support' : 'resistance'} {sinyal.level.toFixed(2)} ·
+              konfirmasi {formatJam(sinyal.waktu)}
             </small>
           )}
         </div>
@@ -218,11 +333,57 @@ export function AlternatifExnessPage() {
         <span><span style={{ color: '#7c3aed', fontWeight: 800 }}>━</span> RSI 14 (garis 70/30)</span>
         <span><span style={{ color: '#16a34a' }}>▮</span> FVG bullish</span>
         <span><span style={{ color: '#dc2626' }}>▮</span> FVG bearish (hanya yang belum terisi)</span>
+        <span><span style={{ color: '#0f766e', fontWeight: 800 }}>╌</span> Support</span>
+        <span><span style={{ color: '#b91c1c', fontWeight: 800 }}>╌</span> Resistance</span>
         <span style={{ color: '#16a34a', fontWeight: 700 }}>▲ BELI</span>
         <span style={{ color: '#dc2626', fontWeight: 700 }}>▼ JUAL</span>
-        <span style={{ color: 'var(--color-text-muted)' }}>
-          Sinyal = engulfing/hammer/shooting star di swing low/high 10 candle + konfirmasi RSI. Hanya estimasi.
-        </span>
+        <span style={{ color: 'var(--color-text-muted)' }}>Emoji di candle = pola candle (arahkan kursor untuk nama pola).</span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+        <div style={{ border: '1px solid var(--color-border)', borderRadius: '6px', padding: '0.75rem 1rem', background: 'var(--color-bg-surface)' }}>
+          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem' }}>🕯️ Pola candle terbaru</h3>
+          {summary.polaTerbaru.length === 0 ? (
+            <small style={{ color: 'var(--color-text-muted)' }}>Belum ada pola terdeteksi.</small>
+          ) : (
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              {summary.polaTerbaru.map((p) => {
+                const info = INFO_POLA[p.jenis];
+                return (
+                  <li key={`${p.jenis}-${p.waktu}`} title={info.keterangan}>
+                    <strong>
+                      {info.emoji} {info.nama}
+                    </strong>{' '}
+                    <span style={{ color: info.arah === 'BUY' ? '#16a34a' : '#dc2626', fontWeight: 700 }}>— {info.peluang}</span>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                      {formatJam(p.waktu)} · close {p.harga.toFixed(2)} · {info.keterangan}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div style={{ border: '1px solid var(--color-border)', borderRadius: '6px', padding: '0.75rem 1rem', background: 'var(--color-bg-surface)' }}>
+          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem' }}>⭐ Rumus sinyal otomatis</h3>
+          <p style={{ margin: '0 0 0.4rem' }}>
+            <strong style={{ color: '#16a34a' }}>BUY</strong> = Support + rejection bawah (🟢 Bullish Engulfing / 🔨 Hammer / 🌅
+            Morning Star) + candle berikutnya bullish sebagai konfirmasi.
+          </p>
+          <p style={{ margin: '0 0 0.4rem' }}>
+            <strong style={{ color: '#dc2626' }}>SELL</strong> = Resistance + rejection atas (🔴 Bearish Engulfing / 🌠 Shooting Star /
+            🌆 Evening Star) + candle berikutnya bearish sebagai konfirmasi.
+          </p>
+          <p style={{ margin: '0 0 0.4rem', fontSize: '0.85rem' }}>
+            🟩/🟥 Marubozu dan 💂 Three White Soldiers / 🐦‍⬛ Three Black Crows ditandai sebagai momentum kuat — jangan langsung kejar
+            harga, tunggu retracement.
+          </p>
+          <small style={{ color: 'var(--color-text-muted)' }}>
+            Support/resistance = swing low/high terakhir. Sinyal dicek otomatis setiap refresh (1 menit) memakai candle yang sudah
+            tertutup. Hanya alat bantu — tetap pakai stop loss.
+          </small>
+        </div>
       </div>
 
       <h3 style={{ margin: '0 0 0.5rem' }}>Grafik TradingView (RSI & MA 50)</h3>
