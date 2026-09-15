@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { insertTextAt } from '../lib/insertText.ts';
 import { Modal } from './ui/Modal.tsx';
-import { ModalFormFooter } from './ui/ModalFormFooter.tsx';
 import './ui/ui.css';
 
 interface KesanTemplateRow {
@@ -139,14 +138,16 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
             placeholder="Ketik kesan, atau klik baris tabel di bawah untuk menyisipkan teks"
           />
         </div>
-        <ModalFormFooter onCancel={onClose} submitLabel="Simpan Kesan" loading={saving} />
-
-        <div className="form-grid--full" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          {!addOpen && (
-            <button type="button" className="btn btn--sm btn--secondary" onClick={openAdd}>
-              + Tambah Kesan
-            </button>
-          )}
+        <div className="form-actions form-actions--end form-grid--full">
+          <button type="submit" className="btn btn--primary" disabled={saving}>
+            {saving ? 'Menyimpan…' : 'Simpan Kesan'}
+          </button>
+          <button type="button" className="btn btn--ghost" onClick={onClose}>
+            Batal
+          </button>
+          <button type="button" className="btn btn--secondary" onClick={openAdd} disabled={addOpen}>
+            + Tambah Kesan
+          </button>
         </div>
 
         {addOpen && (
