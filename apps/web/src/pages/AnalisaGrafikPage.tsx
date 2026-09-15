@@ -159,27 +159,81 @@ async function normalizeImageDataUrl(dataUrl: string): Promise<string> {
   return drawToJpegDataUrl(img, { x: 0, y: 0, width: img.naturalWidth, height: img.naturalHeight });
 }
 
+/** Region Capture (Chrome/Edge): CropTarget belum ada di lib DOM TypeScript. */
+interface CropTargetStatic {
+  fromElement(element: Element): Promise<unknown>;
+}
+
+function getCropTargetApi(): CropTargetStatic | null {
+  const api: unknown = Reflect.get(window, 'CropTarget');
+  return typeof api === 'function' && typeof Reflect.get(api, 'fromElement') === 'function'
+    ? (api as unknown as CropTargetStatic)
+    : null;
+}
+
+/** Tanda pada <video> bahwa stream sudah dipotong browser tepat ke area grafik. */
+const CROPPED_FLAG = 'croppedToChart';
+
+const PILIH_TAB_INI_ERROR =
+  'Capture hanya bisa memotong grafik bila yang dibagikan adalah TAB INI. Klik Capture Grafik lagi dan pilih tab aplikasi ini (bukan layar penuh/jendela/tab lain).';
+
 /** Grafik TradingView ada di iframe lintas-domain sehingga tidak bisa dibaca
  * langsung; jalan satu-satunya adalah capture tab lewat getDisplayMedia. Browser
  * selalu meminta izin untuk itu, jadi stream dibuka sekali lalu dipakai ulang —
- * capture berikutnya langsung jadi tanpa dialog selama tab masih dibagikan. */
-async function openCaptureVideo(onEnded: () => void): Promise<HTMLVideoElement> {
+ * capture berikutnya langsung jadi tanpa dialog selama tab masih dibagikan.
+ * Bila browser mendukung Region Capture, stream dipotong tepat ke elemen grafik
+ * sehingga hasil capture hanya berisi grafiknya saja. */
+async function openCaptureVideo(chartElement: HTMLElement | null, onEnded: () => void): Promise<HTMLVideoElement> {
   if (!navigator.mediaDevices?.getDisplayMedia) {
     throw new Error('Browser ini tidak mendukung capture layar. Gunakan unggah gambar atau tempel (Ctrl+V).');
   }
-  const options: DisplayMediaStreamOptions & { preferCurrentTab?: boolean } = {
-    video: true,
+  const options: DisplayMediaStreamOptions & {
+    preferCurrentTab?: boolean;
+    selfBrowserSurface?: 'include' | 'exclude';
+  } = {
+    video: { displaySurface: 'browser' } as MediaTrackConstraints,
     audio: false,
     preferCurrentTab: true,
+    selfBrowserSurface: 'include',
   };
   const stream = await navigator.mediaDevices.getDisplayMedia(options);
-  stream.getVideoTracks().forEach((track) => track.addEventListener('ended', onEnded));
+  const track = stream.getVideoTracks()[0];
+  const stop = (): void => stream.getTracks().forEach((t) => t.stop());
+  if (!track) {
+    stop();
+    throw new Error('Stream capture tidak berisi video.');
+  }
+
+  // Layar penuh / jendela tidak bisa dipotong akurat ke area grafik.
+  const surface: unknown = Reflect.get(track.getSettings(), 'displaySurface');
+  if (surface === 'monitor' || surface === 'window') {
+    stop();
+    throw new Error(PILIH_TAB_INI_ERROR);
+  }
+
+  let cropped = false;
+  const cropTargetApi = getCropTargetApi();
+  const cropTo: unknown = Reflect.get(track, 'cropTo');
+  if (chartElement && cropTargetApi && typeof cropTo === 'function') {
+    try {
+      const target = await cropTargetApi.fromElement(chartElement);
+      await Promise.resolve(cropTo.call(track, target) as unknown);
+      cropped = true;
+    } catch {
+      // cropTo hanya berhasil untuk capture tab sendiri — berarti tab lain yang dipilih.
+      stop();
+      throw new Error(PILIH_TAB_INI_ERROR);
+    }
+  }
+
+  track.addEventListener('ended', onEnded);
   const video = document.createElement('video');
   video.srcObject = stream;
   video.muted = true;
+  if (cropped) video.dataset[CROPPED_FLAG] = '1';
   await video.play();
-  // Beri jeda singkat supaya frame pertama bukan frame hitam.
-  await new Promise((resolve) => setTimeout(resolve, 400));
+  // Beri jeda singkat supaya frame pertama (sudah terpotong) bukan frame hitam.
+  await new Promise((resolve) => setTimeout(resolve, 500));
   return video;
 }
 
@@ -193,16 +247,19 @@ function isCaptureLive(video: HTMLVideoElement | null): video is HTMLVideoElemen
   return stream instanceof MediaStream && stream.getVideoTracks().some((track) => track.readyState === 'live');
 }
 
-/** Memotong frame sesuai posisi elemen. Jika pengguna membagikan layar/jendela
- * lain (rasio frame tidak cocok dengan viewport), frame dipakai utuh. */
+/** Mengambil satu frame berisi grafik saja. Stream yang sudah dipotong browser
+ * (Region Capture) dipakai utuh; selain itu frame tab dipotong manual sesuai
+ * posisi elemen grafik di viewport. */
 function captureElementFrame(video: HTMLVideoElement, element: HTMLElement | null): string {
   const full: CropRect = { x: 0, y: 0, width: video.videoWidth, height: video.videoHeight };
-  const viewportRatio = window.innerWidth / window.innerHeight;
-  const frameRatio = video.videoWidth / video.videoHeight;
-  if (!element || Math.abs(frameRatio - viewportRatio) / viewportRatio > 0.03) {
+  if (video.dataset[CROPPED_FLAG] === '1') {
     return drawToJpegDataUrl(video, full);
   }
+  if (!element) throw new Error('Area grafik tidak ditemukan.');
   const rect = element.getBoundingClientRect();
+  if (rect.bottom <= 0 || rect.top >= window.innerHeight) {
+    throw new Error('Grafik sedang tidak terlihat di layar. Scroll sampai grafik tampil, lalu capture lagi.');
+  }
   const scale = video.videoWidth / window.innerWidth;
   const x = Math.max(0, rect.left * scale);
   const y = Math.max(0, rect.top * scale);
@@ -293,7 +350,7 @@ export function AnalisaGrafikPage() {
   async function ensureCaptureVideo(): Promise<HTMLVideoElement> {
     const current = captureVideoRef.current;
     if (isCaptureLive(current)) return current;
-    const video = await openCaptureVideo(() => {
+    const video = await openCaptureVideo(chartBoxRef.current, () => {
       captureVideoRef.current = null;
       setCaptureAktif(false);
     });
