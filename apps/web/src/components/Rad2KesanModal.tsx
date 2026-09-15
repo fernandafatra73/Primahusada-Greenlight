@@ -96,10 +96,10 @@ export function Rad2KesanModal({ nama, initialKesan, saving, error, onClose, onS
         <ModalFormFooter onCancel={onClose} submitLabel="Simpan Kesan" loading={saving} />
 
         <div className="form-field form-field--full">
-          <label htmlFor="rad2-kesan-cari">Master Kesan (klik baris untuk memasukkan ke kotak teks)</label>
           <input
             id="rad2-kesan-cari"
             type="search"
+            aria-label="Cari Master Kesan"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari judul atau isi kesan..."
