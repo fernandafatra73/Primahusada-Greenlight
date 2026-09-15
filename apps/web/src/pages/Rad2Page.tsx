@@ -13,6 +13,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort, formatRupiah } from '../lib/format.ts';
 import type { PaginatedResponse } from '../lib/pagination.ts';
 import { formatRadiologName } from '../lib/pasienPrint.ts';
+import { computeRad2Sharing, type Rad2SharingResult } from '../lib/rad2Sharing.ts';
 import { printRadiologyReport } from '../pdf/printRadiologyReport.tsx';
 import '../components/ui/ui.css';
 
@@ -84,6 +85,25 @@ function emptyForm(): Rad2Form {
   };
 }
 
+/** Field yang memengaruhi aturan sharing; mengubahnya menghitung ulang sharing. */
+const SHARING_SOURCE_FIELDS: ReadonlySet<keyof Rad2Form> = new Set(['pengirim', 'pemeriksaan', 'umur', 'harga']);
+
+function autoSharingFor(form: Rad2Form): Rad2SharingResult | null {
+  if (!form.pengirim.trim() || !form.pemeriksaan.trim() || form.umur.trim() === '') return null;
+  return computeRad2Sharing({
+    pengirim: form.pengirim,
+    pemeriksaan: form.pemeriksaan,
+    umur: Number(form.umur),
+    harga: Number(form.harga || 0),
+  });
+}
+
+/** Isi sharing otomatis; nilainya tetap bisa diubah manual sesudahnya. */
+function withAutoSharing(form: Rad2Form): Rad2Form {
+  const result = autoSharingFor(form);
+  return result ? { ...form, sharing: String(result.nominal) } : form;
+}
+
 /** Bentuk data yang dipakai modal Cetak A+L; Rad2 tidak punya No. Foto, jadi
  * nomor urut baris dipakai sebagai gantinya (masih bisa diubah di modal). */
 function toCetakALPasien(item: Rad2Item, rowNo: number): CetakALPasien {
@@ -149,17 +169,24 @@ export function Rad2Page() {
   }, [loadOptions]);
 
   function updateForm(field: keyof Rad2Form, value: string) {
-    setForm((f) => ({ ...f, [field]: value }));
+    setForm((f) => {
+      const next = { ...f, [field]: value };
+      return SHARING_SOURCE_FIELDS.has(field) ? withAutoSharing(next) : next;
+    });
   }
 
   function handlePemeriksaanChange(value: string) {
     const match = jenisOptions.find((j) => j.nama === value);
-    setForm((f) => ({
-      ...f,
-      pemeriksaan: value,
-      harga: match?.harga ? String(Math.round(Number(match.harga))) : f.harga,
-    }));
+    setForm((f) =>
+      withAutoSharing({
+        ...f,
+        pemeriksaan: value,
+        harga: match?.harga ? String(Math.round(Number(match.harga))) : f.harga,
+      }),
+    );
   }
+
+  const sharingRule = autoSharingFor(form);
 
   function openCreate() {
     setForm(emptyForm());
@@ -533,6 +560,12 @@ export function Rad2Page() {
                   <option key={s.id} value={s.nominal} />
                 ))}
               </datalist>
+              {sharingRule && (
+                <small className="form-hint">
+                  Otomatis: {formatRupiah(sharingRule.nominal)} ({sharingRule.keterangan})
+                  {form.sharing !== String(sharingRule.nominal) && ' — diubah manual'}
+                </small>
+              )}
             </div>
             <ModalFormFooter
               onCancel={closeModal}
