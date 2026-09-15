@@ -96,9 +96,15 @@ function onlyClosed(candles: readonly Candle[], timeframe: Timeframe, now: numbe
 }
 
 async function fetchFromYahoo(symbol: string, timeframe: Timeframe): Promise<Candle[]> {
+  return fetchYahooCandles(symbol, timeframe, YAHOO_RANGE[timeframe]);
+}
+
+/** Candle mentah dari Yahoo (termasuk candle yang masih berjalan). `interval`
+ * dan `range` memakai format Yahoo, mis. "5m" dan "5d". */
+export async function fetchYahooCandles(symbol: string, interval: string, range: string): Promise<Candle[]> {
   const url =
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}` +
-    `?interval=${timeframe}&range=${YAHOO_RANGE[timeframe]}`;
+    `?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
 
   const res = await fetch(url, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
