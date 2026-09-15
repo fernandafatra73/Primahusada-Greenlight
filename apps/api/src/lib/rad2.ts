@@ -1,3 +1,5 @@
+import { parseDateOnly } from './dateOnly.js';
+
 /** Batas atas nominal rupiah supaya salah ketik (mis. kelebihan nol) tertolak. */
 export const RAD2_NOMINAL_MAX = 100_000_000;
 
@@ -46,13 +48,6 @@ function wholeNumber(value: unknown, max: number): number | null {
   return num;
 }
 
-/** Tanggal format YYYY-MM-DD (dari input type="date"); null bila tidak valid. */
-function parseTanggal(value: unknown): Date | null {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return null;
-  const date = new Date(`${value.trim()}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value.trim() ? null : date;
-}
-
 /** Validasi body create/update Rad2 (update mengirim seluruh field, jadi aturannya sama). */
 export function parseRad2Input(body: unknown): Rad2ParseResult {
   if (!isRecord(body)) return { ok: false, error: 'Data tidak valid' };
@@ -61,7 +56,7 @@ export function parseRad2Input(body: unknown): Rad2ParseResult {
   if (!nama) return { ok: false, error: 'Nama wajib diisi' };
   const umur = wholeNumber(body.umur, RAD2_UMUR_MAX);
   if (umur === null) return { ok: false, error: `Umur harus angka bulat 0–${RAD2_UMUR_MAX}` };
-  const tanggal = parseTanggal(body.tanggal);
+  const tanggal = parseDateOnly(body.tanggal);
   if (!tanggal) return { ok: false, error: 'Tanggal tidak valid (format YYYY-MM-DD)' };
   const pemeriksaan = requiredText(body.pemeriksaan);
   if (!pemeriksaan) return { ok: false, error: 'Pemeriksaan wajib diisi' };

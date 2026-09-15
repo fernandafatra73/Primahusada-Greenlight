@@ -41,6 +41,33 @@
   color: #fca5a5;
 }
 
+/* Tema biru muda untuk modal Registrasi Radiologi Baru (PasienPage.tsx). */
+.radiolog-lightblue-scope {
+  --color-bg-page: #e0f2fe;
+  --color-bg-surface: #f0f9ff;
+  --color-primary: #0284c7;
+  --color-primary-soft: #bae6fd;
+  --color-primary-hover: #0369a1;
+  --color-primary-muted: #7dd3fc;
+  --color-text-heading: #0c4a6e;
+  --color-text-body: #0f172a;
+  --color-text-muted: #475569;
+  --color-border: #7dd3fc;
+  color: var(--color-text-body);
+}
+
+.radiolog-lightblue-scope .modal__header {
+  background: #bae6fd;
+}
+
+.radiolog-lightblue-scope .legacy-form-row > input,
+.radiolog-lightblue-scope .legacy-form-row > select,
+.radiolog-lightblue-scope .legacy-form-row > textarea,
+.radiolog-lightblue-scope .legacy-form-row > div > input,
+.radiolog-lightblue-scope .legacy-form-row > div > select {
+  background: #ffffff;
+}
+
 @keyframes musik-ph-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(3, 105, 161, 0.35); }
   50% { box-shadow: 0 0 0 12px rgba(3, 105, 161, 0); }

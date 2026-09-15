@@ -7,6 +7,7 @@ import {
 } from '../generated/prisma/internal/prismaNamespace.js';
 import { prisma } from '../lib/prisma.js';
 import { calcPersentaseKehadiran, countHariKerja } from '../lib/absensiRekap.js';
+import { registrationTimestamp } from '../lib/dateOnly.js';
 import { calcTotalSharing, sumHarga } from '../lib/pasienFinance.js';
 import { hashPassword } from '../lib/password.js';
 import { nextPendaftaranUmumCode, nextRegCode } from '../lib/regCode.js';
@@ -2782,12 +2783,17 @@ export async function registerCrudRoutes(app: FastifyInstance) {
       petugasKasir?: string;
       foto?: string;
       asalModul?: 'RADIOLOGI' | 'LABORATORIUM';
+      kesan?: string;
+      /** Tanggal registrasi YYYY-MM-DD; kosong = sekarang. */
+      tanggal?: string;
     };
   }>('/api/pasien', async (req, reply) => {
     const body = req.body;
     if (!body.nama?.trim() || !body.tanggalLahir || !body.pengirimId) {
       return badRequest(reply, 'nama, tanggalLahir, pengirimId wajib');
     }
+    const createdAt = registrationTimestamp(body.tanggal, new Date());
+    if (!createdAt) return badRequest(reply, 'Tanggal tidak valid (format YYYY-MM-DD)');
 
     const dokter = await prisma.dokter.findUnique({ where: { id: body.pengirimId } });
     if (!dokter) return badRequest(reply, 'Dokter pengirim tidak valid');
@@ -2845,6 +2851,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
         pengirimId: body.pengirimId,
         asalModul: body.asalModul === 'LABORATORIUM' ? 'LABORATORIUM' : 'RADIOLOGI',
         klinis: body.klinis?.trim() || null,
+        kesan: body.kesan?.trim() || null,
         sharingType: 'FIXED',
         sharingPercent: new Decimal(0),
         totalHarga,
@@ -2853,6 +2860,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
         admin: body.admin?.trim() || null,
         petugasKasir: body.petugasKasir?.trim() || null,
         foto: body.foto || null,
+        createdAt,
         pemeriksaan: { create: pemeriksaanData },
         paketLab: { create: paketLabData },
       },

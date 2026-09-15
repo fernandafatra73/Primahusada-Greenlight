@@ -235,6 +235,14 @@ const AI_BANDING2_MODEL_OPTIONS: ReadonlyArray<{ readonly value: string; readonl
 ];
 
 /** Gaya tombol kecil ＋ ✎ 🗑 di samping dropdown master data pada modal Registrasi Radiologi Baru. */
+/** Tanggal hari ini (zona waktu perangkat) dalam format input type="date". */
+function todayLocalIso(): string {
+  const now = new Date();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${m}-${d}`;
+}
+
 const MASTER_ACTION_BUTTON_STYLE = {
   border: '1px solid var(--color-border)',
   flex: '0 0 auto',
@@ -361,6 +369,8 @@ export function PasienPage() {
   const [pengirimId, setPengirimId] = useState('');
   const [klinis, setKlinis] = useState('');
   const [kesan, setKesan] = useState('');
+  /** Tanggal registrasi baru (YYYY-MM-DD, zona lokal); default hari ini. */
+  const [tanggalRegistrasi, setTanggalRegistrasi] = useState(todayLocalIso);
   const [admin, setAdmin] = useState('');
   const [foto, setFoto] = useState('');
   const [hargaManual, setHargaManual] = useState('0');
@@ -783,6 +793,7 @@ export function PasienPage() {
     setSharingMode('auto');
     setKlinis('');
     setKesan('');
+    setTanggalRegistrasi(todayLocalIso());
     setAdmin('');
     setFoto('');
     setHargaManual('0');
@@ -1228,6 +1239,8 @@ export function PasienPage() {
         radiologId: radiologId || undefined,
         admin: admin || undefined,
         foto: foto || undefined,
+        kesan: kesan || undefined,
+        tanggal: tanggalRegistrasi || undefined,
       });
       setSavedPasien(res.item);
       await reload({ resetPage: true });
@@ -2032,8 +2045,8 @@ export function PasienPage() {
         title="Registrasi Radiologi Baru"
         onClose={() => setAddOpen(false)}
         size="xl"
-        // Hanya modal ini yang memakai warna Pekerjaan Radiolog; halamannya tetap terang.
-        className="radiolog-work-dark-scope"
+        // Hanya modal ini yang bertema biru muda; halamannya tetap memakai tema umum.
+        className="radiolog-lightblue-scope"
       >
         <form onSubmit={(e) => void onSubmitAdd(e)} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <fieldset className="legacy-groupbox">
@@ -2058,6 +2071,10 @@ export function PasienPage() {
                     value={umurManual}
                     onChange={(e) => handleUmurManualChange(e.target.value)}
                   />
+                </div>
+                <div className="legacy-form-row">
+                  <label htmlFor="reg-alamat">Alamat</label>
+                  <input id="reg-alamat" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
                 </div>
                 <div className="legacy-form-row">
                   <label htmlFor="pemeriksaan-select">Pemeriksaan</label>
@@ -2092,6 +2109,42 @@ export function PasienPage() {
                       + Tambah
                     </button>
                   </div>
+                </div>
+                <div className="legacy-form-row">
+                  <label htmlFor="reg-tanggal">Tanggal</label>
+                  <input
+                    id="reg-tanggal"
+                    type="date"
+                    required
+                    value={tanggalRegistrasi}
+                    onChange={(e) => setTanggalRegistrasi(e.target.value)}
+                  />
+                </div>
+                <div className="legacy-form-row">
+                  <label htmlFor="reg-pengirim">Pengirim</label>
+                  <select
+                    id="reg-pengirim"
+                    required
+                    value={pengirimId}
+                    onChange={(e) => setPengirimId(e.target.value)}
+                  >
+                    <option value="">Pilih dokter pengirim</option>
+                    {dokter.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.nama}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="legacy-form-row" style={{ alignItems: 'flex-start' }}>
+                  <label htmlFor="reg-klinis" style={{ paddingTop: '0.4rem' }}>Klinis</label>
+                  <textarea
+                    id="reg-klinis"
+                    rows={2}
+                    value={klinis}
+                    onChange={(e) => setKlinis(clampClinicalInput(e.target.value))}
+                    placeholder="Keterangan klinis..."
+                  />
                 </div>
               </div>
 
@@ -2250,6 +2303,17 @@ export function PasienPage() {
                       🗑
                     </button>
                   </div>
+                </div>
+                <div className="legacy-form-row">
+                  <label htmlFor="reg-total-sharing">Total Sharing</label>
+                  {/* Server menyimpan sharing FIXED, jadi total sharing registrasi = nominal sharing. */}
+                  <input
+                    id="reg-total-sharing"
+                    type="text"
+                    readOnly
+                    value={formatRupiah(Number(sharingAmount) || 0)}
+                    style={{ fontWeight: 700 }}
+                  />
                 </div>
                 <div className="legacy-form-row" style={{ alignItems: 'flex-start' }}>
                   <label htmlFor="kesan" style={{ paddingTop: '0.4rem' }}>Kesan</label>
