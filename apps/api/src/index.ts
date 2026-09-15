@@ -14,6 +14,7 @@ import { registerBackupRoutes } from './routes/backup.js';
 import { registerCrudRoutes } from './routes/crud.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerKlinikRoutes } from './routes/klinik.js';
+import { registerRad2Routes } from './routes/rad2.js';
 import { registerTransferRoutes } from './routes/transfer.js';
 import { startCandlePatternJob } from './lib/candlePatternJob.js';
 import { startDailyTradingPivotJob } from './lib/dailyTradingPivotJob.js';
@@ -44,6 +45,7 @@ await registerChartCandlesRoutes(app);
 await registerDashboardRoutes(app);
 await registerCrudRoutes(app);
 await registerKlinikRoutes(app);
+await registerRad2Routes(app);
 await registerTransferRoutes(app);
 
 if (hasWebDist) {

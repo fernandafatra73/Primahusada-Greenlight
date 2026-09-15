@@ -337,6 +337,25 @@ model KondisiAlat {
   updatedAt   DateTime @updatedAt
 }
 
+/// Buku register radiologi sederhana (menu Rad2): semua kolom disimpan sebagai
+/// teks/angka lepas, tidak berelasi ke Pasien/Dokter, supaya bisa diisi bebas.
+model Rad2 {
+  id          String   @id @default(cuid())
+  nama        String
+  umur        Int
+  alamat      String?
+  tanggal     DateTime @default(now())
+  pemeriksaan String
+  pengirim    String
+  klinis      String?
+  kesan       String?
+  radiologi   String?
+  harga       Decimal  @default(0)
+  sharing     Decimal  @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model GajiKaryawan {
   id           String   @id @default(cuid())
   namaKaryawan String

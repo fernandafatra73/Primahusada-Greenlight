@@ -54,6 +54,7 @@ const NAVBAR_SPECS: readonly NavbarSpec[] = [
   { type: 'link', id: 'farmasi', label: 'Farmasi', icon: IconDocument },
   { type: 'link', id: 'mega-data', label: 'Mega Data', icon: IconTag },
   { type: 'link', id: 'sosmed', label: 'Sosmed', icon: IconShare },
+  { type: 'link', id: 'rad2', label: 'Rad2', icon: IconStethoscope },
 ];
 
 export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: TopNavbarProps) {
