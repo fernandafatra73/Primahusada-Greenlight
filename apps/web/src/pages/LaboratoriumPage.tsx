@@ -479,34 +479,38 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     setLabRows([]);
   }
 
-  function handleReadFotoHasil(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFotoHasilFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+    setReadFotoHasilError(null);
     const reader = new FileReader();
-    reader.onload = async () => {
-      if (typeof reader.result !== 'string') return;
-      setFotoHasilPreview(reader.result);
-      setReadingFotoHasil(true);
-      setReadFotoHasilError(null);
-      try {
-        // OCR langsung di browser (tanpa AI/server) — tulisan di foto dibaca
-        // dan dicocokkan per nama pemeriksaan untuk mengisi kolom Hasil.
-        const ocrText = await runOcr(reader.result as string);
-        setLabRows((prev) =>
-          prev.map((row) => {
-            if (!row.pemeriksaan.trim()) return row;
-            const hasil = extractValueForParameter(ocrText, row.pemeriksaan);
-            return hasil ? { ...row, hasil } : row;
-          }),
-        );
-      } catch (err) {
-        setReadFotoHasilError(err instanceof Error ? err.message : 'Gagal membaca teks dari foto');
-      } finally {
-        setReadingFotoHasil(false);
-      }
+    reader.onload = () => {
+      if (typeof reader.result === 'string') setFotoHasilPreview(reader.result);
     };
     reader.readAsDataURL(file);
+  }
+
+  async function handleProcessFotoHasil() {
+    if (!fotoHasilPreview) return;
+    setReadingFotoHasil(true);
+    setReadFotoHasilError(null);
+    try {
+      // OCR langsung di browser (tanpa AI/server) — tulisan di foto dibaca
+      // dan dicocokkan per nama pemeriksaan untuk mengisi kolom Hasil.
+      const ocrText = await runOcr(fotoHasilPreview);
+      setLabRows((prev) =>
+        prev.map((row) => {
+          if (!row.pemeriksaan.trim()) return row;
+          const hasil = extractValueForParameter(ocrText, row.pemeriksaan);
+          return hasil ? { ...row, hasil } : row;
+        }),
+      );
+    } catch (err) {
+      setReadFotoHasilError(err instanceof Error ? err.message : 'Gagal membaca teks dari foto');
+    } finally {
+      setReadingFotoHasil(false);
+    }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -1036,26 +1040,36 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                     <label
                       htmlFor="lab-hasil-foto"
                       className="btn btn--secondary btn--sm"
-                      title="Baca teks dari foto hasil pemeriksaan (OCR, tanpa AI) dan isi otomatis kolom Hasil sesuai nama pemeriksaannya"
+                      title="Pilih foto hasil pemeriksaan"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
                     >
-                      {readingFotoHasil ? '⏳ Membaca teks...' : '📷 Baca dari Foto'}
+                      🖼️ Pilih Foto
                     </label>
                     <input
                       id="lab-hasil-foto"
                       type="file"
                       accept="image/*"
-                      onChange={handleReadFotoHasil}
-                      disabled={readingFotoHasil}
+                      onChange={handleFotoHasilFileChange}
                       style={{ display: 'none' }}
                     />
                     {fotoHasilPreview && (
-                      <img
-                        src={fotoHasilPreview}
-                        alt="Preview foto hasil yang dibaca"
-                        title="Foto yang barusan diambil untuk dibaca (tidak disimpan)"
-                        style={{ height: '40px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                      />
+                      <>
+                        <img
+                          src={fotoHasilPreview}
+                          alt="Preview foto hasil yang dibaca"
+                          title="Foto yang dipilih (tidak disimpan)"
+                          style={{ height: '40px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn--secondary btn--sm"
+                          title="Baca teks dari foto (OCR, tanpa AI) dan isi otomatis kolom Hasil sesuai nama pemeriksaannya"
+                          disabled={readingFotoHasil}
+                          onClick={() => void handleProcessFotoHasil()}
+                        >
+                          {readingFotoHasil ? '⏳ Membaca teks...' : '📖 Proses Teks dari Foto'}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

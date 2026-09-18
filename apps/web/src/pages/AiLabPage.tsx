@@ -382,20 +382,22 @@ export function AiLabPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                 <input id="al-foto" type="file" accept="image/*" onChange={handleFotoFileChange} />
                 {fotoDataUrl && (
-                  <img
-                    src={fotoDataUrl}
-                    alt="Preview foto hasil pemeriksaan"
-                    style={{ height: '60px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                  />
+                  <>
+                    <img
+                      src={fotoDataUrl}
+                      alt="Preview foto hasil pemeriksaan"
+                      style={{ height: '60px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn--sm btn--primary"
+                      disabled={readingFoto}
+                      onClick={() => void handleReadFoto()}
+                    >
+                      {readingFoto ? '⏳ Membaca teks...' : '📷 Baca Teks dari Foto'}
+                    </button>
+                  </>
                 )}
-                <button
-                  type="button"
-                  className="btn btn--sm btn--primary"
-                  disabled={!fotoDataUrl || readingFoto}
-                  onClick={() => void handleReadFoto()}
-                >
-                  {readingFoto ? '⏳ Membaca teks...' : '📷 Baca Teks dari Foto'}
-                </button>
               </div>
               {readFotoError && (
                 <p className="alert alert--error" style={{ margin: '0.4rem 0 0' }}>
