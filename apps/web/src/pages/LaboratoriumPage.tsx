@@ -988,6 +988,40 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
           {/* Top section: Form full-width */}
           <form onSubmit={(e) => void handleSave(e)}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem 1.25rem', marginBottom: '1rem' }}>
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <label htmlFor="lab-hasil-foto">Foto Hasil Pemeriksaan (opsional)</label>
+                <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  Unggah foto print out alat/hasil manual — tulisan di foto dibaca langsung (OCR, tanpa AI) dan
+                  mengisi otomatis kolom Hasil di tabel bawah sesuai nama pemeriksaannya. Periksa ulang hasilnya
+                  karena bacaan otomatis ini bisa saja tidak tepat.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  <input id="lab-hasil-foto" type="file" accept="image/*" onChange={handleFotoHasilFileChange} />
+                  {fotoHasilPreview && (
+                    <>
+                      <img
+                        src={fotoHasilPreview}
+                        alt="Preview foto hasil pemeriksaan"
+                        style={{ height: '60px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn--sm btn--primary"
+                        disabled={readingFotoHasil}
+                        onClick={() => void handleProcessFotoHasil()}
+                      >
+                        {readingFotoHasil ? '⏳ Membaca teks...' : '📷 Baca Teks dari Foto'}
+                      </button>
+                    </>
+                  )}
+                </div>
+                {readFotoHasilError && (
+                  <p className="alert alert--error" style={{ margin: '0.4rem 0 0' }}>
+                    {readFotoHasilError}
+                  </p>
+                )}
+              </div>
+
               {/* Interactive Table for Lab Tests (full width) */}
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -1037,47 +1071,8 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                     >
                       Kosongkan
                     </button>
-                    <label
-                      htmlFor="lab-hasil-foto"
-                      className="btn btn--secondary btn--sm"
-                      title="Pilih foto hasil pemeriksaan"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
-                    >
-                      🖼️ Pilih Foto
-                    </label>
-                    <input
-                      id="lab-hasil-foto"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFotoHasilFileChange}
-                      style={{ display: 'none' }}
-                    />
-                    {fotoHasilPreview && (
-                      <>
-                        <img
-                          src={fotoHasilPreview}
-                          alt="Preview foto hasil yang dibaca"
-                          title="Foto yang dipilih (tidak disimpan)"
-                          style={{ height: '40px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                        />
-                        <button
-                          type="button"
-                          className="btn btn--secondary btn--sm"
-                          title="Baca teks dari foto (OCR, tanpa AI) dan isi otomatis kolom Hasil sesuai nama pemeriksaannya"
-                          disabled={readingFotoHasil}
-                          onClick={() => void handleProcessFotoHasil()}
-                        >
-                          {readingFotoHasil ? '⏳ Membaca teks...' : '📖 Proses Teks dari Foto'}
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
-                {readFotoHasilError && (
-                  <p className="alert alert--error" style={{ margin: '0 0 0.5rem' }}>
-                    {readFotoHasilError}
-                  </p>
-                )}
                 <div style={{ overflowY: 'auto', maxHeight: '240px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)' }}>
                   <table className="data-table" style={{ fontSize: '0.85rem', marginBottom: 0 }}>
                     <thead>
