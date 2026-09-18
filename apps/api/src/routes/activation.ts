@@ -51,15 +51,17 @@ export async function registerActivationRoutes(app: FastifyInstance): Promise<vo
     if (!code) return badRequest(reply, 'Kode aktivasi wajib diisi');
 
     const lisensi = await getOrCreateLisensiAktivasi();
-    const valid = verifyActivationCode(lisensi.installId, lisensi.cycle, code);
-    if (!valid) return badRequest(reply, 'Kode aktivasi tidak valid');
+    // Durasi (tahun) ditandatangani di dalam kode itu sendiri — pemilik bebas
+    // membuat kode 1 tahun, 20 tahun, dst lewat generate-activation-code.ts.
+    const years = verifyActivationCode(lisensi.installId, lisensi.cycle, code);
+    if (years === null) return badRequest(reply, 'Kode aktivasi tidak valid');
 
     const now = new Date();
     const updated = await prisma.lisensiAktivasi.update({
       where: { id: 'default' },
       data: {
         activatedAt: now,
-        expiresAt: addActivationDuration(now),
+        expiresAt: addActivationDuration(now, years),
         // Naikkan cycle supaya kode yang baru dipakai ini tidak berlaku lagi
         // untuk permintaan aktivasi berikutnya (setelah lisensi ini kedaluwarsa).
         cycle: { increment: 1 },

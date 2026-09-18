@@ -6,7 +6,13 @@ export const OWNER_WA_NUMBER_LOCAL = '085719325557';
 /// Format internasional (tanpa "+", awalan 0 diganti 62) untuk link wa.me.
 export const OWNER_WA_NUMBER_INTL = `62${OWNER_WA_NUMBER_LOCAL.slice(1)}`;
 
-export const ACTIVATION_DURATION_DAYS = 365;
+/// Lama aktivasi default (tahun) kalau pemilik tidak menentukan sendiri lewat
+/// npm run activation:code -- "<kode-permintaan>" <tahun>. Pemilik bisa
+/// membuat kode dengan durasi berapa pun (mis. 20 tahun untuk aktivasi
+/// jangka panjang) — durasinya ikut ditandatangani di dalam kode itu sendiri.
+export const DEFAULT_ACTIVATION_YEARS = 1;
+const MIN_ACTIVATION_YEARS = 1;
+const MAX_ACTIVATION_YEARS = 100;
 
 /// Kunci rahasia untuk menghitung kode aktivasi dari kode permintaan.
 /// Boleh dioverride lewat env ACTIVATION_SECRET; ada fallback bawaan agar
@@ -35,36 +41,53 @@ export function parseRequestCode(requestCode: string): { installId: string; cycl
   return { installId, cycle };
 }
 
-/// Kode aktivasi pendek (mudah diketik ulang) yang dikirim pemilik lewat
-/// balasan WA, dihitung dari HMAC-SHA256(installId:cycle) dengan secret di
-/// atas. Bukan enkripsi dua arah — hanya bisa dihitung ulang oleh pihak yang
-/// tahu secret-nya (pemilik aplikasi, lewat generate-activation-code.ts).
-export function computeActivationCode(installId: string, cycle: number): string {
-  const digest = createHmac('sha256', getActivationSecret())
-    .update(`${installId}:${cycle}`)
+export function isValidActivationYears(years: number): boolean {
+  return Number.isInteger(years) && years >= MIN_ACTIVATION_YEARS && years <= MAX_ACTIVATION_YEARS;
+}
+
+function activationDigest(installId: string, cycle: number, years: number): string {
+  return createHmac('sha256', getActivationSecret())
+    .update(`${installId}:${cycle}:${years}`)
     .digest('hex')
-    .toUpperCase();
-  const raw = digest.slice(0, 10);
-  return `${raw.slice(0, 5)}-${raw.slice(5, 10)}`;
+    .toUpperCase()
+    .slice(0, 10);
 }
 
-function normalizeCode(code: string): string {
-  return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+/// Kode aktivasi pendek (mudah diketik ulang) yang dikirim pemilik lewat
+/// balasan WA, dihitung dari HMAC-SHA256(installId:cycle:years) dengan
+/// secret di atas. Durasi (tahun) yang dipilih pemilik ikut ditandatangani
+/// dan disertakan apa adanya di ekor kode ("-Y<tahun>") — kalau ekor itu
+/// diubah tanpa tahu secret-nya, verifikasi akan gagal karena digest tidak
+/// cocok lagi. Bukan enkripsi dua arah, hanya bisa dihitung ulang oleh
+/// pihak yang tahu secret-nya (pemilik aplikasi, lewat
+/// generate-activation-code.ts).
+export function computeActivationCode(installId: string, cycle: number, years: number): string {
+  const digest = activationDigest(installId, cycle, years);
+  return `${digest.slice(0, 5)}-${digest.slice(5, 10)}-Y${years}`;
 }
 
-export function verifyActivationCode(installId: string, cycle: number, submittedCode: string): boolean {
-  const expected = normalizeCode(computeActivationCode(installId, cycle));
-  const actual = normalizeCode(submittedCode);
-  // Samakan panjang dulu (hash SHA-256 dari dua string beda panjang) supaya
-  // timingSafeEqual tidak throw — kalau panjangnya beda, sudah pasti tidak cocok.
-  const expectedHash = createHash('sha256').update(expected).digest();
-  const actualHash = createHash('sha256').update(actual).digest();
-  return timingSafeEqual(expectedHash, actualHash);
+const ACTIVATION_CODE_PATTERN = /^([0-9A-F]{5})-?([0-9A-F]{5})-Y(\d{1,3})$/;
+
+/// Mengembalikan jumlah tahun yang tertanam di kode kalau valid untuk
+/// installId+cycle yang diberikan, atau `null` kalau kode salah/rusak.
+export function verifyActivationCode(installId: string, cycle: number, submittedCode: string): number | null {
+  const normalized = submittedCode.trim().toUpperCase().replace(/\s+/g, '');
+  const match = ACTIVATION_CODE_PATTERN.exec(normalized);
+  if (!match) return null;
+  const [, part1, part2, yearsRaw] = match;
+  const years = Number(yearsRaw);
+  if (!isValidActivationYears(years)) return null;
+
+  const expectedDigest = activationDigest(installId, cycle, years);
+  const actualDigest = `${part1}${part2}`;
+  const expectedHash = createHash('sha256').update(expectedDigest).digest();
+  const actualHash = createHash('sha256').update(actualDigest).digest();
+  return timingSafeEqual(expectedHash, actualHash) ? years : null;
 }
 
-export function addActivationDuration(from: Date): Date {
+export function addActivationDuration(from: Date, years: number): Date {
   const result = new Date(from);
-  result.setDate(result.getDate() + ACTIVATION_DURATION_DAYS);
+  result.setFullYear(result.getFullYear() + years);
   return result;
 }
 
