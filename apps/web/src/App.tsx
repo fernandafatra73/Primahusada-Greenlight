@@ -48,6 +48,7 @@ import { AiGeminiPage } from './pages/AiGeminiPage.tsx';
 import { AiRadiologiPage } from './pages/AiRadiologiPage.tsx';
 import { AiRadiologiGrupPage } from './pages/AiRadiologiGrupPage.tsx';
 import { AiFotoPage } from './pages/AiFotoPage.tsx';
+import { AiLabPage } from './pages/AiLabPage.tsx';
 import { SosmedPage } from './pages/SosmedPage.tsx';
 import { Rad2Page } from './pages/Rad2Page.tsx';
 import { GlobalWarmPage } from './pages/GlobalWarmPage.tsx';
@@ -256,6 +257,8 @@ function renderViewContent(
       return <KaryawanPage departemen="RADIOLOGI" />;
     case 'karyawan-laboratorium':
       return <KaryawanPage departemen="LABORATORIUM" />;
+    case 'ai-lab':
+      return <AiLabPage />;
     case 'advantage':
       return <AdvantagePage />;
     case 'bhp-radiologi':

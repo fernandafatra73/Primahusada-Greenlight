@@ -722,6 +722,26 @@ model AnalisaRadiologiAi {
   updatedAt       DateTime @updatedAt
 }
 
+/// Arsip analisa AI untuk hasil laboratorium (Hematologi/Kimia Darah/Widal) —
+/// staff mengisi nilai tiap parameter (disimpan sebagai JSON di
+/// `parameterData`: array {pemeriksaan, hasil, nilaiRujukan, satuan}), lalu
+/// AI menyimpulkan kemungkinan penyakit (`namaPenyakit`) & kesan. `isDraftAi`
+/// sama seperti AnalisaFotoAi/AnalisaRadiologiAi — wajib ditinjau petugas lab
+/// sebelum dipakai.
+model AnalisaLabAi {
+  id             String   @id @default(cuid())
+  namaPasien     String
+  kategori       String
+  parameterData  String
+  namaPenyakit   String?
+  kesan          String?
+  isDraftAi      Boolean  @default(false)
+  petugasLabNama String?
+  tanggal        DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 /// Data master (Grup) untuk fitur AI Radiologi.
 model AiRadiologiGrup {
   id        String   @id @default(cuid())

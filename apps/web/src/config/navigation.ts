@@ -75,6 +75,7 @@ export const MAIN_NAV_CATEGORIES: readonly NavCategory[] = [
       { id: 'klasifikasi-paket', label: 'Klasifikasi Paket', shortLabel: 'Klasifikasi Paket' },
       { id: 'hitungan-led', label: 'Hitungan LED', shortLabel: 'Hitungan LED' },
       { id: 'karyawan-laboratorium', label: 'Daftar Karyawan', shortLabel: 'Daftar Karyawan' },
+      { id: 'ai-lab', label: 'AI Lab', shortLabel: 'AI Lab' },
     ],
   },
   {
@@ -199,6 +200,7 @@ export const MAIN_NAV_ITEMS: readonly NavItem[] = [
   { id: 'klasifikasi-paket', label: 'Klasifikasi Paket', shortLabel: 'Klasifikasi Paket' },
   { id: 'hitungan-led', label: 'Hitungan LED', shortLabel: 'Hitungan LED' },
   { id: 'karyawan-laboratorium', label: 'Daftar Karyawan Laboratorium', shortLabel: 'Daftar Karyawan' },
+  { id: 'ai-lab', label: 'AI Lab', shortLabel: 'AI Lab' },
   { id: 'sharing', label: 'Manajemen Sharing Dokter', shortLabel: 'Sharing Dokter' },
   { id: 'laporan-tahunan', label: 'Laporan Tahunan', shortLabel: 'Laporan Tahunan' },
   { id: 'laporan-pajak', label: 'Laporan Pajak', shortLabel: 'Laporan Pajak' },

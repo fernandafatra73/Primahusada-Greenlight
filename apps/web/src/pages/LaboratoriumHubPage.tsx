@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { AppViewId } from '../config/navigation.ts';
+import { AiLabPage } from './AiLabPage.tsx';
 import { LaboratoriumPage } from './LaboratoriumPage.tsx';
 import { LabDuplikatPage } from './LabDuplikatPage.tsx';
 import { KwitansiLaboratoriumPage } from './KwitansiLaboratoriumPage.tsx';
@@ -25,6 +26,7 @@ const LABORATORIUM_TABS = [
   { id: 'klasifikasi-paket', label: 'Klasifikasi Paket' },
   { id: 'hitungan-led', label: 'Hitungan LED' },
   { id: 'karyawan-laboratorium', label: 'Daftar Karyawan' },
+  { id: 'ai-lab', label: 'AI Lab' },
 ] as const;
 
 type LaboratoriumTabId = (typeof LABORATORIUM_TABS)[number]['id'];
@@ -65,6 +67,8 @@ function renderTabContent(tabId: LaboratoriumTabId, goToTab: (tab: LaboratoriumT
       return <HitunganLedPage />;
     case 'karyawan-laboratorium':
       return <KaryawanPage departemen="LABORATORIUM" />;
+    case 'ai-lab':
+      return <AiLabPage />;
     default: {
       const exhaustiveCheck: never = tabId;
       return exhaustiveCheck;

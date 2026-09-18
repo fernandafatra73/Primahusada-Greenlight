@@ -1,0 +1,253 @@
+import type { FastifyInstance, FastifyReply } from 'fastify';
+import { GoogleGenAI, Type } from '@google/genai';
+import { prisma } from '../lib/prisma.js';
+import { buildPaginationMeta, parsePagination } from '../lib/pagination.js';
+import { generateContentWithRetry } from './analisaFotoAi.js';
+
+function badRequest(reply: FastifyReply, message: string): FastifyReply {
+  return reply.status(400).send({ error: message });
+}
+
+export interface LabParameter {
+  readonly pemeriksaan: string;
+  readonly hasil: string;
+  readonly nilaiRujukan?: string;
+  readonly satuan?: string;
+}
+
+export const MAX_PARAMETERS = 50;
+
+export function sanitizeParameters(value: unknown): LabParameter[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (p): p is LabParameter =>
+        Boolean(p) &&
+        typeof p === 'object' &&
+        typeof (p as { pemeriksaan?: unknown }).pemeriksaan === 'string' &&
+        (p as { pemeriksaan: string }).pemeriksaan.trim().length > 0 &&
+        typeof (p as { hasil?: unknown }).hasil === 'string',
+    )
+    .slice(0, MAX_PARAMETERS)
+    .map((p) => ({
+      pemeriksaan: p.pemeriksaan.trim(),
+      hasil: p.hasil.trim(),
+      nilaiRujukan: typeof p.nilaiRujukan === 'string' ? p.nilaiRujukan.trim() : undefined,
+      satuan: typeof p.satuan === 'string' ? p.satuan.trim() : undefined,
+    }));
+}
+
+/// Format daftar parameter jadi teks yang dikirim ke Gemini. Dipisah dari
+/// pemanggilan Gemini-nya sendiri supaya bisa dites tanpa API key/network.
+export function formatParametersForPrompt(kategori: string, parameters: readonly LabParameter[]): string {
+  const lines = parameters.map((p, index) => {
+    const rujukan = p.nilaiRujukan ? `, nilai rujukan: ${p.nilaiRujukan}` : '';
+    const satuan = p.satuan ? ` ${p.satuan}` : '';
+    return `${index + 1}. ${p.pemeriksaan}: ${p.hasil}${satuan}${rujukan}`;
+  });
+  return [`Kategori pemeriksaan: ${kategori}`, 'Data hasil pemeriksaan:', ...lines].join('\n');
+}
+
+const ANALISA_LAB_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    namaPenyakit: {
+      type: Type.STRING,
+      description:
+        'Perkiraan nama penyakit/kondisi yang paling sesuai dengan pola hasil lab ini (mis. "Anemia", "Demam Tifoid", "Dislipidemia"). Isi "Tidak dapat ditentukan" kalau semua nilai normal atau tidak ada pola yang jelas.',
+    },
+    kesan: {
+      type: Type.STRING,
+      description:
+        'Kesimpulan singkat: sebutkan parameter yang di luar nilai rujukan (tinggi/rendah) dan interpretasi klinisnya, dalam Bahasa Indonesia.',
+    },
+  },
+  required: ['namaPenyakit', 'kesan'],
+};
+
+const ANALISA_LAB_SYSTEM_PROMPT = `Anda adalah asisten AI yang membantu petugas laboratorium & dokter di sebuah klinik menginterpretasi hasil pemeriksaan laboratorium (Hematologi, Kimia Darah, atau Widal) untuk membuat DRAFT AWAL kesimpulan, bukan diagnosis final.
+
+Aturan:
+- Hasil Anda akan selalu ditampilkan ke pengguna dengan label eksplisit sebagai "draft AI yang wajib ditinjau ulang oleh petugas lab/dokter" — Anda tidak perlu menambahkan disclaimer itu sendiri di dalam teks, cukup fokus pada isi kesan & nama penyakit.
+- Bandingkan tiap nilai hasil dengan nilai rujukan (normal range) yang diberikan; sebutkan parameter mana yang di luar batas normal (tinggi/rendah) dan apa artinya secara klinis.
+- Untuk Widal: titer yang meningkat pada satu atau lebih antigen Salmonella (O/H) mengindikasikan kemungkinan demam tifoid — sebutkan itu di kesan kalau relevan, tapi tetap tegaskan ini draft, bukan diagnosis final.
+- Kalau semua nilai dalam batas normal, katakan itu secara jujur — jangan mengarang kelainan yang tidak ada.
+- Jangan berikan rekomendasi pengobatan, dosis obat, atau resep.
+- Tulis dalam Bahasa Indonesia, ringkas, dan gunakan istilah medis yang wajar dipakai tenaga laboratorium Indonesia.
+- Jawab HANYA sesuai skema JSON yang diberikan.`;
+
+export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<void> {
+  app.get<{ Querystring: { page?: string; limit?: string; q?: string } }>('/api/analisa-lab-ai', async (req) => {
+    const { page, limit, skip } = parsePagination(req.query);
+    const q = req.query.q?.trim();
+    const where = q ? { namaPasien: { contains: q } } : {};
+    const [total, items] = await Promise.all([
+      prisma.analisaLabAi.count({ where }),
+      prisma.analisaLabAi.findMany({
+        where,
+        orderBy: { tanggal: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+    return {
+      items: items.map((item) => ({
+        ...item,
+        parameterData: JSON.parse(item.parameterData) as LabParameter[],
+        tanggal: item.tanggal.toISOString(),
+      })),
+      pagination: buildPaginationMeta(total, page, limit),
+    };
+  });
+
+  app.post<{
+    Body: {
+      namaPasien?: string;
+      kategori?: string;
+      parameterData?: unknown;
+      namaPenyakit?: string;
+      kesan?: string;
+      isDraftAi?: boolean;
+      petugasLabNama?: string;
+      tanggal?: string;
+    };
+  }>('/api/analisa-lab-ai', async (req, reply) => {
+    const b = req.body;
+    const parameters = sanitizeParameters(b.parameterData);
+    if (!b.namaPasien?.trim() || !b.kategori?.trim() || parameters.length === 0) {
+      return badRequest(reply, 'namaPasien, kategori, dan parameterData wajib diisi');
+    }
+    const item = await prisma.analisaLabAi.create({
+      data: {
+        namaPasien: b.namaPasien.trim(),
+        kategori: b.kategori.trim(),
+        parameterData: JSON.stringify(parameters),
+        namaPenyakit: b.namaPenyakit?.trim() || null,
+        kesan: b.kesan?.trim() || null,
+        isDraftAi: b.isDraftAi ?? false,
+        petugasLabNama: b.petugasLabNama?.trim() || null,
+        tanggal: b.tanggal ? new Date(b.tanggal) : new Date(),
+      },
+    });
+    return reply.status(201).send({
+      item: { ...item, parameterData: parameters, tanggal: item.tanggal.toISOString() },
+    });
+  });
+
+  app.patch<{
+    Params: { id: string };
+    Body: {
+      namaPasien?: string;
+      kategori?: string;
+      parameterData?: unknown;
+      namaPenyakit?: string;
+      kesan?: string;
+      isDraftAi?: boolean;
+      petugasLabNama?: string;
+      tanggal?: string;
+    };
+  }>('/api/analisa-lab-ai/:id', async (req, reply) => {
+    const existing = await prisma.analisaLabAi.findUnique({ where: { id: req.params.id } });
+    if (!existing) return reply.status(404).send({ error: 'Data analisa lab AI tidak ditemukan' });
+    const b = req.body;
+    const parameters = b.parameterData !== undefined ? sanitizeParameters(b.parameterData) : null;
+    const item = await prisma.analisaLabAi.update({
+      where: { id: req.params.id },
+      data: {
+        namaPasien: b.namaPasien?.trim() ?? existing.namaPasien,
+        kategori: b.kategori?.trim() ?? existing.kategori,
+        parameterData: parameters ? JSON.stringify(parameters) : existing.parameterData,
+        namaPenyakit: b.namaPenyakit !== undefined ? b.namaPenyakit?.trim() || null : existing.namaPenyakit,
+        kesan: b.kesan !== undefined ? b.kesan?.trim() || null : existing.kesan,
+        isDraftAi: b.isDraftAi ?? existing.isDraftAi,
+        petugasLabNama:
+          b.petugasLabNama !== undefined ? b.petugasLabNama?.trim() || null : existing.petugasLabNama,
+        tanggal: b.tanggal ? new Date(b.tanggal) : existing.tanggal,
+      },
+    });
+    return {
+      item: {
+        ...item,
+        parameterData: JSON.parse(item.parameterData) as LabParameter[],
+        tanggal: item.tanggal.toISOString(),
+      },
+    };
+  });
+
+  app.delete<{ Params: { id: string } }>('/api/analisa-lab-ai/:id', async (req) => {
+    await prisma.analisaLabAi.delete({ where: { id: req.params.id } });
+    return { ok: true };
+  });
+
+  app.post<{
+    Body: { namaPasien?: string; kategori?: string; parameterData?: unknown };
+  }>('/api/analisa-lab-ai/analyze', async (req, reply) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return reply.status(503).send({
+        error: 'Fitur analisa AI belum dikonfigurasi. Admin perlu mengatur GEMINI_API_KEY di server.',
+      });
+    }
+
+    const kategori = req.body.kategori?.trim();
+    if (!kategori) return badRequest(reply, 'kategori wajib diisi');
+    const parameters = sanitizeParameters(req.body.parameterData);
+    if (parameters.length === 0) return badRequest(reply, 'parameterData wajib diisi');
+
+    const namaPasien = req.body.namaPasien?.trim();
+    const promptText = [
+      namaPasien ? `Nama pasien: ${namaPasien}` : null,
+      formatParametersForPrompt(kategori, parameters),
+      'Interpretasikan hasil pemeriksaan laboratorium di atas dan berikan draft nama penyakit/kondisi serta kesan sesuai skema JSON.',
+    ]
+      .filter((line): line is string => Boolean(line))
+      .join('\n\n');
+
+    try {
+      const client = new GoogleGenAI({ apiKey });
+      const response = await generateContentWithRetry(
+        client,
+        {
+          model: 'gemini-3.6-flash',
+          contents: [{ role: 'user', parts: [{ text: promptText }] }],
+          config: {
+            systemInstruction: ANALISA_LAB_SYSTEM_PROMPT,
+            responseMimeType: 'application/json',
+            responseSchema: ANALISA_LAB_RESPONSE_SCHEMA,
+            httpOptions: { timeout: 45_000 },
+          },
+        },
+        2,
+      );
+
+      const finishReason = response.candidates?.[0]?.finishReason;
+      if (finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {
+        return reply.status(502).send({
+          error: 'AI menolak menganalisa data ini. Silakan isi kesan & nama penyakit secara manual.',
+        });
+      }
+
+      const text = response.text;
+      if (!text) {
+        return reply.status(502).send({ error: 'AI tidak mengembalikan hasil analisa yang valid.' });
+      }
+
+      let parsed: { namaPenyakit?: unknown; kesan?: unknown };
+      try {
+        parsed = JSON.parse(text) as { namaPenyakit?: unknown; kesan?: unknown };
+      } catch {
+        return reply.status(502).send({ error: 'AI mengembalikan format hasil yang tidak valid.' });
+      }
+
+      return {
+        namaPenyakit: typeof parsed.namaPenyakit === 'string' ? parsed.namaPenyakit : '',
+        kesan: typeof parsed.kesan === 'string' ? parsed.kesan : '',
+      };
+    } catch (err) {
+      req.log.error(err, 'Gagal memanggil AI untuk analisa lab');
+      return reply.status(502).send({
+        error: err instanceof Error ? `Gagal menghubungi layanan AI: ${err.message}` : 'Gagal menghubungi layanan AI',
+      });
+    }
+  });
+}
