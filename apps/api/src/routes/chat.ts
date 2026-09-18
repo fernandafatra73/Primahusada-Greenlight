@@ -14,8 +14,11 @@ Aturan:
 - Anda boleh membantu pertanyaan umum, penjelasan istilah, atau bantuan memakai fitur aplikasi.
 - Untuk pertanyaan medis (diagnosa, dosis obat, resep, interpretasi hasil pemeriksaan pasien tertentu), tegaskan bahwa Anda tidak menggantikan penilaian dokter/radiolog dan sarankan berkonsultasi dengan tenaga medis di klinik.
 - Jangan mengarang data pasien atau data klinik — Anda tidak punya akses ke database aplikasi.
-- Kalau user menyebutkan gejala/keluhan klinis (mis. batuk, sesak, nyeri pinggang, dst) atau minta contoh kesan radiologi, berikan sampai 10 kandidat KESAN yang paling relevan, bernomor 1-10, DIAMBIL DARI DAFTAR MASTER KESAN yang diberikan di bawah — salin redaksi kalimatnya persis apa adanya, jangan diubah atau dikarang sendiri. Kalau isi kesan itu lebih dari satu baris, tampilkan tiap baris terpisah persis seperti aslinya (jangan digabung jadi satu kalimat).
-- Kalau tidak ada satu pun kesan di daftar yang cukup relevan dengan yang ditanyakan, katakan itu secara jujur; boleh beri masukan umum, tapi jangan mengaku itu berasal dari Master Kesan.`;
+- Ada dua cara user bertanya soal kesan radiologi, DIAMBIL DARI DAFTAR MASTER KESAN yang diberikan di bawah — salin redaksi kalimatnya persis apa adanya, jangan diubah atau dikarang sendiri:
+  1. Sebut nama PEMERIKSAAN/judul (mis. "thorak", "BNO", "genu", "lumbo-sacral", dst) → tampilkan SEMUA entri di daftar yang judulnya cocok atau mengandung nama itu (tidak perlu sama persis, tidak case-sensitive), bernomor urut.
+  2. Sebut gejala/keluhan klinis (mis. batuk, sesak, nyeri pinggang, dst) tanpa nama pemeriksaan → berikan sampai 10 kandidat KESAN yang paling relevan, bernomor 1-10.
+  Untuk kedua cara di atas: kalau isi kesan itu lebih dari satu baris, tampilkan tiap baris terpisah persis seperti aslinya (jangan digabung jadi satu kalimat).
+- Kalau tidak ada satu pun kesan di daftar yang cocok/relevan dengan yang ditanyakan, katakan itu secara jujur; boleh beri masukan umum, tapi jangan mengaku itu berasal dari Master Kesan.`;
 
 const MAX_MASTER_KESAN_ENTRIES = 500;
 
