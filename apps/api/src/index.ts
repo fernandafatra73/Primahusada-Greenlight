@@ -1,10 +1,11 @@
 import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import Fastify from 'fastify';
+import { UPLOADS_DIR } from './lib/fileStorage.js';
 import { registerAnalisaFotoAiRoutes } from './routes/analisaFotoAi.js';
 import { registerAnalisaGrafikAiRoutes } from './routes/analisaGrafikAi.js';
 import { registerAnalisaRadiologiAiRoutes } from './routes/analisaRadiologiAi.js';
@@ -36,6 +37,11 @@ await app.register(cors, {
 
 app.get('/api/health', async () => ({ ok: true }));
 
+// Foto rontgen/USG dan file upload lain disimpan di disk (lihat lib/fileStorage.ts),
+// bukan sebagai base64 di database, dan dilayani di sini sebagai file statis.
+mkdirSync(UPLOADS_DIR, { recursive: true });
+await app.register(fastifyStatic, { root: UPLOADS_DIR, prefix: '/uploads/' });
+
 await registerAuthRoutes(app);
 await registerBackupRoutes(app);
 await registerAnalisaFotoAiRoutes(app);
@@ -49,7 +55,7 @@ await registerRad2Routes(app);
 await registerTransferRoutes(app);
 
 if (hasWebDist) {
-  await app.register(fastifyStatic, { root: webDistDir });
+  await app.register(fastifyStatic, { root: webDistDir, decorateReply: false });
 
   app.setNotFoundHandler((req, reply) => {
     if (req.raw.url?.startsWith('/api/')) {

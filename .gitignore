@@ -58,5 +58,8 @@ apps/api/generated/
 # Desktop app build output & regenerated resources
 apps/desktop/dist/
 apps/desktop/resources/server/build/
+
+# Foto rontgen/USG tersimpan sebagai file (lihat apps/api/src/lib/fileStorage.ts)
+apps/api/uploads/
 apps/desktop/resources/server/web-dist/
 

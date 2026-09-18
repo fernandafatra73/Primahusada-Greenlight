@@ -47,6 +47,7 @@ import {
 } from '../lib/searchWhere.js';
 import { syncPasienDuplikat } from '../lib/pasienDuplikat.js';
 import { computeUmur, serializeDecimal } from '../lib/serialize.js';
+import { deleteStoredImage, readStoredImageAsDataUrl, saveImageDataUrl } from '../lib/fileStorage.js';
 
 type ListQuery = { page?: string; limit?: string; q?: string };
 type StaffListQuery = ListQuery & { role?: string };
@@ -3294,7 +3295,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
         regCode: b.regCode?.trim() || null,
         jenisPemeriksaan: b.jenisPemeriksaan?.trim() || null,
         tanggal: b.tanggal ? new Date(b.tanggal) : new Date(),
-        fotoDataUrl: b.fotoDataUrl,
+        fotoDataUrl: saveImageDataUrl(b.fotoDataUrl, 'radiologi'),
         ukuranFoto: b.ukuranFoto?.trim() || '3 x 4 cm',
         kesan: b.kesan?.trim() || null,
         diagnosa: b.diagnosa?.trim() || null,
@@ -3335,6 +3336,8 @@ export async function registerCrudRoutes(app: FastifyInstance) {
   }>('/api/analisa-foto-rontgen/:id', async (req, reply) => {
     const existing = await prisma.analisaFotoRontgen.findUnique({ where: { id: req.params.id } });
     if (!existing) return reply.status(404).send({ error: 'Data analisa foto rontgen tidak ditemukan' });
+    const fotoDataUrl = req.body.fotoDataUrl ? saveImageDataUrl(req.body.fotoDataUrl, 'radiologi') : existing.fotoDataUrl;
+    if (fotoDataUrl !== existing.fotoDataUrl) deleteStoredImage(existing.fotoDataUrl);
     const item = await prisma.analisaFotoRontgen.update({
       where: { id: req.params.id },
       data: {
@@ -3345,7 +3348,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
             ? req.body.jenisPemeriksaan?.trim() || null
             : existing.jenisPemeriksaan,
         tanggal: req.body.tanggal ? new Date(req.body.tanggal) : existing.tanggal,
-        fotoDataUrl: req.body.fotoDataUrl ?? existing.fotoDataUrl,
+        fotoDataUrl,
         kesan: req.body.kesan !== undefined ? req.body.kesan?.trim() || null : existing.kesan,
         diagnosa: req.body.diagnosa !== undefined ? req.body.diagnosa?.trim() || null : existing.diagnosa,
         isDraftAi: req.body.isDraftAi ?? existing.isDraftAi,
@@ -3370,7 +3373,8 @@ export async function registerCrudRoutes(app: FastifyInstance) {
   });
 
   app.delete<{ Params: { id: string } }>('/api/analisa-foto-rontgen/:id', async (req) => {
-    await prisma.analisaFotoRontgen.delete({ where: { id: req.params.id } });
+    const deleted = await prisma.analisaFotoRontgen.delete({ where: { id: req.params.id } });
+    deleteStoredImage(deleted.fotoDataUrl);
     return { ok: true };
   });
 
@@ -3439,7 +3443,15 @@ Aturan:
     if (!fotoDataUrl?.trim()) {
       return badRequest(reply, 'fotoDataUrl wajib diisi');
     }
-    const parsedImage = parseAnalisaFotoRontgenImageDataUrl(fotoDataUrl);
+    // Untuk foto yang sudah tersimpan (edit tanpa unggah ulang), fotoDataUrl berupa
+    // path /uploads/... bukan data URL base64 — baca ulang isinya dari disk.
+    const resolvedDataUrl = fotoDataUrl.startsWith('/uploads/')
+      ? readStoredImageAsDataUrl(fotoDataUrl)
+      : fotoDataUrl;
+    if (!resolvedDataUrl) {
+      return badRequest(reply, 'File foto tidak ditemukan di server.');
+    }
+    const parsedImage = parseAnalisaFotoRontgenImageDataUrl(resolvedDataUrl);
     if (!parsedImage) {
       return badRequest(reply, 'Format foto tidak didukung. Gunakan JPEG, PNG, GIF, atau WEBP.');
     }
@@ -3588,10 +3600,10 @@ Aturan:
         jenisPemeriksaan: b.jenisPemeriksaan?.trim() || null,
         tanggal: b.tanggal ? new Date(b.tanggal) : new Date(),
         dokterPengirim: b.dokterPengirim?.trim() || null,
-        fotoDataUrl: b.fotoDataUrl,
-        fotoDataUrl2: b.fotoDataUrl2 || null,
-        fotoDataUrl3: b.fotoDataUrl3 || null,
-        fotoDataUrl4: b.fotoDataUrl4 || null,
+        fotoDataUrl: saveImageDataUrl(b.fotoDataUrl, 'usg'),
+        fotoDataUrl2: b.fotoDataUrl2 ? saveImageDataUrl(b.fotoDataUrl2, 'usg') : null,
+        fotoDataUrl3: b.fotoDataUrl3 ? saveImageDataUrl(b.fotoDataUrl3, 'usg') : null,
+        fotoDataUrl4: b.fotoDataUrl4 ? saveImageDataUrl(b.fotoDataUrl4, 'usg') : null,
         analisa: b.analisa?.trim() || null,
         kesan: b.kesan?.trim() || null,
         radiologNama: b.radiologNama?.trim() || null,
@@ -3639,6 +3651,31 @@ Aturan:
   }>('/api/usg/:id', async (req, reply) => {
     const existing = await prisma.usg.findUnique({ where: { id: req.params.id } });
     if (!existing) return reply.status(404).send({ error: 'Data USG tidak ditemukan' });
+
+    const fotoDataUrl = req.body.fotoDataUrl ? saveImageDataUrl(req.body.fotoDataUrl, 'usg') : existing.fotoDataUrl;
+    const fotoDataUrl2 =
+      req.body.fotoDataUrl2 !== undefined
+        ? req.body.fotoDataUrl2
+          ? saveImageDataUrl(req.body.fotoDataUrl2, 'usg')
+          : null
+        : existing.fotoDataUrl2;
+    const fotoDataUrl3 =
+      req.body.fotoDataUrl3 !== undefined
+        ? req.body.fotoDataUrl3
+          ? saveImageDataUrl(req.body.fotoDataUrl3, 'usg')
+          : null
+        : existing.fotoDataUrl3;
+    const fotoDataUrl4 =
+      req.body.fotoDataUrl4 !== undefined
+        ? req.body.fotoDataUrl4
+          ? saveImageDataUrl(req.body.fotoDataUrl4, 'usg')
+          : null
+        : existing.fotoDataUrl4;
+    if (fotoDataUrl !== existing.fotoDataUrl) deleteStoredImage(existing.fotoDataUrl);
+    if (fotoDataUrl2 !== existing.fotoDataUrl2) deleteStoredImage(existing.fotoDataUrl2);
+    if (fotoDataUrl3 !== existing.fotoDataUrl3) deleteStoredImage(existing.fotoDataUrl3);
+    if (fotoDataUrl4 !== existing.fotoDataUrl4) deleteStoredImage(existing.fotoDataUrl4);
+
     const item = await prisma.usg.update({
       where: { id: req.params.id },
       data: {
@@ -3655,10 +3692,10 @@ Aturan:
           req.body.dokterPengirim !== undefined
             ? req.body.dokterPengirim?.trim() || null
             : existing.dokterPengirim,
-        fotoDataUrl: req.body.fotoDataUrl ?? existing.fotoDataUrl,
-        fotoDataUrl2: req.body.fotoDataUrl2 !== undefined ? req.body.fotoDataUrl2 || null : existing.fotoDataUrl2,
-        fotoDataUrl3: req.body.fotoDataUrl3 !== undefined ? req.body.fotoDataUrl3 || null : existing.fotoDataUrl3,
-        fotoDataUrl4: req.body.fotoDataUrl4 !== undefined ? req.body.fotoDataUrl4 || null : existing.fotoDataUrl4,
+        fotoDataUrl,
+        fotoDataUrl2,
+        fotoDataUrl3,
+        fotoDataUrl4,
         analisa: req.body.analisa !== undefined ? req.body.analisa?.trim() || null : existing.analisa,
         kesan: req.body.kesan !== undefined ? req.body.kesan?.trim() || null : existing.kesan,
         radiologNama:
@@ -3687,7 +3724,11 @@ Aturan:
   });
 
   app.delete<{ Params: { id: string } }>('/api/usg/:id', async (req) => {
-    await prisma.usg.delete({ where: { id: req.params.id } });
+    const deleted = await prisma.usg.delete({ where: { id: req.params.id } });
+    deleteStoredImage(deleted.fotoDataUrl);
+    deleteStoredImage(deleted.fotoDataUrl2);
+    deleteStoredImage(deleted.fotoDataUrl3);
+    deleteStoredImage(deleted.fotoDataUrl4);
     return { ok: true };
   });
 
