@@ -8,6 +8,7 @@ import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.t
 import { useMutationReload } from '../hooks/useMutationReload.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiDelete, apiPatch, apiPost } from '../lib/api.ts';
+import { extractValueForParameter, runOcr } from '../lib/labOcr.ts';
 import '../components/ui/ui.css';
 
 interface LabParameterRow {
@@ -181,20 +182,16 @@ export function AiLabPage() {
     setReadingFoto(true);
     setReadFotoError(null);
     try {
-      const res = await apiPost<{ results: readonly { pemeriksaan: string; hasil: string }[] }>(
-        '/api/analisa-lab-ai/read-foto',
-        { fotoDataUrl, parameterNames: rows.map((r) => r.pemeriksaan) },
-      );
+      // OCR murni di browser, tidak lewat AI/server — jadi tidak makan kuota Gemini.
+      const ocrText = await runOcr(fotoDataUrl);
       setRows((prev) =>
         prev.map((row) => {
-          const match = res.results.find(
-            (r) => r.pemeriksaan.trim().toLowerCase() === row.pemeriksaan.trim().toLowerCase(),
-          );
-          return match && match.hasil ? { ...row, hasil: match.hasil } : row;
+          const hasil = extractValueForParameter(ocrText, row.pemeriksaan);
+          return hasil ? { ...row, hasil } : row;
         }),
       );
     } catch (err) {
-      setReadFotoError(err instanceof Error ? err.message : 'Gagal membaca foto dengan AI');
+      setReadFotoError(err instanceof Error ? err.message : 'Gagal membaca teks dari foto');
     } finally {
       setReadingFoto(false);
     }
@@ -378,8 +375,9 @@ export function AiLabPage() {
             <div className="form-field form-grid--full">
               <label htmlFor="al-foto">Foto Hasil Pemeriksaan (opsional)</label>
               <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                Unggah foto print out alat/hasil manual — AI akan membaca nilainya dan mengisi otomatis kolom
-                Hasil di tabel bawah sesuai nama parameternya.
+                Unggah foto print out alat/hasil manual — tulisan di foto dibaca langsung (OCR, tanpa AI) dan
+                mengisi otomatis kolom Hasil di tabel bawah sesuai nama parameternya. Periksa ulang hasilnya
+                karena bacaan otomatis ini bisa saja tidak tepat.
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                 <input id="al-foto" type="file" accept="image/*" onChange={handleFotoFileChange} />
@@ -396,7 +394,7 @@ export function AiLabPage() {
                   disabled={!fotoDataUrl || readingFoto}
                   onClick={() => void handleReadFoto()}
                 >
-                  {readingFoto ? '⏳ Membaca foto...' : '📷 Baca & Isi Otomatis'}
+                  {readingFoto ? '⏳ Membaca teks...' : '📷 Baca Teks dari Foto'}
                 </button>
               </div>
               {readFotoError && (
