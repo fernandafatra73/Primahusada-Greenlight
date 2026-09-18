@@ -179,6 +179,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
   const [labRows, setLabRows] = useState<LabTableRow[]>([]);
   const [readingFotoHasil, setReadingFotoHasil] = useState(false);
   const [readFotoHasilError, setReadFotoHasilError] = useState<string | null>(null);
+  const [fotoHasilPreview, setFotoHasilPreview] = useState<string | null>(null);
   const [analisList, setAnalisList] = useState<PetugasLabItem[]>([]);
   const [analisId, setAnalisId] = useState('');
   const [analisNama, setAnalisNama] = useState('');
@@ -310,6 +311,8 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     setEditUmurManual(String(item.umur));
     setEditPengirimId(item.pengirim.id);
     setEditAlamat(item.alamat ?? '');
+    setFotoHasilPreview(null);
+    setReadFotoHasilError(null);
   }
 
   function buildKwitansiData(item: LabPasienItem): KwitansiReportData {
@@ -483,6 +486,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     const reader = new FileReader();
     reader.onload = async () => {
       if (typeof reader.result !== 'string') return;
+      setFotoHasilPreview(reader.result);
       setReadingFotoHasil(true);
       setReadFotoHasilError(null);
       try {
@@ -1045,6 +1049,14 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                       disabled={readingFotoHasil}
                       style={{ display: 'none' }}
                     />
+                    {fotoHasilPreview && (
+                      <img
+                        src={fotoHasilPreview}
+                        alt="Preview foto hasil yang dibaca"
+                        title="Foto yang barusan diambil untuk dibaca (tidak disimpan)"
+                        style={{ height: '40px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                      />
+                    )}
                   </div>
                 </div>
                 {readFotoHasilError && (

@@ -35,4 +35,18 @@ describe('extractValueForParameter', () => {
   test('returns an empty string when the name is found but no value follows it', () => {
     expect(extractValueForParameter('Hemoglobin (Hb)', 'Hemoglobin (Hb)')).toBe('');
   });
+
+  test('matches via alias abbreviation when the catalog name has no parenthetical short form', () => {
+    // Katalog klinik ini pakai nama polos ("Hemoglobine", "Leukosit", "SGOT")
+    // tanpa singkatan, sementara foto analyzer biasanya cuma cetak singkatannya.
+    expect(extractValueForParameter('Hb   10.5   g/dl', 'Hemoglobine')).toBe('10.5');
+    expect(extractValueForParameter('WBC 8500 /ul', 'Leukosit')).toBe('8500');
+    expect(extractValueForParameter('AST: 28 U/L', 'SGOT')).toBe('28');
+    expect(extractValueForParameter('Widal - S. Typhi O   1/320', 'Widal - S. Typhi O')).toBe('1/320');
+  });
+
+  test('alias matching requires a word boundary to avoid false positives inside other words', () => {
+    // "pa" adalah alias Paratyphi A — tidak boleh nyangkut di kata "pasien".
+    expect(extractValueForParameter('Nama pasien: Budi 42', 'Widal - S. Paratyphi A')).toBe('');
+  });
 });
