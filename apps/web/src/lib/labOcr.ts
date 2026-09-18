@@ -21,8 +21,8 @@ export async function runOcr(imageDataUrl: string): Promise<string> {
 /// pemeriksaan ke singkatan yang mungkin muncul di foto, supaya keduanya
 /// tetap bisa dicocokkan tanpa AI.
 const PARAMETER_ALIASES: ReadonlyArray<{ readonly keyword: string; readonly aliases: readonly string[] }> = [
-  { keyword: 'hemoglobin', aliases: ['hb', 'hgb'] },
-  { keyword: 'hemoglobine', aliases: ['hb', 'hgb'] },
+  { keyword: 'hemoglobin', aliases: ['hb', 'hgb', 'rgb'] },
+  { keyword: 'hemoglobine', aliases: ['hb', 'hgb', 'rgb'] },
   { keyword: 'leukosit', aliases: ['wbc', 'leu'] },
   { keyword: 'eritrosit', aliases: ['rbc'] },
   { keyword: 'erytrosit', aliases: ['rbc'] },
@@ -67,6 +67,12 @@ function escapeRegExp(value: string): string {
 
 const VALUE_PATTERN = /\d+\s*\/\s*\d+|\(\s*[+-]\s*\)|negatif|positif|[-+]?\d[\d.,]*\s*%?/i;
 
+/// OCR sering menghasilkan spasi ganda/tidak rata di antara token — rapikan
+/// jadi satu spasi supaya nilai yang masuk ke kolom Hasil bersih.
+function cleanValue(raw: string): string {
+  return raw.trim().replace(/\s+/g, ' ');
+}
+
 /// Cari nilai hasil untuk satu parameter di dalam teks hasil OCR. Mencari
 /// baris yang menyebut nama parameter (nama lengkap, singkatan dalam
 /// kurung kalau ada, atau alias dari PARAMETER_ALIASES), lalu ambil token
@@ -102,7 +108,7 @@ export function extractValueForParameter(ocrText: string, parameterName: string)
       const idx = line.toLowerCase().indexOf(term.toLowerCase());
       if (idx === -1) continue;
       const match = VALUE_PATTERN.exec(line.slice(idx + term.length));
-      if (match) return match[0].trim();
+      if (match) return cleanValue(match[0]);
     }
   }
 
@@ -115,7 +121,7 @@ export function extractValueForParameter(ocrText: string, parameterName: string)
       const found = regex.exec(line);
       if (!found) continue;
       const match = VALUE_PATTERN.exec(line.slice(found.index + found[0].length));
-      if (match) return match[0].trim();
+      if (match) return cleanValue(match[0]);
     }
   }
   return '';

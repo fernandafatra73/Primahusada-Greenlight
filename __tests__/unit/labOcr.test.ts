@@ -49,4 +49,12 @@ describe('extractValueForParameter', () => {
     // "pa" adalah alias Paratyphi A — tidak boleh nyangkut di kata "pasien".
     expect(extractValueForParameter('Nama pasien: Budi 42', 'Widal - S. Paratyphi A')).toBe('');
   });
+
+  test('matches abbreviations reported directly by clinic staff (Hb/WBC/PLT/RBC/Ht)', () => {
+    expect(extractValueForParameter('RGB   13.2   g/dl', 'Hemoglobin')).toBe('13.2');
+    expect(extractValueForParameter('WBC   7200   /ul', 'Jumlah Sel Leukosit')).toBe('7200');
+    expect(extractValueForParameter('PLT   250000  /ul', 'Jumlah Sel Trombosit')).toBe('250000');
+    expect(extractValueForParameter('RBC   4.8   juta/ul', 'Erytrosit (RBC)')).toBe('4.8');
+    expect(extractValueForParameter('Ht    42     %', 'Hematokrit(Ht)')).toBe('42 %');
+  });
 });
