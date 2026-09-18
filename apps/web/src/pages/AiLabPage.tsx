@@ -105,6 +105,10 @@ export function AiLabPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
 
+  const [fotoDataUrl, setFotoDataUrl] = useState('');
+  const [readingFoto, setReadingFoto] = useState(false);
+  const [readFotoError, setReadFotoError] = useState<string | null>(null);
+
   function openCreate() {
     setForm(emptyForm);
     setRows(buildRowsForKategori('Hematologi'));
@@ -112,6 +116,8 @@ export function AiLabPage() {
     setConfirmReviewed(false);
     setAnalyzeError(null);
     setError(null);
+    setFotoDataUrl('');
+    setReadFotoError(null);
     setCreateOpen(true);
   }
 
@@ -135,6 +141,8 @@ export function AiLabPage() {
     setConfirmReviewed(false);
     setAnalyzeError(null);
     setError(null);
+    setFotoDataUrl('');
+    setReadFotoError(null);
     setEditing(item);
   }
 
@@ -150,6 +158,46 @@ export function AiLabPage() {
 
   function handleHasilChange(index: number, hasil: string) {
     setRows((prev) => prev.map((row, i) => (i === index ? { ...row, hasil } : row)));
+  }
+
+  function handleFotoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setFotoDataUrl(reader.result);
+        setReadFotoError(null);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleReadFoto() {
+    if (!fotoDataUrl) {
+      setReadFotoError('Unggah foto hasil pemeriksaan terlebih dahulu.');
+      return;
+    }
+    setReadingFoto(true);
+    setReadFotoError(null);
+    try {
+      const res = await apiPost<{ results: readonly { pemeriksaan: string; hasil: string }[] }>(
+        '/api/analisa-lab-ai/read-foto',
+        { fotoDataUrl, parameterNames: rows.map((r) => r.pemeriksaan) },
+      );
+      setRows((prev) =>
+        prev.map((row) => {
+          const match = res.results.find(
+            (r) => r.pemeriksaan.trim().toLowerCase() === row.pemeriksaan.trim().toLowerCase(),
+          );
+          return match && match.hasil ? { ...row, hasil: match.hasil } : row;
+        }),
+      );
+    } catch (err) {
+      setReadFotoError(err instanceof Error ? err.message : 'Gagal membaca foto dengan AI');
+    } finally {
+      setReadingFoto(false);
+    }
   }
 
   async function handleStartAnalyze() {
@@ -325,6 +373,37 @@ export function AiLabPage() {
                 value={form.petugasLabNama}
                 onChange={(e) => setForm((f) => ({ ...f, petugasLabNama: e.target.value }))}
               />
+            </div>
+
+            <div className="form-field form-grid--full">
+              <label htmlFor="al-foto">Foto Hasil Pemeriksaan (opsional)</label>
+              <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                Unggah foto print out alat/hasil manual — AI akan membaca nilainya dan mengisi otomatis kolom
+                Hasil di tabel bawah sesuai nama parameternya.
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <input id="al-foto" type="file" accept="image/*" onChange={handleFotoFileChange} />
+                {fotoDataUrl && (
+                  <img
+                    src={fotoDataUrl}
+                    alt="Preview foto hasil pemeriksaan"
+                    style={{ height: '60px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                  />
+                )}
+                <button
+                  type="button"
+                  className="btn btn--sm btn--primary"
+                  disabled={!fotoDataUrl || readingFoto}
+                  onClick={() => void handleReadFoto()}
+                >
+                  {readingFoto ? '⏳ Membaca foto...' : '📷 Baca & Isi Otomatis'}
+                </button>
+              </div>
+              {readFotoError && (
+                <p className="alert alert--error" style={{ margin: '0.4rem 0 0' }}>
+                  {readFotoError}
+                </p>
+              )}
             </div>
 
             <div className="form-field form-grid--full">
