@@ -16,6 +16,7 @@ import { normalizeSharingKeterangan, parseSharingNominal } from '../lib/pilihanS
 import { fetchXauSpotPrice, fetchLatestXauDailyPoint } from '../lib/xausGoldPrice.js';
 import { fetchGoldFuturesPrice } from '../lib/goldFuturesPrice.js';
 import { computePivotLevels } from '../lib/dailyTradingPivotJob.js';
+import { generateContentWithFallback } from './analisaFotoAi.js';
 import {
   absensiAdminKlinikListWhere,
   adminKlinikListWhere,
@@ -3463,7 +3464,7 @@ Aturan:
 
     try {
       const client = new GoogleGenAI({ apiKey });
-      const response = await client.models.generateContent({
+      const response = await generateContentWithFallback(client, {
         model: 'gemini-3.6-flash',
         contents: [
           {
@@ -3839,7 +3840,7 @@ Aturan PENTING:
 
     try {
       const client = new GoogleGenAI({ apiKey });
-      const response = await client.models.generateContent({
+      const response = await generateContentWithFallback(client, {
         model: 'gemini-3.6-flash',
         contents: [
           {

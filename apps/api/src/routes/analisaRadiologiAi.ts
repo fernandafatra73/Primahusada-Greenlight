@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { GoogleGenAI, Type } from '@google/genai';
 import { prisma } from '../lib/prisma.js';
 import { buildPaginationMeta, parsePagination } from '../lib/pagination.js';
+import { generateContentWithFallback } from './analisaFotoAi.js';
 
 function badRequest(reply: FastifyReply, message: string): FastifyReply {
   return reply.status(400).send({ error: message });
@@ -170,7 +171,7 @@ export async function registerAnalisaRadiologiAiRoutes(app: FastifyInstance): Pr
 
     try {
       const client = new GoogleGenAI({ apiKey });
-      const response = await client.models.generateContent({
+      const response = await generateContentWithFallback(client, {
         model: 'gemini-3.6-flash',
         contents: [
           {

@@ -39,10 +39,20 @@ const KESAN_RESPONSE_SCHEMA = {
 
 /** Error 503/UNAVAILABLE (lonjakan permintaan) dan 504/DEADLINE_EXCEEDED
  * (timeout sesaat di sisi Gemini) dari Gemini biasanya transient — layak
- * dicoba ulang beberapa kali sebelum menyerah. */
+ * dicoba ulang beberapa kali PADA MODEL YANG SAMA sebelum menyerah. */
 function isRetryableGeminiError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
   return /"code"\s*:\s*(503|504)|UNAVAILABLE|DEADLINE_EXCEEDED|high demand/i.test(message);
+}
+
+/** Ditambah 429/RESOURCE_EXHAUSTED (kuota free tier per-model habis) —
+ * beda dari isRetryableGeminiError, ini dipakai untuk memutuskan pindah ke
+ * MODEL LAIN (lihat generateContentWithFallback), bukan dicoba ulang di
+ * model yang sama, karena kuota per-model tidak akan pulih dalam hitungan
+ * detik walau di-retry. */
+export function isQuotaOrOverloadError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /"code"\s*:\s*(429|503|504)|RESOURCE_EXHAUSTED|UNAVAILABLE|DEADLINE_EXCEEDED|high demand/i.test(message);
 }
 
 function delay(ms: number): Promise<void> {
@@ -63,6 +73,25 @@ export async function generateContentWithRetry(
     }
   }
   throw new Error('unreachable');
+}
+
+/** Model utama (mis. gemini-3.6-flash) sering kena kuota free tier habis
+ * (429) atau kepenuhan (503/504); model `fallbackModel` biasanya masih
+ * punya kuota terpisah karena dihitung per-model, jadi dipakai sebagai
+ * cadangan otomatis — dipakai oleh semua fitur AI (chat, AI Radiologi,
+ * AI Foto, AI Lab, Analisa Grafik) supaya tidak gagal total saat model
+ * utama kehabisan kuota harian. */
+export async function generateContentWithFallback(
+  client: GoogleGenAI,
+  params: Parameters<GoogleGenAI['models']['generateContent']>[0],
+  fallbackModel = 'gemini-flash-lite-latest',
+): ReturnType<GoogleGenAI['models']['generateContent']> {
+  try {
+    return await generateContentWithRetry(client, params, 2);
+  } catch (err) {
+    if (!isQuotaOrOverloadError(err) || params.model === fallbackModel) throw err;
+    return await generateContentWithRetry(client, { ...params, model: fallbackModel }, 2);
+  }
 }
 
 const AI_FOTO_SYSTEM_PROMPT = `Anda adalah asisten AI yang membantu radiolog/dokter di sebuah klinik membaca foto medis (foto anatomi, luka, kondisi kulit, atau foto rontgen) untuk membuat DRAFT AWAL, bukan diagnosis final.
@@ -446,7 +475,7 @@ export async function registerAnalisaFotoAiRoutes(app: FastifyInstance): Promise
 
     try {
       const client = new GoogleGenAI({ apiKey });
-      const response = await generateContentWithRetry(client, {
+      const response = await generateContentWithFallback(client, {
         model: 'gemini-3.6-flash',
         contents: [
           {
@@ -529,7 +558,7 @@ export async function registerAnalisaFotoAiRoutes(app: FastifyInstance): Promise
 
     try {
       const client = new GoogleGenAI({ apiKey });
-      const response = await generateContentWithRetry(client, {
+      const response = await generateContentWithFallback(client, {
         model: geminiModel,
         contents: [
           {

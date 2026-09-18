@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { GoogleGenAI } from '@google/genai';
-import { generateContentWithRetry } from './analisaFotoAi.js';
+import { generateContentWithFallback } from './analisaFotoAi.js';
 import { prisma } from '../lib/prisma.js';
 
 function badRequest(reply: FastifyReply, message: string): FastifyReply {
@@ -112,21 +112,18 @@ export async function registerChatRoutes(app: FastifyInstance): Promise<void> {
         : CHAT_SYSTEM_PROMPT;
 
       const client = new GoogleGenAI({ apiKey });
-      const response = await generateContentWithRetry(
-        client,
-        {
-          model: 'gemini-3.6-flash',
-          contents,
-          // Tanpa timeout, request bisa menggantung tanpa batas kalau Gemini
-          // tidak merespons — chat widget di frontend butuh kepastian gagal.
-          // gemini-3.6-flash pakai mode "thinking" yang bisa makan >20 detik
-          // walau untuk prompt pendek, jadi timeout dilonggarkan ke 45 detik.
-          // 504/DEADLINE_EXCEEDED sesaat sudah dicoba ulang otomatis (lihat
-          // isRetryableGeminiError di analisaFotoAi.ts).
-          config: { systemInstruction, httpOptions: { timeout: 45_000 } },
-        },
-        2,
-      );
+      const response = await generateContentWithFallback(client, {
+        model: 'gemini-3.6-flash',
+        contents,
+        // Tanpa timeout, request bisa menggantung tanpa batas kalau Gemini
+        // tidak merespons — chat widget di frontend butuh kepastian gagal.
+        // gemini-3.6-flash pakai mode "thinking" yang bisa makan >20 detik
+        // walau untuk prompt pendek, jadi timeout dilonggarkan ke 45 detik.
+        // 429/503/504 sesaat sudah dicoba ulang otomatis, lalu jatuh ke
+        // gemini-flash-lite-latest kalau kuota model utama habis (lihat
+        // generateContentWithFallback di analisaFotoAi.ts).
+        config: { systemInstruction, httpOptions: { timeout: 45_000 } },
+      });
 
       const finishReason = response.candidates?.[0]?.finishReason;
       if (finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {

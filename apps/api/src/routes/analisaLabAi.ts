@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { GoogleGenAI, Type } from '@google/genai';
 import { prisma } from '../lib/prisma.js';
 import { buildPaginationMeta, parsePagination } from '../lib/pagination.js';
-import { generateContentWithRetry } from './analisaFotoAi.js';
+import { generateContentWithFallback } from './analisaFotoAi.js';
 
 function badRequest(reply: FastifyReply, message: string): FastifyReply {
   return reply.status(400).send({ error: message });
@@ -251,20 +251,16 @@ export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<
 
     try {
       const client = new GoogleGenAI({ apiKey });
-      const response = await generateContentWithRetry(
-        client,
-        {
-          model: 'gemini-3.6-flash',
-          contents: [{ role: 'user', parts: [{ text: promptText }] }],
-          config: {
-            systemInstruction: ANALISA_LAB_SYSTEM_PROMPT,
-            responseMimeType: 'application/json',
-            responseSchema: ANALISA_LAB_RESPONSE_SCHEMA,
-            httpOptions: { timeout: 45_000 },
-          },
+      const response = await generateContentWithFallback(client, {
+        model: 'gemini-3.6-flash',
+        contents: [{ role: 'user', parts: [{ text: promptText }] }],
+        config: {
+          systemInstruction: ANALISA_LAB_SYSTEM_PROMPT,
+          responseMimeType: 'application/json',
+          responseSchema: ANALISA_LAB_RESPONSE_SCHEMA,
+          httpOptions: { timeout: 45_000 },
         },
-        2,
-      );
+      });
 
       const finishReason = response.candidates?.[0]?.finishReason;
       if (finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {
@@ -324,25 +320,21 @@ export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<
 
     try {
       const client = new GoogleGenAI({ apiKey });
-      const response = await generateContentWithRetry(
-        client,
-        {
-          model: 'gemini-3.6-flash',
-          contents: [
-            {
-              role: 'user',
-              parts: [{ inlineData: { mimeType: parsedImage.mediaType, data: parsedImage.data } }, { text: promptText }],
-            },
-          ],
-          config: {
-            systemInstruction: READ_FOTO_SYSTEM_PROMPT,
-            responseMimeType: 'application/json',
-            responseSchema: READ_FOTO_RESPONSE_SCHEMA,
-            httpOptions: { timeout: 45_000 },
+      const response = await generateContentWithFallback(client, {
+        model: 'gemini-3.6-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [{ inlineData: { mimeType: parsedImage.mediaType, data: parsedImage.data } }, { text: promptText }],
           },
+        ],
+        config: {
+          systemInstruction: READ_FOTO_SYSTEM_PROMPT,
+          responseMimeType: 'application/json',
+          responseSchema: READ_FOTO_RESPONSE_SCHEMA,
+          httpOptions: { timeout: 45_000 },
         },
-        2,
-      );
+      });
 
       const finishReason = response.candidates?.[0]?.finishReason;
       if (finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {
