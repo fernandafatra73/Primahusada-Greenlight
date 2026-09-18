@@ -109,6 +109,7 @@ export function AiLabPage() {
   const [fotoDataUrl, setFotoDataUrl] = useState('');
   const [readingFoto, setReadingFoto] = useState(false);
   const [readFotoError, setReadFotoError] = useState<string | null>(null);
+  const [ocrRawText, setOcrRawText] = useState('');
 
   function openCreate() {
     setForm(emptyForm);
@@ -119,6 +120,7 @@ export function AiLabPage() {
     setError(null);
     setFotoDataUrl('');
     setReadFotoError(null);
+    setOcrRawText('');
     setCreateOpen(true);
   }
 
@@ -144,6 +146,7 @@ export function AiLabPage() {
     setError(null);
     setFotoDataUrl('');
     setReadFotoError(null);
+    setOcrRawText('');
     setEditing(item);
   }
 
@@ -181,9 +184,11 @@ export function AiLabPage() {
     }
     setReadingFoto(true);
     setReadFotoError(null);
+    setOcrRawText('');
     try {
       // OCR murni di browser, tidak lewat AI/server — jadi tidak makan kuota Gemini.
       const ocrText = await runOcr(fotoDataUrl);
+      setOcrRawText(ocrText);
       setRows((prev) =>
         prev.map((row) => {
           const hasil = extractValueForParameter(ocrText, row.pemeriksaan);
@@ -403,6 +408,28 @@ export function AiLabPage() {
                 <p className="alert alert--error" style={{ margin: '0.4rem 0 0' }}>
                   {readFotoError}
                 </p>
+              )}
+              {ocrRawText && (
+                <details style={{ marginTop: '0.4rem' }}>
+                  <summary style={{ cursor: 'pointer', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    Lihat teks mentah hasil baca foto (untuk cek kalau ada yang tidak sesuai)
+                  </summary>
+                  <pre
+                    style={{
+                      marginTop: '0.4rem',
+                      padding: '0.5rem',
+                      fontSize: '0.75rem',
+                      whiteSpace: 'pre-wrap',
+                      background: 'var(--color-bg-page)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-button)',
+                      maxHeight: '150px',
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {ocrRawText}
+                  </pre>
+                </details>
               )}
             </div>
 
