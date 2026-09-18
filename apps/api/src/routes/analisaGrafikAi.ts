@@ -137,7 +137,7 @@ Aturan PENTING:
 
 function isQuotaOrOverloadError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
-  return /"code"\s*:\s*(429|503)|RESOURCE_EXHAUSTED|UNAVAILABLE|high demand/i.test(message);
+  return /"code"\s*:\s*(429|503|504)|RESOURCE_EXHAUSTED|UNAVAILABLE|DEADLINE_EXCEEDED|high demand/i.test(message);
 }
 
 function stringField(value: unknown): string {
@@ -227,10 +227,10 @@ export async function registerAnalisaGrafikAiRoutes(app: FastifyInstance): Promi
         // model lite biasanya masih tersedia, jadi dipakai sebagai cadangan.
         let response: Awaited<ReturnType<typeof generateContentWithRetry>>;
         try {
-          response = await generateContentWithRetry(client, { ...params, model: 'gemini-flash-latest' }, 2);
+          response = await generateContentWithRetry(client, { ...params, model: 'gemini-3.6-flash' }, 2);
         } catch (err) {
           if (!isQuotaOrOverloadError(err)) throw err;
-          req.log.warn('gemini-flash-latest tidak tersedia; memakai gemini-flash-lite-latest untuk analisa grafik');
+          req.log.warn('gemini-3.6-flash tidak tersedia; memakai gemini-flash-lite-latest untuk analisa grafik');
           response = await generateContentWithRetry(client, { ...params, model: 'gemini-flash-lite-latest' });
         }
 

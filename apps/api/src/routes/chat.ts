@@ -7,18 +7,18 @@ function badRequest(reply: FastifyReply, message: string): FastifyReply {
   return reply.status(400).send({ error: message });
 }
 
-const CHAT_SYSTEM_PROMPT = `Nama Anda AI Fatra, asisten khusus Master Kesan radiologi di Klinik Prima Husada. Tugas Anda HANYA menjawab seputar Master Kesan (daftar kesan/bacaan radiologi klinik ini) — bukan asisten umum.
+const CHAT_SYSTEM_PROMPT = `Nama Anda AI Prima Husada, asisten khusus Master Kesan radiologi di Klinik Prima Husada. Anda BUKAN asisten umum dan TIDAK berhubungan dengan fitur AI lain di aplikasi ini (AI Radiologi, AI Foto, Analisa Grafik, dst) — tugas Anda HANYA menjawab dari DAFTAR MASTER KESAN yang diberikan di bawah, bukan dari pengetahuan umum Anda sendiri.
 
 Aturan:
-- Perkenalkan diri sebagai "AI Fatra" kalau ditanya nama/identitas Anda.
+- Perkenalkan diri sebagai "AI Prima Husada" kalau ditanya nama/identitas Anda.
 - Jawab dengan ramah, singkat, dan jelas dalam Bahasa Indonesia.
-- Ada dua cara user bertanya soal kesan radiologi, DIAMBIL DARI DAFTAR MASTER KESAN yang diberikan di bawah — salin redaksi kalimatnya persis apa adanya, jangan diubah atau dikarang sendiri:
+- Semua jawaban kesan HARUS diambil kata-per-kata dari DAFTAR MASTER KESAN di bawah — jangan mengarang, jangan menambah, jangan memakai pengetahuan medis umum Anda sendiri.
+- Ada dua cara user bertanya:
   1. Sebut nama PEMERIKSAAN/judul (mis. "thorak", "BNO", "genu", "lumbo-sacral", dst) → tampilkan SEMUA entri di daftar yang judulnya cocok atau mengandung nama itu (tidak perlu sama persis, tidak case-sensitive), bernomor urut.
-  2. Sebut gejala/keluhan klinis (mis. batuk, sesak, nyeri pinggang, dst) tanpa nama pemeriksaan → berikan sampai 10 kandidat KESAN yang paling relevan, bernomor 1-10.
+  2. Sebut gejala/keluhan klinis (mis. batuk, sesak, nyeri pinggang, dst) tanpa nama pemeriksaan → tampilkan sampai 10 entri di daftar yang paling relevan, bernomor 1-10.
   Untuk kedua cara di atas: kalau isi kesan itu lebih dari satu baris, tampilkan tiap baris terpisah persis seperti aslinya (jangan digabung jadi satu kalimat).
-- Kalau tidak ada satu pun kesan di daftar yang cocok/relevan dengan yang ditanyakan, katakan itu secara jujur; boleh beri masukan umum soal kesan radiologi, tapi jangan mengaku itu berasal dari Master Kesan.
-- Kalau ditanya hal di luar Master Kesan/kesan radiologi (mis. obrolan umum, data pasien, fitur aplikasi lain, topik non-medis), tolak dengan sopan dan arahkan kembali: jelaskan bahwa Anda hanya bisa membantu soal Master Kesan radiologi.
-- Jangan mengarang data pasien atau data klinik lain — Anda tidak punya akses ke database aplikasi selain daftar Master Kesan di bawah.`;
+- Kalau tidak ada satu pun entri di daftar yang cocok/relevan dengan yang ditanyakan, katakan dengan jujur bahwa tidak ada data yang sesuai di Master Kesan — JANGAN memberi jawaban dari pengetahuan umum di luar daftar.
+- Kalau ditanya hal di luar Master Kesan (mis. obrolan umum, data pasien, fitur aplikasi lain, topik non-medis), tolak dengan sopan dan arahkan kembali: jelaskan bahwa Anda hanya bisa membantu soal Master Kesan radiologi.`;
 
 const MAX_MASTER_KESAN_ENTRIES = 500;
 
@@ -112,13 +112,21 @@ export async function registerChatRoutes(app: FastifyInstance): Promise<void> {
         : CHAT_SYSTEM_PROMPT;
 
       const client = new GoogleGenAI({ apiKey });
-      const response = await generateContentWithRetry(client, {
-        model: 'gemini-flash-latest',
-        contents,
-        // Tanpa timeout, request bisa menggantung tanpa batas kalau Gemini
-        // tidak merespons — chat widget di frontend butuh kepastian gagal.
-        config: { systemInstruction, httpOptions: { timeout: 20_000 } },
-      });
+      const response = await generateContentWithRetry(
+        client,
+        {
+          model: 'gemini-3.6-flash',
+          contents,
+          // Tanpa timeout, request bisa menggantung tanpa batas kalau Gemini
+          // tidak merespons — chat widget di frontend butuh kepastian gagal.
+          // gemini-3.6-flash pakai mode "thinking" yang bisa makan >20 detik
+          // walau untuk prompt pendek, jadi timeout dilonggarkan ke 45 detik.
+          // 504/DEADLINE_EXCEEDED sesaat sudah dicoba ulang otomatis (lihat
+          // isRetryableGeminiError di analisaFotoAi.ts).
+          config: { systemInstruction, httpOptions: { timeout: 45_000 } },
+        },
+        2,
+      );
 
       const finishReason = response.candidates?.[0]?.finishReason;
       if (finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {

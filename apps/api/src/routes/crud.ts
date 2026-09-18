@@ -3464,7 +3464,7 @@ Aturan:
     try {
       const client = new GoogleGenAI({ apiKey });
       const response = await client.models.generateContent({
-        model: 'gemini-flash-latest',
+        model: 'gemini-3.6-flash',
         contents: [
           {
             role: 'user',
@@ -3840,7 +3840,7 @@ Aturan PENTING:
     try {
       const client = new GoogleGenAI({ apiKey });
       const response = await client.models.generateContent({
-        model: 'gemini-flash-latest',
+        model: 'gemini-3.6-flash',
         contents: [
           {
             role: 'user',

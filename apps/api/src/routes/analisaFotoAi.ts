@@ -37,11 +37,12 @@ const KESAN_RESPONSE_SCHEMA = {
   required: ['namaPenyakit', 'kesan'],
 };
 
-/** Error 503/UNAVAILABLE dari Gemini biasanya cuma lonjakan permintaan
- * sesaat — layak dicoba ulang beberapa kali sebelum menyerah. */
+/** Error 503/UNAVAILABLE (lonjakan permintaan) dan 504/DEADLINE_EXCEEDED
+ * (timeout sesaat di sisi Gemini) dari Gemini biasanya transient — layak
+ * dicoba ulang beberapa kali sebelum menyerah. */
 function isRetryableGeminiError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
-  return /"code"\s*:\s*503|UNAVAILABLE|high demand/i.test(message);
+  return /"code"\s*:\s*(503|504)|UNAVAILABLE|DEADLINE_EXCEEDED|high demand/i.test(message);
 }
 
 function delay(ms: number): Promise<void> {
@@ -324,7 +325,7 @@ function buildSystemPrompt(model: string | undefined, indicators: readonly Indic
 }
 
 const TB_SCREENING_MODEL_BY_VERSION: Record<string, string> = {
-  v1: 'gemini-flash-latest',
+  v1: 'gemini-3.6-flash',
   v2: 'gemini-flash-lite-latest',
 };
 
@@ -446,7 +447,7 @@ export async function registerAnalisaFotoAiRoutes(app: FastifyInstance): Promise
     try {
       const client = new GoogleGenAI({ apiKey });
       const response = await generateContentWithRetry(client, {
-        model: 'gemini-flash-latest',
+        model: 'gemini-3.6-flash',
         contents: [
           {
             role: 'user',
