@@ -15,6 +15,7 @@ import { clearStoredAuthUser, loadStoredAuthUser, storeAuthUser, type AuthUser }
 import { apiGet } from './lib/api.ts';
 import { withIndonesianVoice } from './lib/speechVoice.ts';
 import { ActivationPage } from './pages/ActivationPage.tsx';
+import { ChatWidget } from './components/chat/ChatWidget.tsx';
 import { DashboardPage } from './pages/DashboardPage.tsx';
 import { DokterPage } from './pages/DokterPage.tsx';
 import { DokterHubPage } from './pages/DokterHubPage.tsx';
@@ -507,6 +508,7 @@ export function App() {
           <AppShell activeView={activeView} authUser={authUser} onNavigate={navigate} onLogout={handleLogout}>
             {renderViewContent(activeView, authUser.role, authUser.departemen, navigate)}
           </AppShell>
+          <ChatWidget />
         </PdfPreviewHost>
       </MusicPlayerProvider>
     </ListRefreshProvider>
