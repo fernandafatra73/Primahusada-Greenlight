@@ -48,9 +48,9 @@ export function ChatWidget() {
   return (
     <div className="chat-widget">
       {open && (
-        <section className="chat-widget__panel" aria-label="Chat dengan AI">
+        <section className="chat-widget__panel" aria-label="Chat dengan AI Fatra">
           <header className="chat-widget__header">
-            <span>Asisten AI</span>
+            <span>AI Fatra</span>
             <button
               type="button"
               className="chat-widget__close"
@@ -63,7 +63,10 @@ export function ChatWidget() {
 
           <div className="chat-widget__list" ref={listRef}>
             {messages.length === 0 && (
-              <p className="chat-widget__empty">Tanya apa saja tentang aplikasi ini ke asisten AI.</p>
+              <p className="chat-widget__empty">
+                Tanya AI Fatra soal Master Kesan radiologi — sebut nama pemeriksaan (mis. "thorak") atau gejala
+                klinis (mis. "batuk, sesak").
+              </p>
             )}
             {messages.map((turn, index) => (
               <div
@@ -81,7 +84,7 @@ export function ChatWidget() {
           <form className="chat-widget__form" onSubmit={(event) => void handleSubmit(event)}>
             <input
               type="text"
-              placeholder="Tulis pesan..."
+              placeholder="Tanya kesan/pemeriksaan..."
               value={input}
               onChange={(event) => setInput(event.target.value)}
               disabled={loading}
@@ -96,7 +99,7 @@ export function ChatWidget() {
       <button
         type="button"
         className="chat-widget__fab"
-        aria-label={open ? 'Tutup chat AI' : 'Buka chat AI'}
+        aria-label={open ? 'Tutup AI Fatra' : 'Buka AI Fatra'}
         onClick={() => setOpen((prev) => !prev)}
       >
         {open ? '✕' : '💬'}
