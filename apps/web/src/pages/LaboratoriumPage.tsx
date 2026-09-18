@@ -31,6 +31,7 @@ import {
   type ParsedLabData,
 } from '../lib/labKesan.ts';
 import { serializeKlinisData } from '../lib/penunjang.ts';
+import { extractValueForParameter, runOcr } from '../lib/labOcr.ts';
 import '../components/ui/ui.css';
 
 export {
@@ -176,6 +177,8 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
   const [amplopItem, setAmplopItem] = useState<LabPasienItem | null>(null);
   const [kwitansiItem, setKwitansiItem] = useState<LabPasienItem | null>(null);
   const [labRows, setLabRows] = useState<LabTableRow[]>([]);
+  const [readingFotoHasil, setReadingFotoHasil] = useState(false);
+  const [readFotoHasilError, setReadFotoHasilError] = useState<string | null>(null);
   const [analisList, setAnalisList] = useState<PetugasLabItem[]>([]);
   const [analisId, setAnalisId] = useState('');
   const [analisNama, setAnalisNama] = useState('');
@@ -471,6 +474,35 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
 
   function handleClearRows() {
     setLabRows([]);
+  }
+
+  function handleReadFotoHasil(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = async () => {
+      if (typeof reader.result !== 'string') return;
+      setReadingFotoHasil(true);
+      setReadFotoHasilError(null);
+      try {
+        // OCR langsung di browser (tanpa AI/server) — tulisan di foto dibaca
+        // dan dicocokkan per nama pemeriksaan untuk mengisi kolom Hasil.
+        const ocrText = await runOcr(reader.result as string);
+        setLabRows((prev) =>
+          prev.map((row) => {
+            if (!row.pemeriksaan.trim()) return row;
+            const hasil = extractValueForParameter(ocrText, row.pemeriksaan);
+            return hasil ? { ...row, hasil } : row;
+          }),
+        );
+      } catch (err) {
+        setReadFotoHasilError(err instanceof Error ? err.message : 'Gagal membaca teks dari foto');
+      } finally {
+        setReadingFotoHasil(false);
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -997,8 +1029,29 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                     >
                       Kosongkan
                     </button>
+                    <label
+                      htmlFor="lab-hasil-foto"
+                      className="btn btn--secondary btn--sm"
+                      title="Baca teks dari foto hasil pemeriksaan (OCR, tanpa AI) dan isi otomatis kolom Hasil sesuai nama pemeriksaannya"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
+                    >
+                      {readingFotoHasil ? '⏳ Membaca teks...' : '📷 Baca dari Foto'}
+                    </label>
+                    <input
+                      id="lab-hasil-foto"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleReadFotoHasil}
+                      disabled={readingFotoHasil}
+                      style={{ display: 'none' }}
+                    />
                   </div>
                 </div>
+                {readFotoHasilError && (
+                  <p className="alert alert--error" style={{ margin: '0 0 0.5rem' }}>
+                    {readFotoHasilError}
+                  </p>
+                )}
                 <div style={{ overflowY: 'auto', maxHeight: '240px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)' }}>
                   <table className="data-table" style={{ fontSize: '0.85rem', marginBottom: 0 }}>
                     <thead>
