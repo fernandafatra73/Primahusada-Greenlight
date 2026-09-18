@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { MAX_HISTORY_TURNS, MAX_MESSAGE_LENGTH, sanitizeHistory } from '../../apps/api/src/routes/chat.ts';
+import {
+  formatMasterKesanContext,
+  MAX_HISTORY_TURNS,
+  MAX_MESSAGE_LENGTH,
+  sanitizeHistory,
+} from '../../apps/api/src/routes/chat.ts';
 
 describe('sanitizeHistory', () => {
   test('returns an empty array for non-array input', () => {
@@ -40,5 +45,35 @@ describe('sanitizeHistory', () => {
     const longText = 'a'.repeat(MAX_MESSAGE_LENGTH + 500);
     const result = sanitizeHistory([{ role: 'user', text: longText }]);
     expect(result[0]!.text).toHaveLength(MAX_MESSAGE_LENGTH);
+  });
+});
+
+describe('formatMasterKesanContext', () => {
+  test('returns an empty string when there are no templates', () => {
+    expect(formatMasterKesanContext([])).toBe('');
+  });
+
+  test('numbers entries and joins multi-line isi with " / "', () => {
+    const result = formatMasterKesanContext([
+      { judul: 'Thorak', isi: 'Tb paru aktif paru kanan dan kiri\nTidak tampak cardiomegali' },
+      { judul: 'Thorak', isi: 'BP Kanan dan kiri\nTidak tampak cardiomegali' },
+    ]);
+    expect(result).toBe(
+      [
+        'DAFTAR MASTER KESAN (judul pemeriksaan dalam kurung siku, lalu isi bacaan per baris dipisah "/"):',
+        '1. [Thorak] Tb paru aktif paru kanan dan kiri / Tidak tampak cardiomegali',
+        '2. [Thorak] BP Kanan dan kiri / Tidak tampak cardiomegali',
+      ].join('\n'),
+    );
+  });
+
+  test('trims each line and drops empty lines from isi', () => {
+    const result = formatMasterKesanContext([{ judul: 'BNO', isi: '  Obs Konstipasi  \n\n Saran: foto colon in loop ' }]);
+    expect(result).toBe(
+      [
+        'DAFTAR MASTER KESAN (judul pemeriksaan dalam kurung siku, lalu isi bacaan per baris dipisah "/"):',
+        '1. [BNO] Obs Konstipasi / Saran: foto colon in loop',
+      ].join('\n'),
+    );
   });
 });

@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { GoogleGenAI } from '@google/genai';
 import { generateContentWithRetry } from './analisaFotoAi.js';
+import { prisma } from '../lib/prisma.js';
 
 function badRequest(reply: FastifyReply, message: string): FastifyReply {
   return reply.status(400).send({ error: message });
@@ -12,7 +13,48 @@ Aturan:
 - Jawab dengan ramah, singkat, dan jelas dalam Bahasa Indonesia.
 - Anda boleh membantu pertanyaan umum, penjelasan istilah, atau bantuan memakai fitur aplikasi.
 - Untuk pertanyaan medis (diagnosa, dosis obat, resep, interpretasi hasil pemeriksaan pasien tertentu), tegaskan bahwa Anda tidak menggantikan penilaian dokter/radiolog dan sarankan berkonsultasi dengan tenaga medis di klinik.
-- Jangan mengarang data pasien atau data klinik — Anda tidak punya akses ke database aplikasi.`;
+- Jangan mengarang data pasien atau data klinik — Anda tidak punya akses ke database aplikasi.
+- Kalau user menyebutkan gejala/keluhan klinis (mis. batuk, sesak, nyeri pinggang, dst) atau minta contoh kesan radiologi, berikan sampai 10 kandidat KESAN yang paling relevan, bernomor 1-10, DIAMBIL DARI DAFTAR MASTER KESAN yang diberikan di bawah — salin redaksi kalimatnya persis apa adanya, jangan diubah atau dikarang sendiri. Kalau isi kesan itu lebih dari satu baris, tampilkan tiap baris terpisah persis seperti aslinya (jangan digabung jadi satu kalimat).
+- Kalau tidak ada satu pun kesan di daftar yang cukup relevan dengan yang ditanyakan, katakan itu secara jujur; boleh beri masukan umum, tapi jangan mengaku itu berasal dari Master Kesan.`;
+
+const MAX_MASTER_KESAN_ENTRIES = 500;
+
+export interface MasterKesanEntry {
+  readonly judul: string;
+  readonly isi: string;
+}
+
+/// Format entri Master Kesan jadi teks rujukan untuk system prompt Gemini.
+/// Dipisah dari query DB-nya (buildMasterKesanContext) supaya bisa dites
+/// tanpa database.
+export function formatMasterKesanContext(templates: readonly MasterKesanEntry[]): string {
+  if (templates.length === 0) return '';
+
+  const lines = templates.map((t, index) => {
+    const isiLines = t.isi
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(' / ');
+    return `${index + 1}. [${t.judul}] ${isiLines}`;
+  });
+  return [
+    'DAFTAR MASTER KESAN (judul pemeriksaan dalam kurung siku, lalu isi bacaan per baris dipisah "/"):',
+    ...lines,
+  ].join('\n');
+}
+
+/// Ambil seluruh isi Master Kesan (KesanTemplate, diisi lewat menu Radiologi >
+/// Master Kesan) untuk dijadikan rujukan jawaban chat — supaya AI menjawab
+/// dengan redaksi kesan yang benar-benar dipakai klinik ini, bukan mengarang.
+export async function buildMasterKesanContext(): Promise<string> {
+  const templates = await prisma.kesanTemplate.findMany({
+    select: { judul: true, isi: true },
+    orderBy: { judul: 'asc' },
+    take: MAX_MASTER_KESAN_ENTRIES,
+  });
+  return formatMasterKesanContext(templates);
+}
 
 type ChatRole = 'user' | 'model';
 interface ChatTurn {
@@ -61,13 +103,18 @@ export async function registerChatRoutes(app: FastifyInstance): Promise<void> {
     ];
 
     try {
+      const masterKesanContext = await buildMasterKesanContext();
+      const systemInstruction = masterKesanContext
+        ? `${CHAT_SYSTEM_PROMPT}\n\n${masterKesanContext}`
+        : CHAT_SYSTEM_PROMPT;
+
       const client = new GoogleGenAI({ apiKey });
       const response = await generateContentWithRetry(client, {
         model: 'gemini-flash-latest',
         contents,
         // Tanpa timeout, request bisa menggantung tanpa batas kalau Gemini
         // tidak merespons — chat widget di frontend butuh kepastian gagal.
-        config: { systemInstruction: CHAT_SYSTEM_PROMPT, httpOptions: { timeout: 20_000 } },
+        config: { systemInstruction, httpOptions: { timeout: 20_000 } },
       });
 
       const finishReason = response.candidates?.[0]?.finishReason;
