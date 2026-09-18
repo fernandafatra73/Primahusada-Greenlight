@@ -3,6 +3,7 @@
   "include": [
     "__tests__",
     "apps/api/prisma.config.ts",
-    "apps/api/prisma/seed.ts"
+    "apps/api/prisma/seed.ts",
+    "apps/api/scripts/generate-activation-code.ts"
   ]
 }

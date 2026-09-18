@@ -12,7 +12,9 @@ import {
 } from './config/navigation.ts';
 import { useAppNavigation } from './hooks/useAppNavigation.ts';
 import { clearStoredAuthUser, loadStoredAuthUser, storeAuthUser, type AuthUser } from './lib/auth.ts';
+import { apiGet } from './lib/api.ts';
 import { withIndonesianVoice } from './lib/speechVoice.ts';
+import { ActivationPage } from './pages/ActivationPage.tsx';
 import { DashboardPage } from './pages/DashboardPage.tsx';
 import { DokterPage } from './pages/DokterPage.tsx';
 import { DokterHubPage } from './pages/DokterHubPage.tsx';
@@ -449,6 +451,29 @@ export function App() {
   const { activeView, navigate } = useAppNavigation();
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => loadStoredAuthUser());
   const [justLoggedIn, setJustLoggedIn] = useState(false);
+  const [activated, setActivated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkActivation(): Promise<void> {
+      try {
+        const result = await apiGet<{ activated: boolean }>('/api/activation/status');
+        if (!cancelled) setActivated(result.activated);
+      } catch {
+        // Gagal cek status (mis. server baru start) — anggap belum aktif dulu,
+        // ActivationPage sendiri punya tombol "coba lagi" kalau ini transient.
+        if (!cancelled) setActivated(false);
+      }
+    }
+    void checkActivation();
+    // Cek ulang tiap 5 menit supaya lisensi yang kedaluwarsa saat aplikasi
+    // sedang dipakai tetap terdeteksi tanpa harus reload manual.
+    const interval = setInterval(() => void checkActivation(), 5 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   function handleLogin(user: AuthUser): void {
     storeAuthUser(user);
@@ -460,6 +485,14 @@ export function App() {
     clearStoredAuthUser();
     setAuthUser(null);
     setJustLoggedIn(false);
+  }
+
+  if (activated === null) {
+    return null;
+  }
+
+  if (!activated) {
+    return <ActivationPage onActivated={() => setActivated(true)} />;
   }
 
   if (!authUser) {

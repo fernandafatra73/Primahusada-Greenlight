@@ -6,6 +6,7 @@ import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import Fastify from 'fastify';
 import { UPLOADS_DIR } from './lib/fileStorage.js';
+import { getOrCreateLisensiAktivasi, isLisensiAktif, registerActivationRoutes } from './routes/activation.js';
 import { registerAnalisaFotoAiRoutes } from './routes/analisaFotoAi.js';
 import { registerAnalisaGrafikAiRoutes } from './routes/analisaGrafikAi.js';
 import { registerAnalisaRadiologiAiRoutes } from './routes/analisaRadiologiAi.js';
@@ -41,6 +42,25 @@ app.get('/api/health', async () => ({ ok: true }));
 // bukan sebagai base64 di database, dan dilayani di sini sebagai file statis.
 mkdirSync(UPLOADS_DIR, { recursive: true });
 await app.register(fastifyStatic, { root: UPLOADS_DIR, prefix: '/uploads/' });
+
+await registerActivationRoutes(app);
+
+// Kunci seluruh API (kecuali /api/health dan /api/activation/*) sampai
+// aplikasi diaktivasi dengan kode dari pemilik dan belum kedaluwarsa.
+// Lihat lib/activation.ts dan routes/activation.ts.
+app.addHook('onRequest', async (req, reply) => {
+  const url = req.raw.url ?? '';
+  if (!url.startsWith('/api/') || url.startsWith('/api/health') || url.startsWith('/api/activation/')) {
+    return;
+  }
+  const lisensi = await getOrCreateLisensiAktivasi();
+  if (!isLisensiAktif(lisensi)) {
+    await reply.status(403).send({
+      error: 'Aplikasi belum diaktivasi atau masa aktivasi sudah habis.',
+      activationRequired: true,
+    });
+  }
+});
 
 await registerAuthRoutes(app);
 await registerBackupRoutes(app);

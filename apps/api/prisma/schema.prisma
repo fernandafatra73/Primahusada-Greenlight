@@ -278,6 +278,21 @@ model ReagenReminderSetting {
   updatedAt DateTime @updatedAt
 }
 
+/// Status aktivasi lisensi aplikasi per instalasi (satu baris, id tetap
+/// "default"). Aplikasi terkunci sampai diaktivasi dengan kode dari pemilik
+/// (kirim kode permintaan via WhatsApp), berlaku 1 tahun sejak `activatedAt`,
+/// lalu `cycle` naik agar kode aktivasi lama tidak bisa dipakai ulang saat
+/// minta aktivasi berikutnya. Lihat apps/api/src/lib/activation.ts.
+model LisensiAktivasi {
+  id          String    @id @default("default")
+  installId   String    @default(cuid())
+  cycle       Int       @default(1)
+  activatedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 /// Daftar akun/kredensial (mis. akun sosial media, email, dsb) yang dikelola
 /// pemilik klinik — diakses lewat tombol "Daftar Akun" di halaman Sosmed.
 model DaftarAkun {
