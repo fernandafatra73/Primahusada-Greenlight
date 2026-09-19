@@ -137,7 +137,7 @@ Aturan:
   - "Limposit" → ambil dari LYM% (persentase limfosit).
   - "Monosit" → ambil dari MID% atau MXD% (persentase sel ukuran sedang).
   - "Staff" → ambil dari MID# atau MXD# (jumlah ABSOLUT sel ukuran sedang, bukan persen) — isi otomatis dengan angka ini seperti parameter lainnya.
-  - "Eosinofil" dan "Basofil" → isi string kosong "" (alat 3-part tidak bisa memisahkan kedua nilai ini secara tersendiri, JANGAN mengarang angka 0 atau angka lain). Biarkan petugas lab mengisi keduanya secara manual berdasarkan pemeriksaan hapusan darah, lalu menyesuaikan Netrofil Segmen supaya totalnya tetap 100%.
+  - "Eosinofil" dan "Basofil" → isi otomatis dengan "0" (alat 3-part tidak bisa memisahkan kedua nilai ini secara tersendiri).
 - Kembalikan HANYA parameter-parameter yang ada di daftar yang diberikan, dengan nama "pemeriksaan" persis sama seperti di daftar (bukan nama/singkatan yang tertulis di foto).
 - Jawab HANYA sesuai skema JSON yang diberikan.`;
 
