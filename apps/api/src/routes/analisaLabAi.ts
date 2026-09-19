@@ -122,6 +122,7 @@ Aturan:
 - Anda akan diberi daftar nama parameter yang harus dicari nilainya di foto.
 - Untuk tiap nama parameter di daftar, cari baris/bagian foto yang menyebut parameter itu (nama di foto boleh beda singkatan/kapitalisasi/urutan kata asal maksudnya sama, mis. "Hb"/"RGB" untuk Hemoglobin, "WBC" untuk Leukosit, "PLT" untuk Trombosit, "RBC" untuk Eritrosit, "Ht"/"HCT" untuk Hematokrit) dan isi "hasil" HANYA dengan angka/nilainya saja (mis. "8500"), JANGAN sertakan nama parameter, singkatannya, atau satuannya di dalam "hasil".
 - Kalau parameter itu tidak ditemukan atau tidak terbaca jelas di foto, isi "hasil" dengan string kosong "" — JANGAN mengarang nilai yang tidak ada di foto.
+- Khusus Leukosit (WBC) dan Trombosit (PLT): sebagian alat analyzer mencetak nilainya dalam notasi ribuan (satuan "10^3/uL", "x10^3/uL", "10^9/L", atau "K/uL", biasanya angka desimal kecil seperti "8.5" atau "210"). Kalau Anda melihat notasi ribuan seperti itu, KALIKAN 1000 dulu supaya sesuai dengan nilai rujukan yang dalam satuan penuh (mis. nilai rujukan "4.000-10.000/uL" berarti hasilnya harus dalam ribuan penuh seperti "8500", bukan "8.5"). Kalau di foto nilainya SUDAH tertulis dalam angka penuh (mis. "8500"), JANGAN dikalikan lagi.
 - Kembalikan HANYA parameter-parameter yang ada di daftar yang diberikan, dengan nama "pemeriksaan" persis sama seperti di daftar (bukan nama/singkatan yang tertulis di foto).
 - Jawab HANYA sesuai skema JSON yang diberikan.`;
 
