@@ -123,13 +123,12 @@ Aturan:
 - Untuk tiap nama parameter di daftar, cari baris/bagian foto yang menyebut parameter itu (nama di foto boleh beda singkatan/kapitalisasi/urutan kata asal maksudnya sama, mis. "Hb"/"RGB" untuk Hemoglobin, "WBC" untuk Leukosit, "PLT" untuk Trombosit, "RBC" untuk Eritrosit, "Ht"/"HCT" untuk Hematokrit) dan isi "hasil" HANYA dengan angka/nilainya saja (mis. "8500"), JANGAN sertakan nama parameter, singkatannya, atau satuannya di dalam "hasil".
 - Kalau parameter itu tidak ditemukan atau tidak terbaca jelas di foto, isi "hasil" dengan string kosong "" — JANGAN mengarang nilai yang tidak ada di foto.
 - Khusus Leukosit (WBC) dan Trombosit (PLT): sebagian alat analyzer mencetak nilainya dalam notasi ribuan (satuan "10^3/uL", "x10^3/uL", "10^9/L", atau "K/uL", biasanya angka desimal kecil seperti "8.5" atau "210"). Kalau Anda melihat notasi ribuan seperti itu, KALIKAN 1000 dulu supaya sesuai dengan nilai rujukan yang dalam satuan penuh (mis. nilai rujukan "4.000-10.000/uL" berarti hasilnya harus dalam ribuan penuh seperti "8500", bukan "8.5"). Kalau di foto nilainya SUDAH tertulis dalam angka penuh (mis. "8500"), JANGAN dikalikan lagi.
-- Khusus kategori Diffcount (Eosinofil, Basofil, Staff, Netrofil Segmen, Limposit, Monosit): alat analyzer 3-part differential biasanya HANYA mencetak 3 nilai gabungan, bukan 6 nilai terpisah — LYM% (limfosit), MID%/MXD% (sel ukuran sedang: gabungan monosit+eosinofil+basofil) dan GRA% (granulosit: gabungan neutrofil+eosinofil+basofil), kadang disertai versi jumlah absolut berakhiran "#" (mis. "MID#" beda dari "MID%"). Kalau daftar parameter berisi nama-nama Diffcount ini, petakan dari foto sebagai berikut:
+- Khusus kategori Diffcount (Eosinofil, Basofil, Staff, Netrofil Segmen, Limposit, Monosit): alat analyzer 3-part differential biasanya HANYA mencetak 3 nilai persentase gabungan — LYM% (limfosit), MID%/MXD% (sel ukuran sedang: gabungan monosit+eosinofil+basofil) dan GRA% (granulosit: gabungan neutrofil segmen+neutrofil batang/staff+eosinofil+basofil). Alat jenis ini TIDAK BISA membedakan Staff (neutrofil batang/imatur) dari Netrofil Segmen (neutrofil matang) — keduanya sama-sama tercampur di dalam GRA%. Kalau daftar parameter berisi nama-nama Diffcount ini, petakan dari foto sebagai berikut:
   - "Netrofil Segmen" → ambil dari GRA% (persentase granulosit).
   - "Limposit" → ambil dari LYM% (persentase limfosit).
   - "Monosit" → ambil dari MID% atau MXD% (persentase sel ukuran sedang).
-  - "Staff" → ambil dari MID# atau MXD# (jumlah ABSOLUT sel ukuran sedang, bukan persen).
-  - "Eosinofil" dan "Basofil" → isi "0" (alat 3-part tidak memisahkan nilai ini sendiri-sendiri).
-  Nilai LYM%+MID%/MXD%+GRA% pada alat 3-part biasanya berjumlah 100%.
+  - "Eosinofil", "Basofil", dan "Staff" → isi "0" (alat 3-part tidak bisa memisahkan ketiga nilai ini secara tersendiri).
+  Dengan pemetaan ini, LYM%+MID%/MXD%+GRA%+0+0+0 harus berjumlah TEPAT 100%.
 - Kembalikan HANYA parameter-parameter yang ada di daftar yang diberikan, dengan nama "pemeriksaan" persis sama seperti di daftar (bukan nama/singkatan yang tertulis di foto).
 - Jawab HANYA sesuai skema JSON yang diberikan.`;
 
