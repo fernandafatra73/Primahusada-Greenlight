@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  formatHasilRibuan,
   formatParametersForPrompt,
   MAX_PARAMETERS,
   sanitizeParameterNames,
@@ -81,5 +82,31 @@ describe('sanitizeParameterNames', () => {
   test('caps the number of names to MAX_PARAMETERS', () => {
     const input = Array.from({ length: MAX_PARAMETERS + 5 }, (_, i) => `Param ${i}`);
     expect(sanitizeParameterNames(input)).toHaveLength(MAX_PARAMETERS);
+  });
+});
+
+describe('formatHasilRibuan', () => {
+  test('adds thousands separators for Leukosit/WBC results', () => {
+    expect(formatHasilRibuan('Jumlah Sel Leukosit', '14800')).toBe('14.800');
+    expect(formatHasilRibuan('Leukosit (WBC)', '8500')).toBe('8.500');
+  });
+
+  test('adds thousands separators for Trombosit/PLT results', () => {
+    expect(formatHasilRibuan('Jumlah Sel Trombosit', '600000')).toBe('600.000');
+    expect(formatHasilRibuan('Trombosit (PLT)', '150000')).toBe('150.000');
+  });
+
+  test('leaves non-numeric or short values untouched', () => {
+    expect(formatHasilRibuan('Jumlah Sel Leukosit', '')).toBe('');
+    expect(formatHasilRibuan('Jumlah Sel Leukosit', '8.5')).toBe('8.5');
+    expect(formatHasilRibuan('Jumlah Sel Leukosit', '850')).toBe('850');
+  });
+
+  test('leaves unrelated parameters untouched', () => {
+    expect(formatHasilRibuan('Hemoglobin (Hb)', '14800')).toBe('14800');
+  });
+
+  test('is idempotent when the value already has thousands separators', () => {
+    expect(formatHasilRibuan('Jumlah Sel Trombosit', '600.000')).toBe('600.000');
   });
 });

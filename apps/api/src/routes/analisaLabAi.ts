@@ -97,6 +97,15 @@ export function sanitizeParameterNames(value: unknown): string[] {
     .map((v) => v.trim());
 }
 
+const RIBUAN_PARAMETER_PATTERN = /leukosit|trombosit|\bwbc\b|\bplt\b/i;
+
+export function formatHasilRibuan(pemeriksaan: string, hasil: string): string {
+  if (!RIBUAN_PARAMETER_PATTERN.test(pemeriksaan)) return hasil;
+  const digitsOnly = hasil.trim().replace(/\./g, '');
+  if (!/^\d{4,}$/.test(digitsOnly)) return hasil;
+  return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 const READ_FOTO_RESPONSE_SCHEMA = {
   type: Type.ARRAY,
   items: {
@@ -127,7 +136,8 @@ Aturan:
   - "Netrofil Segmen" → ambil dari GRA% (persentase granulosit).
   - "Limposit" → ambil dari LYM% (persentase limfosit).
   - "Monosit" → ambil dari MID% atau MXD% (persentase sel ukuran sedang).
-  - "Eosinofil", "Basofil", dan "Staff" → isi string kosong "" (alat 3-part tidak bisa memisahkan ketiga nilai ini secara tersendiri, JANGAN mengarang angka 0 atau angka lain untuk ketiganya). Biarkan petugas lab mengisi ketiga nilai ini secara manual berdasarkan pemeriksaan hapusan darah, lalu menyesuaikan Netrofil Segmen supaya totalnya tetap 100%.
+  - "Staff" → ambil dari MID# atau MXD# (jumlah ABSOLUT sel ukuran sedang, bukan persen) — isi otomatis dengan angka ini seperti parameter lainnya.
+  - "Eosinofil" dan "Basofil" → isi string kosong "" (alat 3-part tidak bisa memisahkan kedua nilai ini secara tersendiri, JANGAN mengarang angka 0 atau angka lain). Biarkan petugas lab mengisi keduanya secara manual berdasarkan pemeriksaan hapusan darah, lalu menyesuaikan Netrofil Segmen supaya totalnya tetap 100%.
 - Kembalikan HANYA parameter-parameter yang ada di daftar yang diberikan, dengan nama "pemeriksaan" persis sama seperti di daftar (bukan nama/singkatan yang tertulis di foto).
 - Jawab HANYA sesuai skema JSON yang diberikan.`;
 
@@ -361,13 +371,15 @@ export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<
       }
 
       const results = Array.isArray(parsed)
-        ? parsed.filter(
-            (p): p is { pemeriksaan: string; hasil: string } =>
-              Boolean(p) &&
-              typeof p === 'object' &&
-              typeof (p as { pemeriksaan?: unknown }).pemeriksaan === 'string' &&
-              typeof (p as { hasil?: unknown }).hasil === 'string',
-          )
+        ? parsed
+            .filter(
+              (p): p is { pemeriksaan: string; hasil: string } =>
+                Boolean(p) &&
+                typeof p === 'object' &&
+                typeof (p as { pemeriksaan?: unknown }).pemeriksaan === 'string' &&
+                typeof (p as { hasil?: unknown }).hasil === 'string',
+            )
+            .map((p) => ({ pemeriksaan: p.pemeriksaan, hasil: formatHasilRibuan(p.pemeriksaan, p.hasil) }))
         : [];
 
       return { results };
