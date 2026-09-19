@@ -127,8 +127,7 @@ Aturan:
   - "Netrofil Segmen" → ambil dari GRA% (persentase granulosit).
   - "Limposit" → ambil dari LYM% (persentase limfosit).
   - "Monosit" → ambil dari MID% atau MXD% (persentase sel ukuran sedang).
-  - "Eosinofil", "Basofil", dan "Staff" → isi "0" (alat 3-part tidak bisa memisahkan ketiga nilai ini secara tersendiri).
-  Dengan pemetaan ini, LYM%+MID%/MXD%+GRA%+0+0+0 harus berjumlah TEPAT 100%.
+  - "Eosinofil", "Basofil", dan "Staff" → isi string kosong "" (alat 3-part tidak bisa memisahkan ketiga nilai ini secara tersendiri, JANGAN mengarang angka 0 atau angka lain untuk ketiganya). Biarkan petugas lab mengisi ketiga nilai ini secara manual berdasarkan pemeriksaan hapusan darah, lalu menyesuaikan Netrofil Segmen supaya totalnya tetap 100%.
 - Kembalikan HANYA parameter-parameter yang ada di daftar yang diberikan, dengan nama "pemeriksaan" persis sama seperti di daftar (bukan nama/singkatan yang tertulis di foto).
 - Jawab HANYA sesuai skema JSON yang diberikan.`;
 
