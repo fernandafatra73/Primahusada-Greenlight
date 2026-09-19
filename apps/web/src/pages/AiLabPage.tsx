@@ -108,6 +108,7 @@ export function AiLabPage() {
   const [fotoDataUrl, setFotoDataUrl] = useState('');
   const [readingFoto, setReadingFoto] = useState(false);
   const [readFotoError, setReadFotoError] = useState<string | null>(null);
+  const [fotoResults, setFotoResults] = useState<readonly { pemeriksaan: string; hasil: string }[]>([]);
 
   function openCreate() {
     setForm(emptyForm);
@@ -118,6 +119,7 @@ export function AiLabPage() {
     setError(null);
     setFotoDataUrl('');
     setReadFotoError(null);
+    setFotoResults([]);
     setCreateOpen(true);
   }
 
@@ -143,6 +145,7 @@ export function AiLabPage() {
     setError(null);
     setFotoDataUrl('');
     setReadFotoError(null);
+    setFotoResults([]);
     setEditing(item);
   }
 
@@ -180,6 +183,7 @@ export function AiLabPage() {
     }
     setReadingFoto(true);
     setReadFotoError(null);
+    setFotoResults([]);
     try {
       // Dibaca pakai AI vision (Gemini) — OCR biasa kurang akurat untuk foto
       // asli (pencahayaan/sudut/font alat berbeda-beda).
@@ -187,6 +191,7 @@ export function AiLabPage() {
         '/api/analisa-lab-ai/read-foto',
         { fotoDataUrl, parameterNames: rows.map((r) => r.pemeriksaan) },
       );
+      setFotoResults(res.results);
       setRows((prev) =>
         prev.map((row) => {
           const match = res.results.find(
@@ -401,6 +406,25 @@ export function AiLabPage() {
                     >
                       {readingFoto ? '⏳ Membaca teks...' : '📷 Baca Teks dari Foto'}
                     </button>
+                    {fotoResults.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                        {fotoResults.map((r) => (
+                          <span
+                            key={r.pemeriksaan}
+                            style={{
+                              fontSize: '0.75rem',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '999px',
+                              background: r.hasil ? 'var(--color-bg-page)' : 'transparent',
+                              border: '1px solid var(--color-border)',
+                              color: r.hasil ? 'var(--color-text-body)' : 'var(--color-text-muted)',
+                            }}
+                          >
+                            {r.pemeriksaan}: {r.hasil || '—'}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </>
                 )}
               </div>

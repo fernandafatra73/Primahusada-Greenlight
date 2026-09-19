@@ -179,6 +179,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
   const [readingFotoHasil, setReadingFotoHasil] = useState(false);
   const [readFotoHasilError, setReadFotoHasilError] = useState<string | null>(null);
   const [fotoHasilPreview, setFotoHasilPreview] = useState<string | null>(null);
+  const [fotoHasilResults, setFotoHasilResults] = useState<readonly { pemeriksaan: string; hasil: string }[]>([]);
   const [analisList, setAnalisList] = useState<PetugasLabItem[]>([]);
   const [analisId, setAnalisId] = useState('');
   const [analisNama, setAnalisNama] = useState('');
@@ -312,6 +313,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     setEditAlamat(item.alamat ?? '');
     setFotoHasilPreview(null);
     setReadFotoHasilError(null);
+    setFotoHasilResults([]);
   }
 
   function buildKwitansiData(item: LabPasienItem): KwitansiReportData {
@@ -496,6 +498,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     if (parameterNames.length === 0) return;
     setReadingFotoHasil(true);
     setReadFotoHasilError(null);
+    setFotoHasilResults([]);
     try {
       // Dibaca pakai AI vision (Gemini) — OCR biasa kurang akurat untuk foto
       // asli (pencahayaan/sudut/font alat berbeda-beda).
@@ -503,6 +506,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
         '/api/analisa-lab-ai/read-foto',
         { fotoDataUrl: fotoHasilPreview, parameterNames },
       );
+      setFotoHasilResults(res.results);
       setLabRows((prev) =>
         prev.map((row) => {
           const match = res.results.find(
@@ -1017,6 +1021,25 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                       >
                         {readingFotoHasil ? '⏳ Membaca teks...' : '📷 Baca Teks dari Foto'}
                       </button>
+                      {fotoHasilResults.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          {fotoHasilResults.map((r) => (
+                            <span
+                              key={r.pemeriksaan}
+                              style={{
+                                fontSize: '0.75rem',
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '999px',
+                                background: r.hasil ? 'var(--color-bg-page)' : 'transparent',
+                                border: '1px solid var(--color-border)',
+                                color: r.hasil ? 'var(--color-text-body)' : 'var(--color-text-muted)',
+                              }}
+                            >
+                              {r.pemeriksaan}: {r.hasil || '—'}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
