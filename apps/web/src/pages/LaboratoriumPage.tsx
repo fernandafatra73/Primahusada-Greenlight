@@ -1025,20 +1025,20 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                         (() => {
                           // Diffcount punya 6 baris tapi cuma jadi 3 nilai mentah di alat
                           // (LYM%/MID%/GRA%) — daripada tampilkan tiap parameter (berisiko
-                          // membingungkan/salah), cukup tampilkan total persentasenya di sini
-                          // (harus 100%); nilai per-parameter tetap masuk ke tabel di bawah
-                          // seperti biasa. "Staff" dikecualikan dari total karena nilainya
-                          // jumlah absolut (dari MID#), bukan persen. Kategori lain tidak
-                          // ditampilkan ringkasannya di sini sama sekali.
+                          // membingungkan/salah), cukup tampilkan totalnya di sini (jumlah dari
+                          // keenam parameter: Eosinofil+Basofil+Staff+Netrofil Segmen+Limposit+
+                          // Monosit); nilai per-parameter tetap masuk ke tabel di bawah seperti
+                          // biasa. Kategori lain tidak ditampilkan ringkasannya di sini sama sekali.
                           const diffcountNames = new Set(
                             labRows.filter((r) => r.klasifikasi === 'Diffcount').map((r) => r.pemeriksaan),
                           );
                           const diffcountResults = fotoHasilResults.filter((r) => diffcountNames.has(r.pemeriksaan));
                           if (diffcountResults.length === 0) return null;
 
-                          const diffcountTotal = diffcountResults
-                            .filter((r) => r.pemeriksaan !== 'Staff')
-                            .reduce((sum, r) => sum + (Number(r.hasil.replace(',', '.')) || 0), 0);
+                          const diffcountTotal = diffcountResults.reduce(
+                            (sum, r) => sum + (Number(r.hasil.replace(',', '.')) || 0),
+                            0,
+                          );
 
                           return (
                             <span
