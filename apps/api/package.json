@@ -11,8 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:studio": "prisma studio",
-    "activation:code": "tsx scripts/generate-activation-code.ts"
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
