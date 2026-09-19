@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   formatParametersForPrompt,
   MAX_PARAMETERS,
+  sanitizeParameterNames,
   sanitizeParameters,
 } from '../../apps/api/src/routes/analisaLabAi.ts';
 
@@ -61,5 +62,24 @@ describe('formatParametersForPrompt', () => {
   test('omits satuan/nilaiRujukan segments when missing', () => {
     const text = formatParametersForPrompt('Hematologi', [{ pemeriksaan: 'Hb', hasil: '10' }]);
     expect(text).toBe(['Kategori pemeriksaan: Hematologi', 'Data hasil pemeriksaan:', '1. Hb: 10'].join('\n'));
+  });
+});
+
+describe('sanitizeParameterNames', () => {
+  test('returns an empty array for non-array input', () => {
+    expect(sanitizeParameterNames(null)).toEqual([]);
+    expect(sanitizeParameterNames('Hb')).toEqual([]);
+  });
+
+  test('keeps only non-empty strings and trims them', () => {
+    expect(sanitizeParameterNames(['  Hemoglobin (Hb)  ', '   ', 42, null, 'MCV'])).toEqual([
+      'Hemoglobin (Hb)',
+      'MCV',
+    ]);
+  });
+
+  test('caps the number of names to MAX_PARAMETERS', () => {
+    const input = Array.from({ length: MAX_PARAMETERS + 5 }, (_, i) => `Param ${i}`);
+    expect(sanitizeParameterNames(input)).toHaveLength(MAX_PARAMETERS);
   });
 });

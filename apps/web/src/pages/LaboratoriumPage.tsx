@@ -31,7 +31,6 @@ import {
   type ParsedLabData,
 } from '../lib/labKesan.ts';
 import { serializeKlinisData } from '../lib/penunjang.ts';
-import { extractValueForParameter, runOcr } from '../lib/labOcr.ts';
 import '../components/ui/ui.css';
 
 export {
@@ -180,7 +179,6 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
   const [readingFotoHasil, setReadingFotoHasil] = useState(false);
   const [readFotoHasilError, setReadFotoHasilError] = useState<string | null>(null);
   const [fotoHasilPreview, setFotoHasilPreview] = useState<string | null>(null);
-  const [ocrHasilRawText, setOcrHasilRawText] = useState('');
   const [analisList, setAnalisList] = useState<PetugasLabItem[]>([]);
   const [analisId, setAnalisId] = useState('');
   const [analisNama, setAnalisNama] = useState('');
@@ -314,7 +312,6 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     setEditAlamat(item.alamat ?? '');
     setFotoHasilPreview(null);
     setReadFotoHasilError(null);
-    setOcrHasilRawText('');
   }
 
   function buildKwitansiData(item: LabPasienItem): KwitansiReportData {
@@ -486,7 +483,6 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     if (!file) return;
     e.target.value = '';
     setReadFotoHasilError(null);
-    setOcrHasilRawText('');
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') setFotoHasilPreview(reader.result);
@@ -496,19 +492,23 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
 
   async function handleProcessFotoHasil() {
     if (!fotoHasilPreview) return;
+    const parameterNames = labRows.map((r) => r.pemeriksaan).filter((p) => p.trim());
+    if (parameterNames.length === 0) return;
     setReadingFotoHasil(true);
     setReadFotoHasilError(null);
-    setOcrHasilRawText('');
     try {
-      // OCR langsung di browser (tanpa AI/server) — tulisan di foto dibaca
-      // dan dicocokkan per nama pemeriksaan untuk mengisi kolom Hasil.
-      const ocrText = await runOcr(fotoHasilPreview);
-      setOcrHasilRawText(ocrText);
+      // Dibaca pakai AI vision (Gemini) — OCR biasa kurang akurat untuk foto
+      // asli (pencahayaan/sudut/font alat berbeda-beda).
+      const res = await apiPost<{ results: readonly { pemeriksaan: string; hasil: string }[] }>(
+        '/api/analisa-lab-ai/read-foto',
+        { fotoDataUrl: fotoHasilPreview, parameterNames },
+      );
       setLabRows((prev) =>
         prev.map((row) => {
-          if (!row.pemeriksaan.trim()) return row;
-          const hasil = extractValueForParameter(ocrText, row.pemeriksaan);
-          return hasil ? { ...row, hasil } : row;
+          const match = res.results.find(
+            (r) => r.pemeriksaan.trim().toLowerCase() === row.pemeriksaan.trim().toLowerCase(),
+          );
+          return match && match.hasil ? { ...row, hasil: match.hasil } : row;
         }),
       );
     } catch (err) {
@@ -996,9 +996,9 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <label htmlFor="lab-hasil-foto">Foto Hasil Pemeriksaan (opsional)</label>
                 <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                  Unggah foto print out alat/hasil manual — tulisan di foto dibaca langsung (OCR, tanpa AI) dan
-                  mengisi otomatis kolom Hasil di tabel bawah sesuai nama pemeriksaannya. Periksa ulang hasilnya
-                  karena bacaan otomatis ini bisa saja tidak tepat.
+                  Unggah foto print out alat/hasil manual — dibaca dengan AI dan mengisi otomatis kolom Hasil
+                  di tabel bawah sesuai nama pemeriksaannya. Periksa ulang hasilnya karena bacaan otomatis ini
+                  bisa saja tidak tepat.
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                   <input id="lab-hasil-foto" type="file" accept="image/*" onChange={handleFotoHasilFileChange} />
@@ -1024,28 +1024,6 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                   <p className="alert alert--error" style={{ margin: '0.4rem 0 0' }}>
                     {readFotoHasilError}
                   </p>
-                )}
-                {ocrHasilRawText && (
-                  <details style={{ marginTop: '0.4rem' }}>
-                    <summary style={{ cursor: 'pointer', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                      Lihat teks mentah hasil baca foto (untuk cek kalau ada yang tidak sesuai)
-                    </summary>
-                    <pre
-                      style={{
-                        marginTop: '0.4rem',
-                        padding: '0.5rem',
-                        fontSize: '0.75rem',
-                        whiteSpace: 'pre-wrap',
-                        background: 'var(--color-bg-page)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-button)',
-                        maxHeight: '150px',
-                        overflowY: 'auto',
-                      }}
-                    >
-                      {ocrHasilRawText}
-                    </pre>
-                  </details>
                 )}
               </div>
 

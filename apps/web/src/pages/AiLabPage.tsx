@@ -8,7 +8,6 @@ import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.t
 import { useMutationReload } from '../hooks/useMutationReload.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiDelete, apiPatch, apiPost } from '../lib/api.ts';
-import { extractValueForParameter, runOcr } from '../lib/labOcr.ts';
 import '../components/ui/ui.css';
 
 interface LabParameterRow {
@@ -109,7 +108,6 @@ export function AiLabPage() {
   const [fotoDataUrl, setFotoDataUrl] = useState('');
   const [readingFoto, setReadingFoto] = useState(false);
   const [readFotoError, setReadFotoError] = useState<string | null>(null);
-  const [ocrRawText, setOcrRawText] = useState('');
 
   function openCreate() {
     setForm(emptyForm);
@@ -120,7 +118,6 @@ export function AiLabPage() {
     setError(null);
     setFotoDataUrl('');
     setReadFotoError(null);
-    setOcrRawText('');
     setCreateOpen(true);
   }
 
@@ -146,7 +143,6 @@ export function AiLabPage() {
     setError(null);
     setFotoDataUrl('');
     setReadFotoError(null);
-    setOcrRawText('');
     setEditing(item);
   }
 
@@ -184,15 +180,19 @@ export function AiLabPage() {
     }
     setReadingFoto(true);
     setReadFotoError(null);
-    setOcrRawText('');
     try {
-      // OCR murni di browser, tidak lewat AI/server — jadi tidak makan kuota Gemini.
-      const ocrText = await runOcr(fotoDataUrl);
-      setOcrRawText(ocrText);
+      // Dibaca pakai AI vision (Gemini) — OCR biasa kurang akurat untuk foto
+      // asli (pencahayaan/sudut/font alat berbeda-beda).
+      const res = await apiPost<{ results: readonly { pemeriksaan: string; hasil: string }[] }>(
+        '/api/analisa-lab-ai/read-foto',
+        { fotoDataUrl, parameterNames: rows.map((r) => r.pemeriksaan) },
+      );
       setRows((prev) =>
         prev.map((row) => {
-          const hasil = extractValueForParameter(ocrText, row.pemeriksaan);
-          return hasil ? { ...row, hasil } : row;
+          const match = res.results.find(
+            (r) => r.pemeriksaan.trim().toLowerCase() === row.pemeriksaan.trim().toLowerCase(),
+          );
+          return match && match.hasil ? { ...row, hasil: match.hasil } : row;
         }),
       );
     } catch (err) {
@@ -380,9 +380,9 @@ export function AiLabPage() {
             <div className="form-field form-grid--full">
               <label htmlFor="al-foto">Foto Hasil Pemeriksaan (opsional)</label>
               <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                Unggah foto print out alat/hasil manual — tulisan di foto dibaca langsung (OCR, tanpa AI) dan
-                mengisi otomatis kolom Hasil di tabel bawah sesuai nama parameternya. Periksa ulang hasilnya
-                karena bacaan otomatis ini bisa saja tidak tepat.
+                Unggah foto print out alat/hasil manual — dibaca dengan AI dan mengisi otomatis kolom Hasil
+                di tabel bawah sesuai nama parameternya. Periksa ulang hasilnya karena bacaan otomatis ini
+                bisa saja tidak tepat.
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                 <input id="al-foto" type="file" accept="image/*" onChange={handleFotoFileChange} />
@@ -408,28 +408,6 @@ export function AiLabPage() {
                 <p className="alert alert--error" style={{ margin: '0.4rem 0 0' }}>
                   {readFotoError}
                 </p>
-              )}
-              {ocrRawText && (
-                <details style={{ marginTop: '0.4rem' }}>
-                  <summary style={{ cursor: 'pointer', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    Lihat teks mentah hasil baca foto (untuk cek kalau ada yang tidak sesuai)
-                  </summary>
-                  <pre
-                    style={{
-                      marginTop: '0.4rem',
-                      padding: '0.5rem',
-                      fontSize: '0.75rem',
-                      whiteSpace: 'pre-wrap',
-                      background: 'var(--color-bg-page)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-button)',
-                      maxHeight: '150px',
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {ocrRawText}
-                  </pre>
-                </details>
               )}
             </div>
 
