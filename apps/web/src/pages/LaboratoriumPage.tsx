@@ -1021,25 +1021,44 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                       >
                         {readingFotoHasil ? '⏳ Membaca teks...' : '📷 Baca Teks dari Foto'}
                       </button>
-                      {fotoHasilResults.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                          {fotoHasilResults.map((r) => (
+                      {fotoHasilResults.length > 0 &&
+                        (() => {
+                          // Diffcount punya 6 baris tapi cuma jadi 3 nilai mentah di alat
+                          // (LYM%/MID%/GRA%) — daripada tampilkan 6 chip yang membingungkan,
+                          // cukup tampilkan total persentasenya (harus 100%). "Staff" dikecualikan
+                          // dari total karena nilainya jumlah absolut (dari MID#), bukan persen.
+                          const diffcountNames = new Set(
+                            labRows.filter((r) => r.klasifikasi === 'Diffcount').map((r) => r.pemeriksaan),
+                          );
+                          const diffcountResults = fotoHasilResults.filter((r) => diffcountNames.has(r.pemeriksaan));
+                          const otherResults = fotoHasilResults.filter((r) => !diffcountNames.has(r.pemeriksaan));
+                          const diffcountTotal = diffcountResults
+                            .filter((r) => r.pemeriksaan !== 'Staff')
+                            .reduce((sum, r) => sum + (Number(r.hasil.replace(',', '.')) || 0), 0);
+
+                          const chip = (label: string, value: string) => (
                             <span
-                              key={r.pemeriksaan}
+                              key={label}
                               style={{
                                 fontSize: '0.75rem',
                                 padding: '0.2rem 0.5rem',
                                 borderRadius: '999px',
-                                background: r.hasil ? 'var(--color-bg-page)' : 'transparent',
+                                background: value ? 'var(--color-bg-page)' : 'transparent',
                                 border: '1px solid var(--color-border)',
-                                color: r.hasil ? 'var(--color-text-body)' : 'var(--color-text-muted)',
+                                color: value ? 'var(--color-text-body)' : 'var(--color-text-muted)',
                               }}
                             >
-                              {r.pemeriksaan}: {r.hasil || '—'}
+                              {label}: {value || '—'}
                             </span>
-                          ))}
-                        </div>
-                      )}
+                          );
+
+                          return (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                              {otherResults.map((r) => chip(r.pemeriksaan, r.hasil))}
+                              {diffcountResults.length > 0 && chip('Total Diffcount', `${diffcountTotal}%`)}
+                            </div>
+                          );
+                        })()}
                     </>
                   )}
                 </div>
