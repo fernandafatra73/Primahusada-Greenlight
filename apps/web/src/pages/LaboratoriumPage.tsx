@@ -179,7 +179,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
   const [readingFotoHasil, setReadingFotoHasil] = useState(false);
   const [readFotoHasilError, setReadFotoHasilError] = useState<string | null>(null);
   const [fotoHasilPreview, setFotoHasilPreview] = useState<string | null>(null);
-  const [fotoHasilResults, setFotoHasilResults] = useState<readonly { pemeriksaan: string; hasil: string }[]>([]);
+  const [jumlahDiffcount, setJumlahDiffcount] = useState<number | null>(null);
   const [analisList, setAnalisList] = useState<PetugasLabItem[]>([]);
   const [analisId, setAnalisId] = useState('');
   const [analisNama, setAnalisNama] = useState('');
@@ -313,7 +313,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     setEditAlamat(item.alamat ?? '');
     setFotoHasilPreview(null);
     setReadFotoHasilError(null);
-    setFotoHasilResults([]);
+    setJumlahDiffcount(null);
   }
 
   function buildKwitansiData(item: LabPasienItem): KwitansiReportData {
@@ -498,7 +498,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     if (parameterNames.length === 0) return;
     setReadingFotoHasil(true);
     setReadFotoHasilError(null);
-    setFotoHasilResults([]);
+    setJumlahDiffcount(null);
     try {
       // Dibaca pakai AI vision (Gemini) — OCR biasa kurang akurat untuk foto
       // asli (pencahayaan/sudut/font alat berbeda-beda).
@@ -506,7 +506,6 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
         '/api/analisa-lab-ai/read-foto',
         { fotoDataUrl: fotoHasilPreview, parameterNames },
       );
-      setFotoHasilResults(res.results);
       setLabRows((prev) =>
         prev.map((row) => {
           const match = res.results.find(
@@ -520,6 +519,16 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     } finally {
       setReadingFotoHasil(false);
     }
+  }
+
+  // Jumlahkan hasil keenam baris Diffcount yang ada SAAT INI di tabel (baik
+  // dari hasil baca foto maupun yang diketik/diubah manual) — supaya bisa
+  // dicek kapan saja hasilnya sudah pas 100% atau belum.
+  function handleHitungDiffcount() {
+    const total = labRows
+      .filter((r) => r.klasifikasi === 'Diffcount')
+      .reduce((sum, r) => sum + (Number(r.hasil.replace(',', '.')) || 0), 0);
+    setJumlahDiffcount(total);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -1021,39 +1030,31 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                       >
                         {readingFotoHasil ? '⏳ Membaca teks...' : '📷 Baca Teks dari Foto'}
                       </button>
-                      {fotoHasilResults.length > 0 &&
-                        (() => {
-                          // Diffcount punya 6 baris tapi cuma jadi 3 nilai mentah di alat
-                          // (LYM%/MID%/GRA%) — daripada tampilkan tiap parameter (berisiko
-                          // membingungkan/salah), cukup tampilkan totalnya di sini (jumlah dari
-                          // keenam parameter: Eosinofil+Basofil+Staff+Netrofil Segmen+Limposit+
-                          // Monosit); nilai per-parameter tetap masuk ke tabel di bawah seperti
-                          // biasa. Kategori lain tidak ditampilkan ringkasannya di sini sama sekali.
-                          const diffcountNames = new Set(
-                            labRows.filter((r) => r.klasifikasi === 'Diffcount').map((r) => r.pemeriksaan),
-                          );
-                          const diffcountResults = fotoHasilResults.filter((r) => diffcountNames.has(r.pemeriksaan));
-                          if (diffcountResults.length === 0) return null;
-
-                          const diffcountTotal = diffcountResults.reduce(
-                            (sum, r) => sum + (Number(r.hasil.replace(',', '.')) || 0),
-                            0,
-                          );
-
-                          return (
-                            <span
-                              style={{
-                                fontSize: '0.75rem',
-                                padding: '0.2rem 0.5rem',
-                                borderRadius: '999px',
-                                background: 'var(--color-bg-page)',
-                                border: '1px solid var(--color-border)',
-                              }}
-                            >
-                              Total Diffcount: {diffcountTotal}%
-                            </span>
-                          );
-                        })()}
+                    </>
+                  )}
+                  {labRows.some((r) => r.klasifikasi === 'Diffcount') && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn--sm btn--secondary"
+                        title="Jumlahkan hasil Eosinofil+Basofil+Staff+Netrofil Segmen+Limposit+Monosit yang ada di tabel saat ini"
+                        onClick={handleHitungDiffcount}
+                      >
+                        🧮 Jumlah Diffcount
+                      </button>
+                      {jumlahDiffcount !== null && (
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '999px',
+                            background: 'var(--color-bg-page)',
+                            border: '1px solid var(--color-border)',
+                          }}
+                        >
+                          Jumlah Diffcount: {jumlahDiffcount}%
+                        </span>
+                      )}
                     </>
                   )}
                 </div>
