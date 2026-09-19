@@ -2303,9 +2303,9 @@ export async function registerCrudRoutes(app: FastifyInstance) {
         urutan: 7,
         harga: 50000,
         items: [
-          { pemeriksaan: 'Eosinofil', nilaiRujukan: '1 - 3 %', satuan: '%', harga: 10000, urutan: 1 },
+          { pemeriksaan: 'Eosinofil', nilaiRujukan: '0 - 3 %', satuan: '%', harga: 10000, urutan: 1 },
           { pemeriksaan: 'Basofil', nilaiRujukan: '0 - 1 %', satuan: '%', harga: 10000, urutan: 2 },
-          { pemeriksaan: 'Staff', nilaiRujukan: '2 - 6 %', satuan: '%', harga: 10000, urutan: 3 },
+          { pemeriksaan: 'Staff', nilaiRujukan: '0 - 4 %', satuan: '%', harga: 10000, urutan: 3 },
           { pemeriksaan: 'Netrofil Segmen', nilaiRujukan: '50 - 70 %', satuan: '%', harga: 10000, urutan: 4 },
           { pemeriksaan: 'Limposit', nilaiRujukan: '20 - 40 %', satuan: '%', harga: 10000, urutan: 5 },
           { pemeriksaan: 'Monosit', nilaiRujukan: '2 - 8 %', satuan: '%', harga: 10000, urutan: 6 },

@@ -141,7 +141,7 @@ describe('lookupLabReference and groupLabRowsForPdf', () => {
     const eos = lookupLabReference('Eosinofil');
     expect(eos).toEqual({
       klasifikasi: 'Diffcount',
-      nilaiRujukan: '1 - 3 %',
+      nilaiRujukan: '0 - 3 %',
     });
 
     const led = lookupLabReference('LED');

@@ -227,9 +227,9 @@ export const PAKET_PEMERIKSAAN_LAB: readonly LabPackage[] = [
     id: 'diffcount',
     label: 'Diffcount',
     items: [
-      { pemeriksaan: 'Eosinofil', nilaiRujukan: '1 - 3 %' },
+      { pemeriksaan: 'Eosinofil', nilaiRujukan: '0 - 3 %' },
       { pemeriksaan: 'Basofil', nilaiRujukan: '0 - 1 %' },
-      { pemeriksaan: 'Staff', nilaiRujukan: '2 - 6 %' },
+      { pemeriksaan: 'Staff', nilaiRujukan: '0 - 4 %' },
       { pemeriksaan: 'Netrofil Segmen', nilaiRujukan: '50 - 70 %' },
       { pemeriksaan: 'Limposit', nilaiRujukan: '20 - 40 %' },
       { pemeriksaan: 'Monosit', nilaiRujukan: '2 - 8 %' },
