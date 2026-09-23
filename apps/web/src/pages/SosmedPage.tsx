@@ -36,6 +36,12 @@ const SOSMED_LINKS: readonly SosmedLink[] = [
     url: 'https://www.binance.bh/en/futures/PAXGUSDT',
     icon: '🟡',
   },
+  {
+    id: 'tradewill',
+    label: 'Tradewill',
+    url: 'https://www.tradewill.com/',
+    icon: '📈',
+  },
 ];
 
 const cardStyle: React.CSSProperties = {
