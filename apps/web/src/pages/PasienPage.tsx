@@ -369,9 +369,6 @@ export function PasienPage() {
   const [aiBanding2Brightness, setAiBanding2Brightness] = useState(0);
   const [aiBanding2Detail, setAiBanding2Detail] = useState(0);
   const [aiBanding2AdjustingPhoto, setAiBanding2AdjustingPhoto] = useState(false);
-  // true setelah pengguna menekan tombol "Upload" pasca mengatur ketajaman/densitas/kontras;
-  // di-reset ke false setiap kali foto atau slider berubah lagi supaya wajib di-upload ulang.
-  const [aiBanding2Uploaded, setAiBanding2Uploaded] = useState(false);
   const [nama, setNama] = useState('');
   const [tanggalLahir, setTanggalLahir] = useState('');
   const [umurManual, setUmurManual] = useState('');
@@ -1089,7 +1086,6 @@ export function PasienPage() {
     if (!aiBanding2RawDataUrl) return;
     let cancelled = false;
     setAiBanding2AdjustingPhoto(true);
-    setAiBanding2Uploaded(false);
     applyPhotoAdjustments(aiBanding2RawDataUrl, {
       contrast: aiBanding2Contrast,
       brightness: aiBanding2Brightness,
@@ -1119,7 +1115,6 @@ export function PasienPage() {
     setAiBanding2DragOver(false);
     setAiBanding2Error(null);
     setAiBanding2Result(null);
-    setAiBanding2Uploaded(false);
     setAiBanding2Open(true);
   }
 
@@ -1155,12 +1150,6 @@ export function PasienPage() {
     if (file) loadAiBanding2File(file);
   }
 
-  function handleAiBanding2Upload() {
-    if (!aiBanding2DataUrl || aiBanding2AdjustingPhoto) return;
-    setAiBanding2Uploaded(true);
-    setAiBanding2Error(null);
-  }
-
   async function handleAiBanding2Analyze() {
     if (!aiBanding2Model) {
       setAiBanding2Error('Pilih model version terlebih dahulu.');
@@ -1168,10 +1157,6 @@ export function PasienPage() {
     }
     if (!aiBanding2DataUrl) {
       setAiBanding2Error('Unggah foto rontgen terlebih dahulu sebelum memulai analisa AI.');
-      return;
-    }
-    if (!aiBanding2Uploaded) {
-      setAiBanding2Error('Klik tombol Upload setelah mengatur ketajaman/densitas/kontras, sebelum menganalisa.');
       return;
     }
     setAiBanding2Analyzing(true);
@@ -3096,15 +3081,6 @@ export function PasienPage() {
               <div className="tbscan-preview">
                 <img src={aiBanding2DataUrl} alt="Preview X-Ray" style={{ opacity: aiBanding2AdjustingPhoto ? 0.6 : 1 }} />
                 {aiBanding2AdjustingPhoto && <p className="aifoto-upload__hint">Memproses foto…</p>}
-                <button
-                  type="button"
-                  className="btn btn--sm btn--ghost"
-                  style={{ marginTop: '0.6rem', width: '100%' }}
-                  disabled={aiBanding2AdjustingPhoto || !aiBanding2DataUrl}
-                  onClick={handleAiBanding2Upload}
-                >
-                  {aiBanding2Uploaded ? '✅ Foto siap dianalisa' : '📤 Upload Foto untuk Analisa AI'}
-                </button>
               </div>
             )}
 
@@ -3157,13 +3133,7 @@ export function PasienPage() {
             <button
               type="button"
               className="aifoto-analyze-btn"
-              disabled={
-                aiBanding2Analyzing ||
-                aiBanding2AdjustingPhoto ||
-                !aiBanding2DataUrl ||
-                !aiBanding2Model ||
-                !aiBanding2Uploaded
-              }
+              disabled={aiBanding2Analyzing || aiBanding2AdjustingPhoto || !aiBanding2DataUrl || !aiBanding2Model}
               onClick={() => void handleAiBanding2Analyze()}
             >
               {aiBanding2Analyzing ? '⏳ Menganalisa...' : '▶ Analyze'}
