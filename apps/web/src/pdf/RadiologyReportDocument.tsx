@@ -6,7 +6,12 @@ import {
   Text,
   View,
 } from '@react-pdf/renderer';
-import { formatPdfClinicalText, truncatePdfCell } from './pdfText.ts';
+import {
+  formatPdfClinicalText,
+  getClinicalFontMetrics,
+  totalClinicalWords,
+  truncatePdfCell,
+} from './pdfText.ts';
 
 export interface RadiologyReportData {
   readonly logoSrc: string;
@@ -43,12 +48,14 @@ const styles = StyleSheet.create({
     color: BLACK,
   },
   frame: {
-    // minHeight (bukan height tetap) supaya tabel identitas pasien & elemen
-    // lain tidak ikut "diperas" saat konten Klinis lebih panjang dari satu
-    // halaman (mis. varian Cetak Lengkap dengan templat bacaan) — kelebihan
-    // konten meluber ke halaman berikutnya alih-alih memaksa semua elemen
-    // menyusut mengikuti tinggi tetap.
-    minHeight: '100%',
+    // height tetap (bukan minHeight) + overflow hidden: kerangka & posisi
+    // tanda tangan harus selalu pas di 1 halaman dan tidak pernah bergeser ke
+    // halaman 2, walau Temuan/Kesan panjang. Supaya teks tetap utuh (tidak
+    // terpotong), font Klinis/Temuan/Kesan menyusut otomatis mengikuti total
+    // kata — lihat getClinicalFontMetrics di pdfText.ts. overflow hidden di
+    // sini murni jaring pengaman untuk kasus ekstrem di luar tier terkecil.
+    height: '100%',
+    overflow: 'hidden',
     padding: 10,
     flexDirection: 'column',
   },
@@ -206,6 +213,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     paddingVertical: 8,
+    overflow: 'hidden',
   },
   clinicalRow: {
     flexDirection: 'row',
@@ -345,6 +353,17 @@ function PatientRow({
 export function RadiologyReportDocument({ data }: { readonly data: RadiologyReportData }) {
   const dokter = truncatePdfCell(data.dokterPengirim, 36);
   const includeFrame = data.includeFrame ?? true;
+  const clinicalWordLoad = totalClinicalWords([
+    data.klinis,
+    data.includeTemuan ? data.temuan : undefined,
+    data.kesan,
+    data.templatBacaan,
+  ]);
+  const clinicalFontMetrics = getClinicalFontMetrics(clinicalWordLoad);
+  const clinicalValueStyle = [
+    styles.clinicalInlineValue,
+    { fontSize: clinicalFontMetrics.fontSize, lineHeight: clinicalFontMetrics.lineHeight },
+  ];
 
   return (
     <Document>
@@ -416,7 +435,7 @@ export function RadiologyReportDocument({ data }: { readonly data: RadiologyRepo
             <View style={styles.clinicalRow}>
               {includeFrame ? <Text style={styles.clinicalInlineLabel}>Klinis : </Text> : null}
               <View style={styles.clinicalValueWrap}>
-                <Text style={styles.clinicalInlineValue}>
+                <Text style={clinicalValueStyle}>
                   {formatPdfClinicalText(data.klinis)}
                   {data.templatBacaan ? `\n\n${data.templatBacaan}` : ''}
                 </Text>
@@ -426,7 +445,7 @@ export function RadiologyReportDocument({ data }: { readonly data: RadiologyRepo
               <View style={[styles.clinicalRow, styles.temuanRow]}>
                 {includeFrame ? <Text style={styles.clinicalInlineLabel}>Temuan : </Text> : null}
                 <View style={styles.clinicalValueWrap}>
-                  <Text style={styles.clinicalInlineValue}>{formatPdfClinicalText(data.temuan)}</Text>
+                  <Text style={clinicalValueStyle}>{formatPdfClinicalText(data.temuan)}</Text>
                 </View>
               </View>
             ) : null}
@@ -437,7 +456,7 @@ export function RadiologyReportDocument({ data }: { readonly data: RadiologyRepo
               <View style={styles.clinicalRow}>
                 {includeFrame ? <Text style={styles.clinicalInlineLabel}>Kesan : </Text> : null}
                 <View style={styles.clinicalValueWrap}>
-                  <Text style={styles.clinicalInlineValue}>
+                  <Text style={clinicalValueStyle}>
                     {formatPdfClinicalText(data.kesan)}
                   </Text>
                 </View>

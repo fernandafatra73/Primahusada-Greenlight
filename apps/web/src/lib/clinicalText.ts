@@ -29,3 +29,12 @@ export function limitToMaxWords(text: string, maxWords = CLINICAL_MAX_WORDS): st
 export function clampClinicalInput(text: string, maxWords = CLINICAL_MAX_WORDS): string {
   return limitToMaxWords(text, maxWords);
 }
+
+/** Jumlah kata suatu field, dibatasi CLINICAL_MAX_WORDS — dipakai untuk menghitung
+ * beban total teks klinis (Klinis+Temuan+Kesan) tanpa perlu memformat dulu. */
+export function countClampedWords(text: string | undefined, maxWords = CLINICAL_MAX_WORDS): number {
+  if (!text) {
+    return 0;
+  }
+  return Math.min(countWords(text), maxWords);
+}
