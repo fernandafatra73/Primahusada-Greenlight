@@ -5,7 +5,8 @@ type PdfVersion =
   | 'with-signature'
   | 'without-signature'
   | 'with-signature-no-frame'
-  | 'without-signature-no-frame';
+  | 'without-signature-no-frame'
+  | 'cetak-terbaru';
 
 interface PdfPreviewModalProps {
   readonly open: boolean;
@@ -13,6 +14,7 @@ interface PdfPreviewModalProps {
   readonly withoutSignature: Blob | null;
   readonly withSignatureNoFrame: Blob | null;
   readonly withoutSignatureNoFrame: Blob | null;
+  readonly cetakTerbaru: Blob | null;
   readonly filename: string;
   readonly onClose: () => void;
 }
@@ -23,6 +25,7 @@ export function PdfPreviewModal({
   withoutSignature,
   withSignatureNoFrame,
   withoutSignatureNoFrame,
+  cetakTerbaru,
   filename,
   onClose,
 }: PdfPreviewModalProps) {
@@ -35,6 +38,7 @@ export function PdfPreviewModal({
     'without-signature': withoutSignature,
     'with-signature-no-frame': withSignatureNoFrame,
     'without-signature-no-frame': withoutSignatureNoFrame,
+    'cetak-terbaru': cetakTerbaru,
   };
   const activeBlob = blobByVersion[version];
 
@@ -68,6 +72,7 @@ export function PdfPreviewModal({
       'without-signature': '-tanpa-ttd',
       'with-signature-no-frame': '-tanpa-kerangka',
       'without-signature-no-frame': '-tanpa-ttd-tanpa-kerangka',
+      'cetak-terbaru': '-cetak-terbaru',
     };
     const suffix = suffixByVersion[version];
     const base = filename.replace(/\.pdf$/i, '');
@@ -118,6 +123,15 @@ export function PdfPreviewModal({
             onClick={() => setVersion('without-signature-no-frame')}
           >
             Tanpa TTD tanpa kerangka
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={version === 'cetak-terbaru'}
+            className={`filter-tab${version === 'cetak-terbaru' ? ' filter-tab--active' : ''}`}
+            onClick={() => setVersion('cetak-terbaru')}
+          >
+            Cetak Terbaru
           </button>
         </div>
         <div className="pdf-preview__toolbar">

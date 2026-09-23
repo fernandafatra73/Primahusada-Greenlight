@@ -115,6 +115,7 @@ interface PasienRow {
   readonly hasilStatus: 'MENUNGGU_HASIL' | 'SELESAI';
   readonly paymentStatus: 'BELUM_LUNAS' | 'LUNAS';
   readonly klinis?: string | null;
+  readonly temuan?: string | null;
   readonly kesan?: string | null;
   readonly foto?: string | null;
   readonly createdAt: string;
@@ -131,6 +132,7 @@ interface PasienDetail extends PasienRow {
   readonly noTelepon: string | null;
   readonly alamat: string | null;
   readonly klinis: string | null;
+  readonly temuan: string | null;
   readonly kesan: string | null;
   readonly admin: string | null;
   readonly foto: string | null;
@@ -376,6 +378,7 @@ export function PasienPage() {
   const [alamat, setAlamat] = useState('');
   const [pengirimId, setPengirimId] = useState('');
   const [klinis, setKlinis] = useState('');
+  const [temuan, setTemuan] = useState('');
   const [kesan, setKesan] = useState('');
   /** Tanggal registrasi baru (YYYY-MM-DD, zona lokal); default hari ini. */
   const [tanggalRegistrasi, setTanggalRegistrasi] = useState(todayLocalIso);
@@ -800,6 +803,7 @@ export function PasienPage() {
     setSharingAmount(dokter[0]?.defaultSharingAmount ?? '0');
     setSharingMode('auto');
     setKlinis('');
+    setTemuan('');
     setKesan('');
     setTanggalRegistrasi(todayLocalIso());
     setAdmin('');
@@ -848,6 +852,7 @@ export function PasienPage() {
         radTambahan: parsedKlinis.radTambahan,
         labTambahan: parsedKlinis.labTambahan,
       };
+      setTemuan(p.temuan ?? '');
       setKesan(p.kesan ?? '');
       setAdmin(p.admin ?? '');
       setFoto(p.foto ?? '');
@@ -1272,6 +1277,7 @@ export function PasienPage() {
         alamat,
         pengirimId,
         klinis: serializeKlinisData(klinis, [], []),
+        temuan: temuan || undefined,
         jenisPemeriksaanIds: selectedJenis,
         sharingAmount: Number(sharingAmount),
         harga: Number(hargaManual) || 0,
@@ -1316,6 +1322,7 @@ export function PasienPage() {
           existingTambahanRef.current.radTambahan,
           existingTambahanRef.current.labTambahan,
         ),
+        temuan,
         hasilStatus,
         paymentStatus,
         sharingAmount: Number(sharingAmount),
@@ -1796,6 +1803,19 @@ export function PasienPage() {
     </div>
   );
 
+  const temuanField = (
+    <div className="form-field" style={{ gridColumn: '1' }}>
+      <label htmlFor="temuan">Temuan</label>
+      <textarea
+        id="temuan"
+        rows={2}
+        value={temuan}
+        onChange={(e) => setTemuan(clampClinicalInput(e.target.value))}
+        placeholder="Temuan radiologi (tampil di Cetak Terbaru)..."
+      />
+    </div>
+  );
+
   const kesanField = (
     <div className="form-field form-grid--span-2">
       <label htmlFor="kesan">Kesan</label>
@@ -2183,6 +2203,16 @@ export function PasienPage() {
                     value={klinis}
                     onChange={(e) => setKlinis(clampClinicalInput(e.target.value))}
                     placeholder="Keterangan klinis..."
+                  />
+                </div>
+                <div className="legacy-form-row" style={{ alignItems: 'flex-start' }}>
+                  <label htmlFor="reg-temuan" style={{ paddingTop: '0.4rem' }}>Temuan</label>
+                  <textarea
+                    id="reg-temuan"
+                    rows={2}
+                    value={temuan}
+                    onChange={(e) => setTemuan(clampClinicalInput(e.target.value))}
+                    placeholder="Temuan radiologi (tampil di Cetak Terbaru)..."
                   />
                 </div>
               </div>
@@ -2690,6 +2720,7 @@ export function PasienPage() {
         <form onSubmit={(e) => void onSubmitEdit(e)} className="form-grid form-grid--wide">
           {patientFields}
           {klinisField}
+          {temuanField}
           {kesanField}
           {jenisPemeriksaanField}
           {formError && <div className="alert alert--error form-grid--full">{formError}</div>}

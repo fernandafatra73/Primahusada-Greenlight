@@ -10,6 +10,7 @@ interface PasienPrintSource {
   readonly createdAt: string;
   readonly alamat: string | null;
   readonly klinis: string | null;
+  readonly temuan: string | null;
   readonly kesan: string | null;
   readonly pengirim: { readonly nama: string };
   readonly radiolog: { readonly nama: string } | null;
@@ -48,6 +49,7 @@ export async function printPasienReport(pasienId: string): Promise<void> {
     pemeriksaan: allPemeriksaan,
     dokterPengirim: p.pengirim.nama,
     klinis: formatKlinisDisplay(p.klinis) || '—',
+    temuan: p.temuan?.trim() || undefined,
     kesan: p.kesan?.trim() || '—',
     radiologNama: formatRadiologName(p.radiolog?.nama),
   });

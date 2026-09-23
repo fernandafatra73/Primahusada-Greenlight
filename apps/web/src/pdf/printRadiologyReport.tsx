@@ -8,7 +8,7 @@ import {
 
 export type PrintRadiologyReportInput = Omit<
   RadiologyReportData,
-  'logoSrc' | 'signatureSrc' | 'includeSignature' | 'includeFrame' | 'templatBacaan'
+  'logoSrc' | 'signatureSrc' | 'includeSignature' | 'includeFrame' | 'templatBacaan' | 'includeTemuan'
 >;
 
 export interface RadiologyPdfPreview {
@@ -16,6 +16,8 @@ export interface RadiologyPdfPreview {
   readonly withoutSignature: Blob;
   readonly withSignatureNoFrame: Blob;
   readonly withoutSignatureNoFrame: Blob;
+  /** Varian "Cetak Terbaru": sama seperti withSignature, ditambah baris "Temuan :" di bawah Klinis. */
+  readonly cetakTerbaru: Blob;
   readonly filename: string;
 }
 
@@ -36,6 +38,7 @@ async function buildReportBlob(
   includeSignature: boolean,
   includeFrame: boolean,
   signatureSrc?: string,
+  includeTemuan = false,
 ): Promise<Blob> {
   return pdf(
     <RadiologyReportDocument
@@ -44,6 +47,7 @@ async function buildReportBlob(
         logoSrc,
         includeSignature,
         includeFrame,
+        includeTemuan,
         signatureSrc: includeSignature ? signatureSrc : undefined,
       }}
     />,
@@ -61,12 +65,13 @@ export async function generateRadiologyReportVersions(
     signatureSrc = undefined;
   }
 
-  const [withSignature, withoutSignature, withSignatureNoFrame, withoutSignatureNoFrame] =
+  const [withSignature, withoutSignature, withSignatureNoFrame, withoutSignatureNoFrame, cetakTerbaru] =
     await Promise.all([
       buildReportBlob(input, logoSrc, true, true, signatureSrc),
       buildReportBlob(input, logoSrc, false, true),
       buildReportBlob(input, logoSrc, true, false, signatureSrc),
       buildReportBlob(input, logoSrc, false, false),
+      buildReportBlob(input, logoSrc, true, true, signatureSrc, true),
     ]);
 
   const cleanName = input.nama.trim().replace(/[/\\?%*:|"<>]/g, '_') || 'pasien';
@@ -76,6 +81,7 @@ export async function generateRadiologyReportVersions(
     withoutSignature,
     withSignatureNoFrame,
     withoutSignatureNoFrame,
+    cetakTerbaru,
     filename: `${cleanName}.pdf`,
   };
 }

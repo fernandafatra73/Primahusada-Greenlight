@@ -2777,6 +2777,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
       alamat?: string;
       pengirimId: string;
       klinis?: string;
+      temuan?: string;
       jenisPemeriksaanIds: string[];
       sharingAmount?: number;
       harga?: number;
@@ -2853,6 +2854,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
         pengirimId: body.pengirimId,
         asalModul: body.asalModul === 'LABORATORIUM' ? 'LABORATORIUM' : 'RADIOLOGI',
         klinis: body.klinis?.trim() || null,
+        temuan: body.temuan?.trim() || null,
         kesan: body.kesan?.trim() || null,
         sharingType: 'FIXED',
         sharingPercent: new Decimal(0),
@@ -2887,6 +2889,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
       alamat?: string;
       pengirimId?: string;
       klinis?: string;
+      temuan?: string;
       hasilStatus?: 'MENUNGGU_HASIL' | 'SELESAI';
       paymentStatus?: 'BELUM_LUNAS' | 'LUNAS';
       radiologId?: string | null;
@@ -2991,6 +2994,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
           alamat: req.body.alamat !== undefined ? req.body.alamat?.trim() || null : existing.alamat,
           pengirimId,
           klinis: req.body.klinis !== undefined ? req.body.klinis?.trim() || null : existing.klinis,
+          temuan: req.body.temuan !== undefined ? req.body.temuan?.trim() || null : existing.temuan,
           kesan: req.body.kesan !== undefined ? req.body.kesan?.trim() || null : existing.kesan,
           hasilStatus,
           paymentStatus: req.body.paymentStatus ?? existing.paymentStatus,
@@ -4977,6 +4981,7 @@ function mapPasien(
     noTelepon: string | null;
     alamat: string | null;
     klinis: string | null;
+    temuan: string | null;
     hasilStatus: string;
     paymentStatus: string;
     sharingAmount: Decimal | null;
@@ -5014,6 +5019,7 @@ function mapPasien(
     alamat: p.alamat,
     pengirim: p.pengirim,
     klinis: p.klinis,
+    temuan: p.temuan,
     hasilStatus: p.hasilStatus,
     paymentStatus: p.paymentStatus,
     sharingAmount: serializeDecimal(p.sharingAmount ?? p.totalSharing),

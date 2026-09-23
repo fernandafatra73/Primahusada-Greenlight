@@ -839,6 +839,8 @@ model Pasien {
   pengirim        Dokter        @relation(fields: [pengirimId], references: [id])
   asalModul       AsalModul     @default(RADIOLOGI)
   klinis          String?
+  /// Temuan (findings) radiologi, dicetak di bawah Klinis khusus pada varian "Cetak Terbaru".
+  temuan          String?
   hasilStatus     HasilStatus   @default(MENUNGGU_HASIL)
   paymentStatus   PaymentStatus @default(BELUM_LUNAS)
   sharingType     SharingType   @default(PERCENT)

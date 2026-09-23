@@ -21,6 +21,10 @@ export interface RadiologyReportData {
   readonly pemeriksaan: string;
   readonly dokterPengirim: string;
   readonly klinis: string;
+  /** Temuan (findings), ditampilkan di bawah Klinis — hanya dicetak pada varian "Cetak Terbaru" (`includeTemuan`). */
+  readonly temuan?: string;
+  /** Aktifkan baris "Temuan :" di bawah Klinis; khusus varian "Cetak Terbaru". */
+  readonly includeTemuan?: boolean;
   readonly kesan: string;
   readonly radiologNama: string;
   /** Templat bacaan baku, ditampilkan di bawah Klinis dipisah 2 baris kosong
@@ -207,6 +211,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     width: '100%',
+  },
+  temuanRow: {
+    marginTop: 8,
   },
   clinicalInlineLabel: {
     width: 44,
@@ -415,6 +422,14 @@ export function RadiologyReportDocument({ data }: { readonly data: RadiologyRepo
                 </Text>
               </View>
             </View>
+            {data.includeTemuan && data.temuan ? (
+              <View style={[styles.clinicalRow, styles.temuanRow]}>
+                {includeFrame ? <Text style={styles.clinicalInlineLabel}>Temuan : </Text> : null}
+                <View style={styles.clinicalValueWrap}>
+                  <Text style={styles.clinicalInlineValue}>{formatPdfClinicalText(data.temuan)}</Text>
+                </View>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.bodyMiddle}>
