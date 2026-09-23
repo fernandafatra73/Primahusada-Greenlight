@@ -20,6 +20,7 @@ import { isValidBirthDate } from '../lib/birthDate.ts';
 import { clampClinicalInput } from '../lib/clinicalText.ts';
 import { readFileAsDataUrl, validateFotoFile } from '../lib/fotoUpload.ts';
 import { formatAiFotoAnalisa, formatTbScreeningAnalisa } from '../lib/aiFotoAnalisa.ts';
+import { applyPhotoAdjustments } from '../lib/imageAdjust.ts';
 import { formatSharingShort } from '../lib/pilihanSharing.ts';
 import {
   computeAutoSharingAmount,
@@ -361,6 +362,13 @@ export function PasienPage() {
   const [aiBanding2Analyzing, setAiBanding2Analyzing] = useState(false);
   const [aiBanding2Error, setAiBanding2Error] = useState<string | null>(null);
   const [aiBanding2Result, setAiBanding2Result] = useState<TbScreeningResult | null>(null);
+  // Foto asli (belum dipengaruhi slider) — ketajaman/densitas/kontras selalu dihitung ulang dari sini,
+  // supaya foto yang dikirim ke AI (sebelum didiagnosa) adalah versi yang sudah diatur.
+  const [aiBanding2RawDataUrl, setAiBanding2RawDataUrl] = useState('');
+  const [aiBanding2Contrast, setAiBanding2Contrast] = useState(0);
+  const [aiBanding2Brightness, setAiBanding2Brightness] = useState(0);
+  const [aiBanding2Detail, setAiBanding2Detail] = useState(0);
+  const [aiBanding2AdjustingPhoto, setAiBanding2AdjustingPhoto] = useState(false);
   const [nama, setNama] = useState('');
   const [tanggalLahir, setTanggalLahir] = useState('');
   const [umurManual, setUmurManual] = useState('');
@@ -1074,9 +1082,36 @@ export function PasienPage() {
     setAddOpen(true);
   }
 
+  useEffect(() => {
+    if (!aiBanding2RawDataUrl) return;
+    let cancelled = false;
+    setAiBanding2AdjustingPhoto(true);
+    applyPhotoAdjustments(aiBanding2RawDataUrl, {
+      contrast: aiBanding2Contrast,
+      brightness: aiBanding2Brightness,
+      detail: aiBanding2Detail,
+    })
+      .then((result) => {
+        if (!cancelled) setAiBanding2DataUrl(result);
+      })
+      .catch(() => {
+        if (!cancelled) setAiBanding2DataUrl(aiBanding2RawDataUrl);
+      })
+      .finally(() => {
+        if (!cancelled) setAiBanding2AdjustingPhoto(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [aiBanding2RawDataUrl, aiBanding2Contrast, aiBanding2Brightness, aiBanding2Detail]);
+
   function openAiBanding2Modal() {
     setAiBanding2Model('');
     setAiBanding2DataUrl('');
+    setAiBanding2RawDataUrl('');
+    setAiBanding2Contrast(0);
+    setAiBanding2Brightness(0);
+    setAiBanding2Detail(0);
     setAiBanding2DragOver(false);
     setAiBanding2Error(null);
     setAiBanding2Result(null);
@@ -1091,6 +1126,10 @@ export function PasienPage() {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
+        setAiBanding2Contrast(0);
+        setAiBanding2Brightness(0);
+        setAiBanding2Detail(0);
+        setAiBanding2RawDataUrl(reader.result);
         setAiBanding2DataUrl(reader.result);
         setAiBanding2Error(null);
         setAiBanding2Result(null);
@@ -3040,7 +3079,52 @@ export function PasienPage() {
             />
             {aiBanding2DataUrl && (
               <div className="tbscan-preview">
-                <img src={aiBanding2DataUrl} alt="Preview X-Ray" />
+                <img src={aiBanding2DataUrl} alt="Preview X-Ray" style={{ opacity: aiBanding2AdjustingPhoto ? 0.6 : 1 }} />
+                {aiBanding2AdjustingPhoto && <p className="aifoto-upload__hint">Memproses foto…</p>}
+              </div>
+            )}
+
+            {aiBanding2RawDataUrl && (
+              <div className="aifoto-adjust">
+                <div className="aifoto-adjust__row">
+                  <label htmlFor="tbscan-ketajaman">Ketajaman / Detail</label>
+                  <input
+                    id="tbscan-ketajaman"
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={aiBanding2Detail}
+                    onChange={(e) => setAiBanding2Detail(Number(e.target.value))}
+                  />
+                  <span className="aifoto-adjust__value">{aiBanding2Detail}</span>
+                </div>
+                <div className="aifoto-adjust__row">
+                  <label htmlFor="tbscan-densitas">Densitas</label>
+                  <input
+                    id="tbscan-densitas"
+                    type="range"
+                    min={-50}
+                    max={50}
+                    value={aiBanding2Brightness}
+                    onChange={(e) => setAiBanding2Brightness(Number(e.target.value))}
+                  />
+                  <span className="aifoto-adjust__value">{aiBanding2Brightness}</span>
+                </div>
+                <div className="aifoto-adjust__row">
+                  <label htmlFor="tbscan-kontras">Kontras (Paru ↔ Tulang)</label>
+                  <input
+                    id="tbscan-kontras"
+                    type="range"
+                    min={-50}
+                    max={50}
+                    value={aiBanding2Contrast}
+                    onChange={(e) => setAiBanding2Contrast(Number(e.target.value))}
+                  />
+                  <span className="aifoto-adjust__value">{aiBanding2Contrast}</span>
+                </div>
+                <p className="tbscan-upload__hint" style={{ margin: '0.25rem 0 0' }}>
+                  Geser Kontras ke kiri untuk kontras paru (jaringan lunak), ke kanan untuk kontras tulang.
+                </p>
               </div>
             )}
           </div>
@@ -3049,7 +3133,7 @@ export function PasienPage() {
             <button
               type="button"
               className="aifoto-analyze-btn"
-              disabled={aiBanding2Analyzing || !aiBanding2DataUrl || !aiBanding2Model}
+              disabled={aiBanding2Analyzing || aiBanding2AdjustingPhoto || !aiBanding2DataUrl || !aiBanding2Model}
               onClick={() => void handleAiBanding2Analyze()}
             >
               {aiBanding2Analyzing ? '⏳ Menganalisa...' : '▶ Analyze'}

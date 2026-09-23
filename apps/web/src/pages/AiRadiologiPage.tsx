@@ -84,7 +84,7 @@ export function AiRadiologiPage() {
     if (!rawFotoDataUrl) return;
     let cancelled = false;
     setAdjustingPhoto(true);
-    applyPhotoAdjustments(rawFotoDataUrl, { contrast, detail })
+    applyPhotoAdjustments(rawFotoDataUrl, { contrast, brightness: 0, detail })
       .then((result) => {
         if (!cancelled) setForm((f) => ({ ...f, fotoDataUrl: result }));
       })

@@ -1,6 +1,8 @@
 export interface PhotoAdjustments {
-  /** -50..50, 0 = tidak diubah. */
+  /** -50..50, 0 = tidak diubah. Kontras rendah = mendekati kontras paru (soft tissue), tinggi = mendekati kontras tulang. */
   readonly contrast: number;
+  /** -50..50 (densitas/kecerahan), 0 = tidak diubah. */
+  readonly brightness: number;
   /** 0..100 (jumlah sharpen/ketajaman detail), 0 = tidak diubah. */
   readonly detail: number;
 }
@@ -54,8 +56,8 @@ function sharpen(ctx: CanvasRenderingContext2D, width: number, height: number, a
  * Dipanggil ulang dari data URL foto ASLI setiap slider berubah, bukan ditumpuk dari hasil sebelumnya.
  */
 export async function applyPhotoAdjustments(rawDataUrl: string, adjustments: PhotoAdjustments): Promise<string> {
-  const { contrast, detail } = adjustments;
-  if (contrast === 0 && detail === 0) return rawDataUrl;
+  const { contrast, brightness, detail } = adjustments;
+  if (contrast === 0 && brightness === 0 && detail === 0) return rawDataUrl;
 
   const img = await loadImage(rawDataUrl);
   const scale = Math.min(1, MAX_ADJUST_DIM / Math.max(img.width, img.height));
@@ -68,7 +70,10 @@ export async function applyPhotoAdjustments(rawDataUrl: string, adjustments: Pho
   const ctx = canvas.getContext('2d');
   if (!ctx) return rawDataUrl;
 
-  ctx.filter = contrast !== 0 ? `contrast(${100 + contrast}%)` : 'none';
+  const filters: string[] = [];
+  if (contrast !== 0) filters.push(`contrast(${100 + contrast}%)`);
+  if (brightness !== 0) filters.push(`brightness(${100 + brightness}%)`);
+  ctx.filter = filters.length > 0 ? filters.join(' ') : 'none';
   ctx.drawImage(img, 0, 0, width, height);
   ctx.filter = 'none';
   sharpen(ctx, width, height, detail);
