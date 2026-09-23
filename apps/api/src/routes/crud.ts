@@ -90,6 +90,19 @@ const staffPublicSelect = {
   departemen: true,
 } as const;
 
+/// Daftar lagu karaoke tidak menyertakan fileData (base64 file lokal) di
+/// listing supaya payload-nya tidak membengkak — dibaca terpisah lewat
+/// endpoint /api/karaoke-lagu/:id/file.
+const karaokeLaguListSelect = {
+  id: true,
+  judul: true,
+  penyanyi: true,
+  url: true,
+  hasFile: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 function badRequest(reply: FastifyReply, message: string) {
   return reply.status(400).send({ error: message });
 }
@@ -501,22 +514,49 @@ export async function registerCrudRoutes(app: FastifyInstance) {
     const where = karaokeLaguListWhere(req.query.q);
     const [total, items] = await Promise.all([
       prisma.karaokeLagu.count({ where }),
-      prisma.karaokeLagu.findMany({ where, orderBy: { judul: 'asc' }, skip, take: limit }),
+      prisma.karaokeLagu.findMany({
+        where,
+        orderBy: { judul: 'asc' },
+        skip,
+        take: limit,
+        select: karaokeLaguListSelect,
+      }),
     ]);
     return { items, pagination: buildPaginationMeta(total, page, limit) };
   });
 
+  app.get<{ Params: { id: string } }>('/api/karaoke-lagu/:id/file', async (req, reply) => {
+    const item = await prisma.karaokeLagu.findUnique({
+      where: { id: req.params.id },
+      select: { fileData: true },
+    });
+    if (!item?.fileData) return reply.status(404).send({ error: 'File lagu tidak ditemukan' });
+    const match = item.fileData.match(/^data:([^;]+);base64,(.+)$/s);
+    if (!match) return reply.status(500).send({ error: 'Format file tidak valid' });
+    const [, mime, base64] = match;
+    const buffer = Buffer.from(base64!, 'base64');
+    reply.header('Content-Type', mime);
+    reply.header('Content-Length', String(buffer.length));
+    reply.header('Cache-Control', 'private, max-age=3600');
+    return reply.send(buffer);
+  });
+
   app.post<{
-    Body: { judul: string; penyanyi?: string; url: string };
+    Body: { judul: string; penyanyi?: string; url?: string; fileData?: string };
   }>('/api/karaoke-lagu', async (req, reply) => {
     if (!req.body.judul?.trim()) return badRequest(reply, 'judul wajib diisi');
-    if (!req.body.url?.trim()) return badRequest(reply, 'url wajib diisi');
+    const url = req.body.url?.trim() || null;
+    const fileData = req.body.fileData?.trim() || null;
+    if (!url && !fileData) return badRequest(reply, 'url atau file lagu wajib diisi');
     const item = await prisma.karaokeLagu.create({
       data: {
         judul: req.body.judul.trim(),
         penyanyi: req.body.penyanyi?.trim() || null,
-        url: req.body.url.trim(),
+        url,
+        fileData,
+        hasFile: fileData !== null,
       },
+      select: karaokeLaguListSelect,
     });
     return reply.status(201).send({ item });
   });
@@ -534,6 +574,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
         penyanyi: req.body.penyanyi !== undefined ? req.body.penyanyi?.trim() || null : existing.penyanyi,
         url: req.body.url?.trim() || existing.url,
       },
+      select: karaokeLaguListSelect,
     });
     return { item };
   });

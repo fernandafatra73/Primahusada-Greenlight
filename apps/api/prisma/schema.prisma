@@ -792,7 +792,13 @@ model KaraokeLagu {
   id        String   @id @default(cuid())
   judul     String
   penyanyi  String?
-  url       String
+  /// Link video karaoke (YouTube/stream). Kosong jika lagu berasal dari file
+  /// yang diunggah (lihat fileData/hasFile).
+  url       String?
+  /// Data URL base64 saat lagu ditambahkan dari file lokal (mis. tombol USB),
+  /// disimpan seperti PlaylistLagu.audioData agar tidak hilang dari sesi.
+  fileData  String?
+  hasFile   Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
