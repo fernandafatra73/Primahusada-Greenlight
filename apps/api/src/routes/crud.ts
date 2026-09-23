@@ -39,6 +39,7 @@ import {
   radiograferListWhere,
   radiologListWhere,
   sharingRadiologListWhere,
+  siaranTvListWhere,
   staffListWhere,
   suratKeteranganRujukanListWhere,
   suratKeteranganSehatListWhere,
@@ -70,6 +71,8 @@ type UsgListQuery = ListQuery & {
   startDate?: string;
   endDate?: string;
 };
+type SiaranTvKategoriInput = 'NASIONAL' | 'LUAR_NEGERI';
+type SiaranTvListQuery = ListQuery & { kategori?: string };
 
 const pasienInclude = {
   pengirim: true,
@@ -489,6 +492,59 @@ export async function registerCrudRoutes(app: FastifyInstance) {
 
   app.delete<{ Params: { id: string } }>('/api/ai-radiologi-grup/:id', async (req) => {
     await prisma.aiRadiologiGrup.delete({ where: { id: req.params.id } });
+    return { ok: true };
+  });
+
+  app.get<{ Querystring: SiaranTvListQuery }>('/api/siaran-tv', async (req) => {
+    const { page, limit, skip } = parsePagination(req.query);
+    const where = siaranTvListWhere(req.query.q, req.query.kategori);
+    const [total, items] = await Promise.all([
+      prisma.siaranTv.count({ where }),
+      prisma.siaranTv.findMany({ where, orderBy: { nama: 'asc' }, skip, take: limit }),
+    ]);
+    return { items, pagination: buildPaginationMeta(total, page, limit) };
+  });
+
+  app.post<{
+    Body: { nama: string; kategori: SiaranTvKategoriInput; url: string };
+  }>('/api/siaran-tv', async (req, reply) => {
+    if (!req.body.nama?.trim()) return badRequest(reply, 'nama wajib diisi');
+    if (req.body.kategori !== 'NASIONAL' && req.body.kategori !== 'LUAR_NEGERI') {
+      return badRequest(reply, 'kategori tidak valid');
+    }
+    if (!req.body.url?.trim()) return badRequest(reply, 'url wajib diisi');
+    const item = await prisma.siaranTv.create({
+      data: {
+        nama: req.body.nama.trim(),
+        kategori: req.body.kategori,
+        url: req.body.url.trim(),
+      },
+    });
+    return reply.status(201).send({ item });
+  });
+
+  app.patch<{
+    Params: { id: string };
+    Body: { nama?: string; kategori?: SiaranTvKategoriInput; url?: string };
+  }>('/api/siaran-tv/:id', async (req, reply) => {
+    const existing = await prisma.siaranTv.findUnique({ where: { id: req.params.id } });
+    if (!existing) return reply.status(404).send({ error: 'Siaran TV tidak ditemukan' });
+    if (req.body.kategori !== undefined && req.body.kategori !== 'NASIONAL' && req.body.kategori !== 'LUAR_NEGERI') {
+      return badRequest(reply, 'kategori tidak valid');
+    }
+    const item = await prisma.siaranTv.update({
+      where: { id: req.params.id },
+      data: {
+        nama: req.body.nama?.trim() || existing.nama,
+        kategori: req.body.kategori ?? existing.kategori,
+        url: req.body.url?.trim() || existing.url,
+      },
+    });
+    return { item };
+  });
+
+  app.delete<{ Params: { id: string } }>('/api/siaran-tv/:id', async (req) => {
+    await prisma.siaranTv.delete({ where: { id: req.params.id } });
     return { ok: true };
   });
 

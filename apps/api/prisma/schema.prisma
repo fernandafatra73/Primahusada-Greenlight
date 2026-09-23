@@ -783,6 +783,20 @@ model PlaylistLagu {
   createdAt DateTime @default(now())
 }
 
+enum SiaranTvKategori {
+  NASIONAL
+  LUAR_NEGERI
+}
+
+model SiaranTv {
+  id        String           @id @default(cuid())
+  nama      String
+  kategori  SiaranTvKategori
+  url       String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
 model KesanBacaanGrup {
   id        String                @id @default(cuid())
   nama      String

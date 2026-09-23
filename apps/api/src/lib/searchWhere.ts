@@ -46,6 +46,20 @@ export function aiRadiologiGrupListWhere(q?: string): Prisma.AiRadiologiGrupWher
   return { nama: { contains: term } };
 }
 
+export function siaranTvListWhere(q?: string, kategori?: string): Prisma.SiaranTvWhereInput {
+  const parts: Prisma.SiaranTvWhereInput[] = [];
+  if (kategori === 'NASIONAL' || kategori === 'LUAR_NEGERI') {
+    parts.push({ kategori });
+  }
+  const term = searchTerm(q);
+  if (term) {
+    parts.push({ nama: { contains: term } });
+  }
+  if (parts.length === 0) return {};
+  if (parts.length === 1) return parts[0]!;
+  return { AND: parts };
+}
+
 export function petugasLabListWhere(q?: string): Prisma.PetugasLabWhereInput {
   const term = searchTerm(q);
   if (!term) return {};
