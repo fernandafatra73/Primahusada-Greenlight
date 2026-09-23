@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
@@ -38,6 +38,13 @@ export function KaraokePage() {
   const [nowPlaying, setNowPlaying] = useState<AntrianItem | null>(null);
   const [antrian, setAntrian] = useState<readonly AntrianItem[]>([]);
   const [replayKey, setReplayKey] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  useEffect(() => {
+    setIsPaused(false);
+  }, [nowPlaying?.id, replayKey]);
 
   const [queueTarget, setQueueTarget] = useState<KaraokeLagu | null>(null);
   const [namaPenyanyiDraft, setNamaPenyanyiDraft] = useState('');
@@ -162,6 +169,24 @@ export function KaraokePage() {
 
   const playable = nowPlaying ? resolveSiaranTvPlayable(nowPlaying.lagu.url) : null;
 
+  function togglePause() {
+    if (!playable) return;
+    if (playable.kind === 'video') {
+      if (isPaused) {
+        videoRef.current?.play();
+      } else {
+        videoRef.current?.pause();
+      }
+      return;
+    }
+    // Kontrol YouTube lewat postMessage bawaan (butuh enablejsapi=1 di src iframe).
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func: isPaused ? 'playVideo' : 'pauseVideo', args: [] }),
+      '*',
+    );
+    setIsPaused((p) => !p);
+  }
+
   const form = (
     <form onSubmit={(e) => void onSubmit(e)} className="form-grid">
       <div className="form-field form-grid--full">
@@ -225,6 +250,11 @@ export function KaraokePage() {
                 )}
               </div>
               <div style={{ display: 'flex', gap: '0.4rem' }}>
+                {playable.kind !== 'iframe' && (
+                  <button type="button" className="btn btn--sm btn--secondary" onClick={togglePause}>
+                    {isPaused ? '▶️ Lanjutkan' : '⏸️ Jeda'}
+                  </button>
+                )}
                 <button type="button" className="btn btn--sm btn--secondary" onClick={() => setReplayKey((k) => k + 1)}>
                   🔁 Ulangi
                 </button>
@@ -240,14 +270,18 @@ export function KaraokePage() {
               {playable.kind === 'video' ? (
                 <video
                   key={`${playable.src}-${replayKey}`}
+                  ref={videoRef}
                   src={playable.src}
                   controls
                   autoPlay
+                  onPlay={() => setIsPaused(false)}
+                  onPause={() => setIsPaused(true)}
                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
                 />
               ) : (
                 <iframe
                   key={`${playable.src}-${replayKey}`}
+                  ref={iframeRef}
                   src={playable.src}
                   title={nowPlaying.lagu.judul}
                   allow="autoplay; encrypted-media; picture-in-picture"

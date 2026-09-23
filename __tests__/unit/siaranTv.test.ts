@@ -5,21 +5,21 @@ describe('resolveSiaranTvPlayable', () => {
   test('detects youtube watch links', () => {
     expect(resolveSiaranTvPlayable('https://www.youtube.com/watch?v=abcdefghijk')).toEqual({
       kind: 'youtube',
-      src: 'https://www.youtube.com/embed/abcdefghijk?autoplay=1',
+      src: 'https://www.youtube.com/embed/abcdefghijk?autoplay=1&enablejsapi=1',
     });
   });
 
   test('detects youtu.be short links', () => {
     expect(resolveSiaranTvPlayable('https://youtu.be/abcdefghijk')).toEqual({
       kind: 'youtube',
-      src: 'https://www.youtube.com/embed/abcdefghijk?autoplay=1',
+      src: 'https://www.youtube.com/embed/abcdefghijk?autoplay=1&enablejsapi=1',
     });
   });
 
   test('detects youtube live links', () => {
     expect(resolveSiaranTvPlayable('https://www.youtube.com/live/abcdefghijk?feature=share')).toEqual({
       kind: 'youtube',
-      src: 'https://www.youtube.com/embed/abcdefghijk?autoplay=1',
+      src: 'https://www.youtube.com/embed/abcdefghijk?autoplay=1&enablejsapi=1',
     });
   });
 

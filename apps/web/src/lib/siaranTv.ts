@@ -16,7 +16,10 @@ export function resolveSiaranTvPlayable(url: string): SiaranTvPlayable {
   const trimmed = url.trim();
   const youtubeMatch = YOUTUBE_ID_PATTERN.exec(trimmed);
   if (youtubeMatch) {
-    return { kind: 'youtube', src: `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1` };
+    return {
+      kind: 'youtube',
+      src: `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&enablejsapi=1`,
+    };
   }
   if (DIRECT_VIDEO_EXTENSION_PATTERN.test(trimmed)) {
     return { kind: 'video', src: trimmed };
