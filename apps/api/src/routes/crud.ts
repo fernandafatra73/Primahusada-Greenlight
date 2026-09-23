@@ -25,6 +25,7 @@ import {
   fotoDashboardListWhere,
   hargaListWhere,
   jenisListWhere,
+  karaokeLaguListWhere,
   karyawanKlinikListWhere,
   kesanListWhere,
   logoPerusahaanListWhere,
@@ -492,6 +493,53 @@ export async function registerCrudRoutes(app: FastifyInstance) {
 
   app.delete<{ Params: { id: string } }>('/api/ai-radiologi-grup/:id', async (req) => {
     await prisma.aiRadiologiGrup.delete({ where: { id: req.params.id } });
+    return { ok: true };
+  });
+
+  app.get<{ Querystring: ListQuery }>('/api/karaoke-lagu', async (req) => {
+    const { page, limit, skip } = parsePagination(req.query);
+    const where = karaokeLaguListWhere(req.query.q);
+    const [total, items] = await Promise.all([
+      prisma.karaokeLagu.count({ where }),
+      prisma.karaokeLagu.findMany({ where, orderBy: { judul: 'asc' }, skip, take: limit }),
+    ]);
+    return { items, pagination: buildPaginationMeta(total, page, limit) };
+  });
+
+  app.post<{
+    Body: { judul: string; penyanyi?: string; url: string };
+  }>('/api/karaoke-lagu', async (req, reply) => {
+    if (!req.body.judul?.trim()) return badRequest(reply, 'judul wajib diisi');
+    if (!req.body.url?.trim()) return badRequest(reply, 'url wajib diisi');
+    const item = await prisma.karaokeLagu.create({
+      data: {
+        judul: req.body.judul.trim(),
+        penyanyi: req.body.penyanyi?.trim() || null,
+        url: req.body.url.trim(),
+      },
+    });
+    return reply.status(201).send({ item });
+  });
+
+  app.patch<{
+    Params: { id: string };
+    Body: { judul?: string; penyanyi?: string; url?: string };
+  }>('/api/karaoke-lagu/:id', async (req, reply) => {
+    const existing = await prisma.karaokeLagu.findUnique({ where: { id: req.params.id } });
+    if (!existing) return reply.status(404).send({ error: 'Lagu karaoke tidak ditemukan' });
+    const item = await prisma.karaokeLagu.update({
+      where: { id: req.params.id },
+      data: {
+        judul: req.body.judul?.trim() || existing.judul,
+        penyanyi: req.body.penyanyi !== undefined ? req.body.penyanyi?.trim() || null : existing.penyanyi,
+        url: req.body.url?.trim() || existing.url,
+      },
+    });
+    return { item };
+  });
+
+  app.delete<{ Params: { id: string } }>('/api/karaoke-lagu/:id', async (req) => {
+    await prisma.karaokeLagu.delete({ where: { id: req.params.id } });
     return { ok: true };
   });
 
