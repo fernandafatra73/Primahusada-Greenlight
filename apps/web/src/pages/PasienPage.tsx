@@ -3096,6 +3096,15 @@ export function PasienPage() {
               <div className="tbscan-preview">
                 <img src={aiBanding2DataUrl} alt="Preview X-Ray" style={{ opacity: aiBanding2AdjustingPhoto ? 0.6 : 1 }} />
                 {aiBanding2AdjustingPhoto && <p className="aifoto-upload__hint">Memproses foto…</p>}
+                <button
+                  type="button"
+                  className="btn btn--sm btn--ghost"
+                  style={{ marginTop: '0.6rem', width: '100%' }}
+                  disabled={aiBanding2AdjustingPhoto || !aiBanding2DataUrl}
+                  onClick={handleAiBanding2Upload}
+                >
+                  {aiBanding2Uploaded ? '✅ Foto siap dianalisa' : '📤 Upload Foto untuk Analisa AI'}
+                </button>
               </div>
             )}
 
@@ -3140,15 +3149,6 @@ export function PasienPage() {
                 <p className="tbscan-upload__hint" style={{ margin: '0.25rem 0 0' }}>
                   Geser Kontras ke kiri untuk kontras paru (jaringan lunak), ke kanan untuk kontras tulang.
                 </p>
-                <button
-                  type="button"
-                  className="btn btn--sm btn--ghost"
-                  style={{ marginTop: '0.6rem' }}
-                  disabled={aiBanding2AdjustingPhoto || !aiBanding2DataUrl}
-                  onClick={handleAiBanding2Upload}
-                >
-                  {aiBanding2Uploaded ? '✅ Foto siap dianalisa' : '📤 Upload Foto untuk Analisa AI'}
-                </button>
               </div>
             )}
           </div>
