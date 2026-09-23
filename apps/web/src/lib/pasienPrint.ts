@@ -1,4 +1,4 @@
-import { apiGet } from './api.ts';
+import { apiGet, apiPatch } from './api.ts';
 import { formatDateShort, formatUmurDetail } from './format.ts';
 import { formatKlinisDisplay, parseKlinisData } from './penunjang.ts';
 import { printRadiologyReport } from '../pdf/printRadiologyReport.tsx';
@@ -52,5 +52,12 @@ export async function printPasienReport(pasienId: string): Promise<void> {
     temuan: p.temuan?.trim() || undefined,
     kesan: p.kesan?.trim() || '—',
     radiologNama: formatRadiologName(p.radiolog?.nama),
+  }, {
+    // Dipakai tab "Cetak Terbaru" di modal pratinjau untuk edit Kesan/Temuan
+    // lalu simpan & cetak ulang tanpa menutup modal.
+    onSaveKesanTemuan: async (kesan, temuan) => {
+      await apiPatch(`/api/pasien/${pasienId}`, { kesan, temuan });
+      await printPasienReport(pasienId);
+    },
   });
 }

@@ -950,6 +950,14 @@
   margin-bottom: 0.75rem;
 }
 
+.pdf-preview__edit-panel {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-page);
+}
+
 .pdf-preview__frame {
   width: 100%;
   height: min(72vh, 720px);

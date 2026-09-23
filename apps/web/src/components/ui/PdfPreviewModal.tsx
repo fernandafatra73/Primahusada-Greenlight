@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { clampClinicalInput } from '../../lib/clinicalText.ts';
 import { Modal } from './Modal.tsx';
 
 type PdfVersion =
@@ -16,6 +17,12 @@ interface PdfPreviewModalProps {
   readonly withoutSignatureNoFrame: Blob | null;
   readonly cetakTerbaru: Blob | null;
   readonly filename: string;
+  /** Nilai Kesan/Temuan saat ini, dipakai mengisi awal panel edit di tab "Cetak Terbaru". */
+  readonly initialKesan?: string;
+  readonly initialTemuan?: string;
+  /** Hanya disediakan untuk pratinjau yang datanya bisa disimpan ulang (mis. dari Pasien) —
+   * kalau kosong, panel edit Kesan/Temuan di tab "Cetak Terbaru" tidak ditampilkan. */
+  readonly onSaveKesanTemuan?: (kesan: string, temuan: string) => Promise<void>;
   readonly onClose: () => void;
 }
 
@@ -27,11 +34,18 @@ export function PdfPreviewModal({
   withoutSignatureNoFrame,
   cetakTerbaru,
   filename,
+  initialKesan = '',
+  initialTemuan = '',
+  onSaveKesanTemuan,
   onClose,
 }: PdfPreviewModalProps) {
   const [version, setVersion] = useState<PdfVersion>('with-signature');
   const [url, setUrl] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [kesanDraft, setKesanDraft] = useState(initialKesan);
+  const [temuanDraft, setTemuanDraft] = useState(initialTemuan);
+  const [savingKesanTemuan, setSavingKesanTemuan] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const blobByVersion: Record<PdfVersion, Blob | null> = {
     'with-signature': withSignature,
@@ -47,6 +61,14 @@ export function PdfPreviewModal({
       setVersion('with-signature');
     }
   }, [open]);
+
+  // Nilai awal (kesan lama sebelum diedit, atau hasil terbaru setelah disimpan) selalu
+  // datang dari caller lewat prop — disinkronkan ke draft supaya textarea tidak "basi".
+  useEffect(() => {
+    setKesanDraft(initialKesan);
+    setTemuanDraft(initialTemuan);
+    setSaveError(null);
+  }, [initialKesan, initialTemuan]);
 
   useEffect(() => {
     if (!activeBlob) {
@@ -82,6 +104,19 @@ export function PdfPreviewModal({
     anchor.download = `${base}${suffix}.pdf`;
     anchor.click();
     URL.revokeObjectURL(objectUrl);
+  }
+
+  async function handleSaveKesanTemuan() {
+    if (!onSaveKesanTemuan) return;
+    setSavingKesanTemuan(true);
+    setSaveError(null);
+    try {
+      await onSaveKesanTemuan(kesanDraft, temuanDraft);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan Kesan/Temuan');
+    } finally {
+      setSavingKesanTemuan(false);
+    }
   }
 
   return (
@@ -142,6 +177,41 @@ export function PdfPreviewModal({
             Unduh PDF
           </button>
         </div>
+        {version === 'cetak-terbaru' && onSaveKesanTemuan && (
+          <div className="form-grid pdf-preview__edit-panel">
+            <div className="form-field">
+              <label htmlFor="pdf-preview-temuan">Edit Temuan</label>
+              <textarea
+                id="pdf-preview-temuan"
+                rows={2}
+                value={temuanDraft}
+                onChange={(e) => setTemuanDraft(clampClinicalInput(e.target.value))}
+                placeholder="Temuan radiologi..."
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="pdf-preview-kesan">Edit Kesan</label>
+              <textarea
+                id="pdf-preview-kesan"
+                rows={3}
+                value={kesanDraft}
+                onChange={(e) => setKesanDraft(clampClinicalInput(e.target.value))}
+                placeholder="Isi kesan radiologi..."
+              />
+            </div>
+            {saveError && <div className="alert alert--error form-grid--full">{saveError}</div>}
+            <div className="form-grid--full">
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                disabled={savingKesanTemuan}
+                onClick={() => void handleSaveKesanTemuan()}
+              >
+                {savingKesanTemuan ? 'Menyimpan...' : '💾 Simpan & Perbarui Cetak Terbaru'}
+              </button>
+            </div>
+          </div>
+        )}
         {url ? (
           <iframe
             ref={iframeRef}

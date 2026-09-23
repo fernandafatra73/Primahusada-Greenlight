@@ -21,11 +21,22 @@ export interface RadiologyPdfPreview {
   readonly filename: string;
 }
 
-let openPreview: ((preview: RadiologyPdfPreview, input: PrintRadiologyReportInput) => void) | null = null;
+/** Disediakan hanya oleh caller yang datanya berasal dari record yang bisa di-PATCH
+ * (mis. `printPasienReport`) — dipakai tab "Cetak Terbaru" di modal pratinjau untuk
+ * mengedit Kesan/Temuan lalu menyimpan & mencetak ulang, tanpa menutup modal. */
+export interface RadiologyPdfPreviewMeta {
+  readonly onSaveKesanTemuan?: (kesan: string, temuan: string) => Promise<void>;
+}
 
-export function registerPdfPreviewHandler(
-  handler: (preview: RadiologyPdfPreview, input: PrintRadiologyReportInput) => void,
-): () => void {
+type PdfPreviewOpenHandler = (
+  preview: RadiologyPdfPreview,
+  input: PrintRadiologyReportInput,
+  meta?: RadiologyPdfPreviewMeta,
+) => void;
+
+let openPreview: PdfPreviewOpenHandler | null = null;
+
+export function registerPdfPreviewHandler(handler: PdfPreviewOpenHandler): () => void {
   openPreview = handler;
   return () => {
     openPreview = null;
@@ -104,11 +115,14 @@ function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export async function printRadiologyReport(input: PrintRadiologyReportInput): Promise<void> {
+export async function printRadiologyReport(
+  input: PrintRadiologyReportInput,
+  meta?: RadiologyPdfPreviewMeta,
+): Promise<void> {
   const versions = await generateRadiologyReportVersions(input);
 
   if (openPreview) {
-    openPreview(versions, input);
+    openPreview(versions, input, meta);
     return;
   }
 
