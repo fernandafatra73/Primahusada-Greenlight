@@ -36,4 +36,14 @@ describe('resolveSiaranTvPlayable', () => {
       src: 'https://player.example.com/embed/channel-1',
     });
   });
+
+  test('detects local blob URLs from a file picker (e.g. USB drive)', () => {
+    const src = 'blob:http://localhost:1973/1234-5678';
+    expect(resolveSiaranTvPlayable(src)).toEqual({ kind: 'video', src });
+  });
+
+  test('detects data: video/audio URLs', () => {
+    const src = 'data:video/mp4;base64,AAAA';
+    expect(resolveSiaranTvPlayable(src)).toEqual({ kind: 'video', src });
+  });
 });

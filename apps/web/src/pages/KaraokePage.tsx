@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
@@ -45,6 +45,20 @@ export function KaraokePage() {
   useEffect(() => {
     setIsPaused(false);
   }, [nowPlaying?.id, replayKey]);
+
+  const [localLagu, setLocalLagu] = useState<readonly KaraokeLagu[]>([]);
+  const localLaguRef = useRef<readonly KaraokeLagu[]>([]);
+  localLaguRef.current = localLagu;
+  useEffect(() => {
+    return () => {
+      for (const lagu of localLaguRef.current) URL.revokeObjectURL(lagu.url);
+    };
+  }, []);
+
+  const [usbModalOpen, setUsbModalOpen] = useState(false);
+  const [usbFile, setUsbFile] = useState<File | null>(null);
+  const [usbJudul, setUsbJudul] = useState('');
+  const [usbPenyanyi, setUsbPenyanyi] = useState('');
 
   const [queueTarget, setQueueTarget] = useState<KaraokeLagu | null>(null);
   const [namaPenyanyiDraft, setNamaPenyanyiDraft] = useState('');
@@ -154,6 +168,45 @@ export function KaraokePage() {
 
   function removeFromQueue(id: string) {
     setAntrian((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  function openUsbModal() {
+    setUsbFile(null);
+    setUsbJudul('');
+    setUsbPenyanyi('');
+    setUsbModalOpen(true);
+  }
+
+  function handleUsbFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUsbFile(file);
+    if (!usbJudul.trim()) {
+      setUsbJudul(file.name.replace(/\.[^/.]+$/, ''));
+    }
+  }
+
+  function submitUsbForm(e: FormEvent) {
+    e.preventDefault();
+    if (!usbFile || !usbJudul.trim()) return;
+    const lagu: KaraokeLagu = {
+      id: `usb-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      judul: usbJudul.trim(),
+      penyanyi: usbPenyanyi.trim() || null,
+      url: URL.createObjectURL(usbFile),
+    };
+    setLocalLagu((prev) => [...prev, lagu]);
+    setUsbModalOpen(false);
+  }
+
+  function removeLocalLagu(id: string) {
+    setLocalLagu((prev) => {
+      const target = prev.find((l) => l.id === id);
+      if (target) URL.revokeObjectURL(target.url);
+      return prev.filter((l) => l.id !== id);
+    });
+    setAntrian((prev) => prev.filter((a) => a.lagu.id !== id));
+    if (nowPlaying?.lagu.id === id) setNowPlaying(null);
   }
 
   function shuffleQueue() {
@@ -366,13 +419,65 @@ export function KaraokePage() {
         )}
       </div>
 
+      {localLagu.length > 0 && (
+        <div
+          style={{
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '10px',
+            padding: '1.25rem',
+            marginBottom: '1.25rem',
+          }}
+        >
+          <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.75rem' }}>
+            Lagu dari USB (sesi ini)
+          </div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Judul Lagu</th>
+                <th>Penyanyi Asli</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {localLagu.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.judul}</td>
+                  <td>{item.penyanyi ?? '—'}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      <button type="button" className="btn btn--sm btn--primary" onClick={() => playNow(item)}>
+                        ▶️ Nyanyikan
+                      </button>
+                      <button type="button" className="btn btn--sm btn--secondary" onClick={() => openQueueForm(item)}>
+                        ➕ Antrian
+                      </button>
+                      <button type="button" className="btn btn--sm btn--danger" onClick={() => removeLocalLagu(item.id)}>
+                        🗑️ Hapus
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="form-hint">Lagu dari USB/komputer hanya tersedia selama sesi ini, tidak tersimpan permanen.</p>
+        </div>
+      )}
+
       <ListPageShell
         title="Daftar Lagu Karaoke"
         subtitle="Kelola koleksi lagu karaoke dan tambahkan ke antrian bernyanyi"
         action={
-          <button type="button" className="btn btn--primary" onClick={openAdd}>
-            + Tambah Lagu
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button type="button" className="btn btn--secondary" onClick={openUsbModal}>
+              💾 USB
+            </button>
+            <button type="button" className="btn btn--primary" onClick={openAdd}>
+              + Tambah Lagu
+            </button>
+          </div>
         }
         metrics={[
           {
@@ -435,6 +540,39 @@ export function KaraokePage() {
       </Modal>
       <Modal open={modalMode === 'edit'} title="Ubah Lagu Karaoke" onClose={() => setModalMode(null)}>
         {form}
+      </Modal>
+
+      <Modal open={usbModalOpen} title="Tambah Lagu dari USB" onClose={() => setUsbModalOpen(false)}>
+        <form onSubmit={submitUsbForm} className="form-grid">
+          <div className="form-field form-grid--full">
+            <label htmlFor="usb-file">File Video/Audio Karaoke *</label>
+            <input id="usb-file" type="file" accept="video/*,audio/*" required onChange={handleUsbFileChange} />
+          </div>
+          <div className="form-field form-grid--full">
+            <label htmlFor="usb-judul">Judul Lagu *</label>
+            <input
+              id="usb-judul"
+              required
+              value={usbJudul}
+              onChange={(e) => setUsbJudul(e.target.value)}
+              placeholder="Judul lagu…"
+            />
+          </div>
+          <div className="form-field form-grid--full">
+            <label htmlFor="usb-penyanyi">Penyanyi Asli</label>
+            <input
+              id="usb-penyanyi"
+              value={usbPenyanyi}
+              onChange={(e) => setUsbPenyanyi(e.target.value)}
+              placeholder="Opsional"
+            />
+          </div>
+          <p className="form-hint form-grid--full">
+            Pilih file video/audio karaoke dari komputer atau flashdisk (USB) yang tersambung. Lagu ini hanya
+            tersedia selama sesi ini, tidak tersimpan permanen di server.
+          </p>
+          <ModalFormFooter onCancel={() => setUsbModalOpen(false)} submitLabel="Tambah" />
+        </form>
       </Modal>
 
       <Modal open={queueTarget !== null} title={`Tambah ke Antrian — ${queueTarget?.judul ?? ''}`} onClose={() => setQueueTarget(null)}>
