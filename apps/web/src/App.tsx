@@ -64,6 +64,7 @@ import { RadiologiPage } from './pages/RadiologiPage.tsx';
 import { PetugasLabPage } from './pages/PetugasLabPage.tsx';
 import { RadiologMasterPage } from './pages/RadiologMasterPage.tsx';
 import { RadiograferPage } from './pages/RadiograferPage.tsx';
+import { KoneksiPhPage } from './pages/KoneksiPhPage.tsx';
 import { KondisiAlatPage } from './pages/KondisiAlatPage.tsx';
 import { LogbookPasienPage } from './pages/LogbookPasienPage.tsx';
 import { GajiKaryawanPage } from './pages/GajiKaryawanPage.tsx';
@@ -301,6 +302,8 @@ function renderViewContent(
       return <SosmedPage onNavigate={navigate} />;
     case 'rad2':
       return <Rad2Page />;
+    case 'koneksi':
+      return <KoneksiPhPage />;
     case 'global-warm':
       return <GlobalWarmPage />;
     case 'daftar-akun':

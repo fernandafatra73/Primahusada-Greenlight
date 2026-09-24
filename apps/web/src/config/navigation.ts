@@ -151,6 +151,7 @@ export const MAIN_NAV_ITEMS: readonly NavItem[] = [
   { id: 'farmasi', label: 'Farmasi', shortLabel: 'Farmasi' },
   { id: 'sosmed', label: 'Sosmed', shortLabel: 'Sosmed' },
   { id: 'rad2', label: 'Rad2', shortLabel: 'Rad2' },
+  { id: 'koneksi', label: 'Koneksi', shortLabel: 'Koneksi' },
   { id: 'global-warm', label: 'Global Warm', shortLabel: 'Global Warm' },
   { id: 'daftar-akun', label: 'Daftar Akun', shortLabel: 'Daftar Akun' },
   { id: 'expertise', label: 'Expertise', shortLabel: 'Expertise' },
