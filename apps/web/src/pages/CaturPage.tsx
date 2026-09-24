@@ -2,23 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   PROMOTION_CHOICES,
   applyMove,
-  fileOf,
   gameStatus,
   generateMoves,
   initialPosition,
   isGameOver,
   moveToSan,
   opposite,
-  rankOf,
-  squareName,
   type Color,
   type GameStatus,
   type Move,
-  type Piece,
   type PieceType,
   type Position,
   type Square,
 } from '../lib/chess.ts';
+import { ChessBoard, PIECE_GLYPH } from '../components/ChessBoard.tsx';
+import { CaturTonton } from '../components/CaturTonton.tsx';
 import { DIFFICULTY_LABELS, chooseMove, type Difficulty } from '../lib/chessAi.ts';
 import {
   DEFAULT_TIME_CONTROL_ID,
@@ -29,23 +27,6 @@ import {
 } from '../lib/chessClock.ts';
 import '../components/ui/ui.css';
 
-const GLYPH: Record<PieceType, string> = {
-  k: '♚',
-  q: '♛',
-  r: '♜',
-  b: '♝',
-  n: '♞',
-  p: '♟',
-};
-
-// Warna papan kayu sheesham: kotak terang kayu boxwood, kotak gelap kayu
-// jati kemerahan, dengan bingkai mahoni lebih tua di sekelilingnya.
-const LIGHT_SQUARE = '#f0dfc0';
-const DARK_SQUARE = '#a2703f';
-const LIGHT_LAST_MOVE = '#e2d08a';
-const DARK_LAST_MOVE = '#94733a';
-const FRAME = '#5c3a22';
-const FRAME_EDGE = '#3f2717';
 
 /** Pemain dunia yang bisa dipilih sebagai lawan. */
 const WORLD_PLAYERS: readonly string[] = [
@@ -104,6 +85,7 @@ function toMovePairs(sans: readonly string[]): readonly (readonly [number, strin
 }
 
 export function CaturPage() {
+  const [mode, setMode] = useState<'main' | 'tonton'>('main');
   const [history, setHistory] = useState<readonly GameSnapshot[]>([initialSnapshot()]);
   const [playerColor, setPlayerColor] = useState<Color>('w');
   const [difficulty, setDifficulty] = useState<Difficulty>('sedang');
@@ -249,11 +231,6 @@ export function CaturPage() {
   }
 
   const flipped = playerColor === 'b';
-  const squares = useMemo(() => {
-    const order = Array.from({ length: 64 }, (_, i) => i);
-    return flipped ? order.reverse() : order;
-  }, [flipped]);
-
   const targetSquares = new Set(movesForSelected.map((m) => m.to));
   const advantage = useMemo(() => materialAdvantage(position), [position]);
 
@@ -271,7 +248,37 @@ export function CaturPage() {
         ? `${namaLawan} sedang berpikir…`
         : `Giliran ${nameOf(position.turn)}${status === 'check' ? ' — Skak!' : ''}`;
 
+  const modeTabs = (
+    <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem' }}>
+      {([
+        ['main', '♟️ Main Catur'],
+        ['tonton', '📺 Tonton Pertandingan'],
+      ] as const).map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          className={`btn btn--sm ${mode === id ? 'btn--primary' : 'btn--ghost'}`}
+          onClick={() => setMode(id)}
+          style={mode !== id ? { border: '1px solid var(--color-border)' } : undefined}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (mode === 'tonton') {
+    return (
+      <>
+        {modeTabs}
+        <CaturTonton />
+      </>
+    );
+  }
+
   return (
+    <>
+      {modeTabs}
     <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
       <div>
         <PlayerBar
@@ -281,38 +288,14 @@ export function CaturPage() {
           active={!over && position.turn === opponentColor}
         />
 
-        <div
-          style={{
-            background: FRAME,
-            padding: '18px',
-            borderRadius: '6px',
-            border: `2px solid ${FRAME_EDGE}`,
-            boxShadow: '0 8px 22px rgba(0,0,0,0.25)',
-            display: 'inline-block',
-            position: 'relative',
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(8, min(8.6vw, 60px))',
-              gridTemplateRows: 'repeat(8, min(8.6vw, 60px))',
-              boxShadow: 'inset 0 0 0 2px rgba(0,0,0,0.35)',
-            }}
-          >
-            {squares.map((sq) => (
-              <SquareCell
-                key={sq}
-                square={sq}
-                piece={position.board[sq] ?? null}
-                selected={selected === sq}
-                isTarget={targetSquares.has(sq)}
-                isLastMove={current.lastMove?.from === sq || current.lastMove?.to === sq}
-                onClick={() => handleSquareClick(sq)}
-              />
-            ))}
-          </div>
-        </div>
+        <ChessBoard
+          position={position}
+          flipped={flipped}
+          selected={selected}
+          targets={targetSquares}
+          lastMove={current.lastMove}
+          onSquareClick={handleSquareClick}
+        />
 
         <PlayerBar
           name={namaPemain || 'Anda'}
@@ -475,7 +458,7 @@ export function CaturPage() {
                   onClick={() => completePromotion(type)}
                   style={{ fontSize: '1.8rem', lineHeight: 1, padding: '0.3rem 0.6rem' }}
                 >
-                  {GLYPH[type]}
+                  {PIECE_GLYPH[type]}
                 </button>
               ))}
             </div>
@@ -483,6 +466,7 @@ export function CaturPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -535,68 +519,6 @@ function PlayerBar({ name, color, clockMs, active }: PlayerBarProps) {
         </span>
       )}
     </div>
-  );
-}
-
-interface SquareCellProps {
-  readonly square: Square;
-  readonly piece: Piece | null;
-  readonly selected: boolean;
-  readonly isTarget: boolean;
-  readonly isLastMove: boolean;
-  readonly onClick: () => void;
-}
-
-function SquareCell({ square, piece, selected, isTarget, isLastMove, onClick }: SquareCellProps) {
-  const isLight = (fileOf(square) + rankOf(square)) % 2 === 0;
-  const background = selected
-    ? '#e0c060'
-    : isLastMove
-      ? isLight
-        ? LIGHT_LAST_MOVE
-        : DARK_LAST_MOVE
-      : isLight
-        ? LIGHT_SQUARE
-        : DARK_SQUARE;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={squareName(square)}
-      style={{
-        background,
-        border: 'none',
-        padding: 0,
-        cursor: 'pointer',
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 'min(6.2vw, 42px)',
-        lineHeight: 1,
-        color: piece?.color === 'w' ? '#fffaf0' : '#1c1310',
-        textShadow:
-          piece?.color === 'w'
-            ? '0 0 2px #3b2a1a, 0 1px 2px rgba(0,0,0,0.55)'
-            : '0 1px 1px rgba(255,255,255,0.25)',
-      }}
-    >
-      {piece ? GLYPH[piece.type] : ''}
-      {isTarget && (
-        <span
-          style={{
-            position: 'absolute',
-            width: piece ? '86%' : '30%',
-            height: piece ? '86%' : '30%',
-            borderRadius: '50%',
-            background: piece ? 'transparent' : 'rgba(20,83,45,0.4)',
-            border: piece ? '4px solid rgba(20,83,45,0.5)' : 'none',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-    </button>
   );
 }
 

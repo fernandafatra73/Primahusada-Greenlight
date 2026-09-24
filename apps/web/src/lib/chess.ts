@@ -572,6 +572,45 @@ function disambiguate(pos: Position, move: Move, piece: Piece): string {
   return squareName(move.from);
 }
 
+const SAN_PATTERN = /^([KQRBN])?([a-h])?([1-8])?x?([a-h][1-8])(?:=([QRBN]))?$/;
+
+/** Kebalikan `moveToSan`: mencari langkah sah yang cocok dengan notasi.
+ *
+ * Dicocokkan berdasarkan bagian-bagian notasi (bidak, kotak asal bila ditulis,
+ * kotak tujuan, promosi) dan bukan lewat perbandingan teks, supaya notasi dari
+ * sumber lain yang menulis kotak asal lebih lengkap atau lebih ringkas dari
+ * keluaran `moveToSan` tetap terbaca. Mengembalikan null bila tidak ada yang
+ * cocok — dipakai untuk memeriksa keabsahan rekaman partai. */
+export function findMoveBySan(pos: Position, san: string): Move | null {
+  const cleaned = san.trim().replace(/[!?]+$/, '').replace(/[+#]+$/, '');
+  const legal = generateMoves(pos);
+
+  const castle = cleaned.replace(/0/g, 'O');
+  if (castle === 'O-O' || castle === 'O-O-O') {
+    const side = castle === 'O-O' ? 'k' : 'q';
+    return legal.find((m) => m.isCastle === side) ?? null;
+  }
+
+  const match = SAN_PATTERN.exec(cleaned);
+  if (!match) return null;
+
+  const [, letter, fromFile, fromRank, target, promotion] = match;
+  const type = (letter ?? 'P').toLowerCase() as PieceType;
+  const to = squareFromName(target as string);
+
+  const candidates = legal.filter((move) => {
+    if (move.to !== to) return false;
+    if (pos.board[move.from]?.type !== type) return false;
+    if (fromFile && 'abcdefgh'[fileOf(move.from)] !== fromFile) return false;
+    if (fromRank && String(8 - rankOf(move.from)) !== fromRank) return false;
+    if (promotion) return move.promotion === promotion.toLowerCase();
+    // Tanpa keterangan promosi, promosi menteri dipakai sebagai bawaan.
+    return move.promotion === undefined || move.promotion === 'q';
+  });
+
+  return candidates[0] ?? null;
+}
+
 function checkSuffix(pos: Position, move: Move): string {
   const next = applyMove(pos, move);
   if (!isInCheck(next)) return '';
