@@ -13,9 +13,18 @@ import {
   type Move,
   type PlacedTile,
   type RoundResult,
+  type Side,
   type Tile,
 } from '../lib/gaplek.ts';
 import { analysePosition, boardInsight, chooseMove } from '../lib/gaplekAi.ts';
+import {
+  ROW_H,
+  ROW_W,
+  chainWidths,
+  isDoubleTile,
+  layoutSnake,
+  rowCount,
+} from '../lib/gaplekLayout.ts';
 import '../components/ui/ui.css';
 
 const HUMAN = 0;
@@ -44,6 +53,8 @@ export function GaplekPage() {
   const [result, setResult] = useState<RoundResult | null>(null);
   const [log, setLog] = useState<readonly string[]>([]);
   const [showAnalysis, setShowAnalysis] = useState(true);
+  /** Kartu yang sedang ditarik atau dipilih untuk dijatuhkan ke meja. */
+  const [heldIndex, setHeldIndex] = useState<number | null>(null);
 
   const ends = openEnds(game);
   const myMoves = useMemo(() => (game.turn === HUMAN ? legalMoves(game) : []), [game]);
@@ -106,6 +117,7 @@ export function GaplekPage() {
 
   function play(move: Move) {
     if (game.turn !== HUMAN || result) return;
+    setHeldIndex(null);
     const tile = game.hands[HUMAN]?.[move.tileIndex] as Tile;
     addLog(`Anda pasang ${tile.a}|${tile.b} di ${move.side}.`);
     const next = applyMove(game, move);
@@ -122,6 +134,7 @@ export function GaplekPage() {
   }
 
   function newRound() {
+    setHeldIndex(null);
     setGame(dealRound());
     setResult(null);
     setLog([]);
@@ -135,6 +148,17 @@ export function GaplekPage() {
   const myHand = game.hands[HUMAN] ?? [];
   const myTurn = game.turn === HUMAN && !result;
   const mustPass = myTurn && myMoves.length === 0;
+
+  /** Langkah untuk kartu yang sedang dipegang ke sisi tertentu, bila sah. */
+  function heldMoveFor(side: Side): Move | null {
+    if (heldIndex === null) return null;
+    return myMoves.find((m) => m.tileIndex === heldIndex && m.side === side) ?? null;
+  }
+
+  function dropAt(side: Side) {
+    const move = heldMoveFor(side);
+    if (move) play(move);
+  }
 
   return (
     <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -182,18 +206,16 @@ export function GaplekPage() {
             <FaceDownRow count={game.hands[1]?.length ?? 0} vertical />
           </div>
 
-          <div style={{ gridArea: 'tengah', display: 'flex', alignItems: 'center', justifyContent: 'center', overflowX: 'auto' }}>
-            {game.placed.length === 0 ? (
-              <p style={{ color: '#bbf7d0', margin: 0, textAlign: 'center' }}>
-                Papan masih kosong — pemegang balak 6|6 yang jalan pertama.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                {game.placed.map((placed, i) => (
-                  <DominoChain key={`${placed[0]}-${placed[1]}-${i}`} placed={placed} />
-                ))}
-              </div>
-            )}
+          <div style={{ gridArea: 'tengah', position: 'relative', minHeight: '19rem' }}>
+            <ChainSnake
+              placed={game.placed}
+              leftLabel={ends.length === 2 ? String(ends[0]) : '6|6'}
+              rightLabel={ends.length === 2 ? String(ends[1]) : '6|6'}
+              acceptsLeft={heldMoveFor('kiri') !== null}
+              acceptsRight={heldMoveFor('kanan') !== null}
+              onDropLeft={() => dropAt('kiri')}
+              onDropRight={() => dropAt('kanan')}
+            />
           </div>
 
           <div style={{ gridArea: 'kanan', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -213,18 +235,23 @@ export function GaplekPage() {
           </p>
         )}
 
-        <h3 style={{ margin: '0 0 0.4rem', fontSize: '0.95rem' }}>
+        <h3 style={{ margin: '0 0 0.2rem', fontSize: '0.95rem' }}>
           Kartu Anda ({myHand.length})
         </h3>
+        <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#64748b' }}>
+          Tarik kartu ke ujung meja yang angkanya cocok — atau klik kartunya dulu, lalu klik
+          ujung yang dituju.
+        </p>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
           {myHand.map((tile, tileIndex) => (
             <HandTile
               key={`${tileKey(tile)}-${tileIndex}`}
               tile={tile}
-              moves={myMoves.filter((m) => m.tileIndex === tileIndex)}
+              playable={myTurn && myMoves.some((m) => m.tileIndex === tileIndex)}
+              held={heldIndex === tileIndex}
               recommended={best?.move.tileIndex === tileIndex}
-              disabled={!myTurn}
-              onPlay={play}
+              onPick={() => setHeldIndex(tileIndex)}
+              onToggle={() => setHeldIndex(heldIndex === tileIndex ? null : tileIndex)}
             />
           ))}
           {myHand.length === 0 && <span style={{ color: '#64748b' }}>Kartu habis.</span>}
@@ -407,38 +434,175 @@ function AnalysisPanel({
   );
 }
 
-function HandTile({
-  tile,
-  moves,
-  recommended,
-  disabled,
-  onPlay,
+/** Rantai digambar berbaris seperti ular: berjalan mendatar, lalu berbalik
+ * arah di baris berikutnya ketika sudah mentok — sebagaimana kartu gaplek
+ * disusun di atas meja saat rantainya kepanjangan.
+ *
+ * Kartu balak (angka kembar) dipasang melintang, tegak lurus arah rantai,
+ * sesuai aturan gaplek. Karena melintang, balak hanya memakan ruang selebar
+ * kartu sehingga barisan tetap rapat. */
+function ChainSnake({
+  placed,
+  leftLabel,
+  rightLabel,
+  acceptsLeft,
+  acceptsRight,
+  onDropLeft,
+  onDropRight,
 }: {
-  readonly tile: Tile;
-  readonly moves: readonly Move[];
-  readonly recommended: boolean;
-  readonly disabled: boolean;
-  readonly onPlay: (move: Move) => void;
+  readonly placed: readonly PlacedTile[];
+  readonly leftLabel: string;
+  readonly rightLabel: string;
+  readonly acceptsLeft: boolean;
+  readonly acceptsRight: boolean;
+  readonly onDropLeft: () => void;
+  readonly onDropRight: () => void;
 }) {
-  const playable = moves.length > 0 && !disabled;
+  if (placed.length === 0) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.6rem' }}>
+        <p style={{ color: '#bbf7d0', margin: 0, textAlign: 'center' }}>
+          Papan masih kosong — pemegang balak 6|6 yang jalan pertama.
+        </p>
+        <DropZone label="6|6" title="Taruh balak 6|6 di sini" accepts={acceptsRight} onDrop={onDropRight} />
+      </div>
+    );
+  }
+
+  // Zona kiri dan kanan ikut menempati jalur yang sama dengan kartu, jadi
+  // keduanya selalu muncul persis di tempat kartu berikutnya akan jatuh.
+  const slots = layoutSnake(chainWidths(placed));
+  const rows = rowCount(slots);
 
   return (
-    <div style={{ textAlign: 'center' }}>
-      <Domino a={tile.a} b={tile.b} dimmed={!playable} highlighted={recommended && playable} />
-      <div style={{ display: 'flex', gap: '0.2rem', justifyContent: 'center', marginTop: '0.25rem' }}>
-        {moves.map((move) => (
-          <button
-            key={move.side}
-            type="button"
-            className="btn btn--sm btn--secondary"
-            onClick={() => onPlay(move)}
-            disabled={disabled}
-            style={{ padding: '0.1rem 0.4rem', fontSize: '0.72rem' }}
-          >
-            {move.side}
-          </button>
-        ))}
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: `${ROW_W}px`, height: `${rows * ROW_H}px` }}>
+        {slots.map((slot, i) => {
+          const tile = placed[i - 1];
+          return (
+            <div
+              key={i === 0 ? 'kiri' : i === slots.length - 1 ? 'kanan' : `${tile?.[0]}-${tile?.[1]}-${i}`}
+              style={{
+                position: 'absolute',
+                left: `${slot.x}px`,
+                top: `${slot.y}px`,
+                width: `${slot.width}px`,
+                height: `${ROW_H}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {i === 0 && (
+                <DropZone label={leftLabel} title={`Sambung di ujung ${leftLabel}`} accepts={acceptsLeft} onDrop={onDropLeft} />
+              )}
+              {i === slots.length - 1 && (
+                <DropZone label={rightLabel} title={`Sambung di ujung ${rightLabel}`} accepts={acceptsRight} onDrop={onDropRight} />
+              )}
+              {tile && i > 0 && i < slots.length - 1 && (
+                <DominoChain placed={tile} crosswise={isDoubleTile(tile)} />
+              )}
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+/** Zona di tepi rantai tempat kartu dijatuhkan. Menyala hijau hanya bila
+ * kartu yang sedang dipegang memang boleh masuk di sisi itu. */
+function DropZone({
+  label,
+  title,
+  accepts,
+  onDrop,
+}: {
+  /** Ditulis pendek karena kedudukannya selebar satu kartu. */
+  readonly label: string;
+  readonly title: string;
+  readonly accepts: boolean;
+  readonly onDrop: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={() => accepts && onDrop()}
+      onDragOver={(e) => {
+        if (accepts) e.preventDefault();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        if (accepts) onDrop();
+      }}
+      style={{
+        width: '46px',
+        height: '46px',
+        padding: '0',
+        lineHeight: 1.1,
+        borderRadius: '8px',
+        border: `2px dashed ${accepts ? '#4ade80' : 'rgba(255,255,255,0.35)'}`,
+        background: accepts ? 'rgba(74,222,128,0.18)' : 'rgba(255,255,255,0.06)',
+        color: accepts ? '#bbf7d0' : 'rgba(255,255,255,0.55)',
+        cursor: accepts ? 'pointer' : 'default',
+        // Sengaja tidak memakai `disabled`: tombol yang disabled tidak
+        // menerima event dragover/drop sama sekali, jadi kartu tidak bisa
+        // dijatuhkan ke sini.
+        fontSize: '1.05rem',
+        fontWeight: 800,
+        opacity: accepts ? 1 : 0.55,
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function HandTile({
+  tile,
+  playable,
+  held,
+  recommended,
+  onPick,
+  onToggle,
+}: {
+  readonly tile: Tile;
+  readonly playable: boolean;
+  readonly held: boolean;
+  readonly recommended: boolean;
+  /** Dipakai saat kartu mulai ditarik: selalu memegang, tidak membatalkan. */
+  readonly onPick: () => void;
+  readonly onToggle: () => void;
+}) {
+  return (
+    <div
+      draggable={playable}
+      onDragStart={(e) => {
+        if (!playable) return;
+        e.dataTransfer.effectAllowed = 'move';
+        // Sebagian browser menolak drag tanpa data apa pun.
+        e.dataTransfer.setData('text/plain', `${tile.a}-${tile.b}`);
+        onPick();
+      }}
+      onClick={() => playable && onToggle()}
+      role="button"
+      tabIndex={playable ? 0 : -1}
+      onKeyDown={(e) => {
+        if (playable && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      title={playable ? `Tarik ${tile.a}|${tile.b} ke meja` : `${tile.a}|${tile.b} belum bisa dipasang`}
+      style={{
+        cursor: playable ? 'grab' : 'not-allowed',
+        transform: held ? 'translateY(-8px)' : undefined,
+        transition: 'transform 120ms ease',
+      }}
+    >
+      <Domino a={tile.a} b={tile.b} dimmed={!playable} highlighted={held || (recommended && playable)} />
     </div>
   );
 }
@@ -475,20 +639,34 @@ function Domino({
 }
 
 /** Kartu yang sudah terpasang digambar mendatar mengikuti arah rantai. */
-function DominoChain({ placed }: { readonly placed: PlacedTile }) {
+function DominoChain({
+  placed,
+  crosswise = false,
+}: {
+  readonly placed: PlacedTile;
+  /** Balak dipasang melintang — tegak lurus arah rantai. */
+  readonly crosswise?: boolean;
+}) {
   return (
     <div
       style={{
         display: 'flex',
+        flexDirection: crosswise ? 'column' : 'row',
         background: '#fffdf5',
         border: '2px solid #334155',
         borderRadius: '5px',
         overflow: 'hidden',
       }}
     >
-      <PipFace value={placed[0]} size={30} />
-      <div style={{ width: '2px', background: '#334155' }} />
-      <PipFace value={placed[1]} size={30} />
+      <PipFace value={placed[0]} size={24} />
+      <div
+        style={
+          crosswise
+            ? { height: '2px', background: '#334155' }
+            : { width: '2px', background: '#334155' }
+        }
+      />
+      <PipFace value={placed[1]} size={24} />
     </div>
   );
 }
