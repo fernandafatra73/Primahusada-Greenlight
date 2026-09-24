@@ -47,7 +47,9 @@ const styles = StyleSheet.create({
   dataLabel: { width: 130, fontSize: 10.5 },
   dataColon: { width: 12, fontSize: 10.5 },
   dataValue: { flex: 1, fontSize: 10.5, fontWeight: 'bold' },
-  signatureSection: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 40, paddingHorizontal: 20 },
+  signatureSection: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-end', marginTop: 40, paddingHorizontal: 20 },
+  /** Cap klinik, ditaruh di kiri nama dokter sejajar ruang tanda tangan. */
+  signatureStamp: { width: 78, height: 78, marginRight: 6, marginBottom: 6 },
   signatureBox: { alignItems: 'center', width: 200 },
   signatureDate: { fontSize: 10, marginBottom: 45 },
   signatureName: { fontSize: 10, fontWeight: 'bold', textDecoration: 'underline' },
@@ -119,6 +121,7 @@ export function SuratKeteranganSehatDocument({ data }: { readonly data: SuratKet
           </Text>
 
           <View style={styles.signatureSection}>
+            {data.logoSrc ? <Image style={styles.signatureStamp} src={data.logoSrc} /> : null}
             <View style={styles.signatureBox}>
               <Text style={styles.signatureDate}>
                 {data.tempatSurat}, {data.tanggalSurat}
