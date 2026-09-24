@@ -4,7 +4,7 @@ import { FAMOUS_GAMES } from '../../apps/web/src/lib/chessGames.ts';
 
 describe('FAMOUS_GAMES', () => {
   test('ships the full list with unique ids', () => {
-    expect(FAMOUS_GAMES).toHaveLength(200);
+    expect(FAMOUS_GAMES).toHaveLength(300);
     expect(new Set(FAMOUS_GAMES.map((g) => g.id)).size).toBe(FAMOUS_GAMES.length);
   });
 

@@ -38,17 +38,18 @@ interface ChessBoardProps {
  * gelap — tanpa itu keduanya menyatu dengan papan. */
 function pieceStyle(color: 'w' | 'b'): CSSProperties {
   if (color === 'w') {
+    // Bidak "putih" digambar warna kayu coklat muda seperti set kayu asli.
     return {
-      color: '#fcf7ec',
+      color: '#c08a4a',
       WebkitTextStrokeWidth: '1.6px',
-      WebkitTextStrokeColor: '#33220f',
-      filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.45))',
+      WebkitTextStrokeColor: '#4a2f14',
+      filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.4))',
     };
   }
   return {
-    color: '#15100b',
+    color: '#131110',
     WebkitTextStrokeWidth: '1.1px',
-    WebkitTextStrokeColor: 'rgba(247,238,220,0.62)',
+    WebkitTextStrokeColor: 'rgba(245,242,220,0.45)',
     filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.35))',
   };
 }
