@@ -10,16 +10,16 @@ export const PIECE_GLYPH: Record<PieceType, string> = {
   p: '♟',
 };
 
-// Papan biru: kotak terang biru pucat, kotak gelap biru sedang, dengan
-// bingkai biru tua. Sorotan langkah terakhir memakai kuning keemasan karena
-// paling terbaca di atas biru.
-const LIGHT_SQUARE = '#e6eef5';
-const DARK_SQUARE = '#4a7ba7';
-const LIGHT_LAST_MOVE = '#f3e08f';
-const DARK_LAST_MOVE = '#c3a259';
+// Papan turnamen: kotak gelap hijau, kotak terang krem gading, dipasang di
+// dalam bingkai kayu. Sorotan langkah terakhir memakai kuning kehijauan yang
+// terbaca di kedua warna kotak.
+const LIGHT_SQUARE = '#eeeed2';
+const DARK_SQUARE = '#769656';
+const LIGHT_LAST_MOVE = '#f6f669';
+const DARK_LAST_MOVE = '#baca44';
 const SELECTED = '#f2c14e';
-const FRAME = '#1f3b57';
-const FRAME_EDGE = '#132638';
+const FRAME = '#6b4a2b';
+const FRAME_EDGE = '#452c17';
 
 interface ChessBoardProps {
   readonly position: Position;
@@ -60,7 +60,7 @@ export function ChessBoard({
   targets,
   lastMove = null,
   onSquareClick,
-  maxSquarePx = 68,
+  maxSquarePx = 74,
 }: ChessBoardProps) {
   const order = Array.from({ length: 64 }, (_, i) => i);
   const squares = flipped ? [...order].reverse() : order;
@@ -146,7 +146,7 @@ function SquareCell({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: `min(7.4vw, ${Math.round(maxSquarePx * 0.86)}px)`,
+        fontSize: `min(8vw, ${Math.round(maxSquarePx * 0.9)}px)`,
         lineHeight: 1,
         ...(piece ? pieceStyle(piece.color) : {}),
       }}
