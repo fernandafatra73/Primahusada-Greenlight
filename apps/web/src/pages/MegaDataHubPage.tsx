@@ -12,12 +12,14 @@ import { AiGeminiPage } from './AiGeminiPage.tsx';
 import { ExpertisePage } from './ExpertisePage.tsx';
 import { SiaranTvPage } from './SiaranTvPage.tsx';
 import { KaraokePage } from './KaraokePage.tsx';
+import { CaturPage } from './CaturPage.tsx';
 
 const MEGA_DATA_TABS = [
   { id: 'fatra', label: 'Fatra' },
   { id: 'musik-ph', label: 'Musik-PH' },
   { id: 'bernyanyi', label: 'Bernyanyi' },
   { id: 'siaran-tv', label: 'Siaran TV' },
+  { id: 'catur', label: 'Catur' },
   { id: 'templet', label: 'Templet' },
   { id: 'transfer', label: 'Transfer' },
   { id: 'daftar-telpon', label: 'Daftar Telpon' },
@@ -41,6 +43,8 @@ function renderTabContent(tabId: MegaDataTabId) {
       return <KaraokePage />;
     case 'siaran-tv':
       return <SiaranTvPage />;
+    case 'catur':
+      return <CaturPage />;
     case 'templet':
       return <TempletPage />;
     case 'transfer':
