@@ -1079,3 +1079,16 @@ model KeuanganTransaksi {
   updatedAt  DateTime @updatedAt
 }
 
+
+/// Daftar komputer klinik yang bisa disambungkan lewat menu "Koneksi Ke PH".
+/// `anydeskId` disimpan sudah tanpa spasi (hasil normalisasi), boleh berupa
+/// nomor ID atau alias AnyDesk.
+model KomputerKlinik {
+  id        String   @id @default(cuid())
+  nama      String
+  anydeskId String
+  lokasi    String?
+  catatan   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
