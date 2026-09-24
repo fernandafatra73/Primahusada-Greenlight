@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  LOSING_SCORE,
   applyMove,
   applyPass,
+  applyRoundScores,
   canPlay,
   dealRound,
   handPips,
   legalMoves,
+  matchStanding,
   openEnds,
   roundResult,
   tileKey,
@@ -28,11 +31,11 @@ import {
 import '../components/ui/ui.css';
 
 const HUMAN = 0;
-const PLAYER_NAMES = ['Anda', 'Komputer 1', 'Komputer 2', 'Komputer 3'] as const;
+const DEFAULT_NAMES = ['Anda', 'Komputer 1', 'Komputer 2', 'Komputer 3'] as const;
 const COMPUTER_DELAY_MS = 700;
 
 /** Titik domino merah, seperti set gaplek yang biasa dipakai. */
-const PIP_COLOR = '#c81e1e';
+const PIP_COLOR = '#b00000';
 const FELT = '#0f5132';
 const TABLE_EDGE = '#6b4a2b';
 
@@ -53,6 +56,7 @@ export function GaplekPage() {
   const [result, setResult] = useState<RoundResult | null>(null);
   const [log, setLog] = useState<readonly string[]>([]);
   const [showAnalysis, setShowAnalysis] = useState(true);
+  const [names, setNames] = useState<readonly string[]>([...DEFAULT_NAMES]);
   /** Kartu yang sedang ditarik atau dipilih untuk dijatuhkan ke meja. */
   const [heldIndex, setHeldIndex] = useState<number | null>(null);
 
@@ -65,6 +69,11 @@ export function GaplekPage() {
   const insight = useMemo(() => boardInsight(game, HUMAN), [game]);
   const best = analysis?.ranked[0] ?? null;
 
+  const nameOf = useCallback(
+    (player: number) => names[player]?.trim() || (DEFAULT_NAMES[player] as string),
+    [names],
+  );
+
   const addLog = useCallback((line: string) => {
     setLog((prev) => [line, ...prev].slice(0, 40));
   }, []);
@@ -74,15 +83,15 @@ export function GaplekPage() {
       const outcome = roundResult(state);
       if (!outcome) return false;
       setResult(outcome);
-      setScores((prev) => prev.map((s, i) => (i === outcome.winner ? s + outcome.points : s)));
+      setScores((prev) => applyRoundScores(prev, outcome));
       addLog(
         outcome.ending === 'habis'
-          ? `${PLAYER_NAMES[outcome.winner]} kartunya habis dan dapat ${outcome.points} poin.`
-          : `Buntu. ${PLAYER_NAMES[outcome.winner]} sisa matanya paling kecil, dapat ${outcome.points} poin.`,
+          ? `${nameOf(outcome.winner)} kartunya habis — pemain lain menambah sisa matanya.`
+          : `Buntu. Sisa mata ${nameOf(outcome.winner)} paling kecil, jadi dia bebas nilai.`,
       );
       return true;
     },
-    [addLog],
+    [addLog, nameOf],
   );
 
   /** Giliran komputer dijalankan lewat timer supaya terlihat seperti berpikir
@@ -95,7 +104,7 @@ export function GaplekPage() {
     // ganda kalau ditaruh di sana.
     const timer = setTimeout(() => {
       const move = chooseMove(game);
-      const name = PLAYER_NAMES[game.turn];
+      const name = nameOf(game.turn);
 
       if (!move) {
         const passed = applyPass(game);
@@ -113,7 +122,7 @@ export function GaplekPage() {
     }, COMPUTER_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [game, result, addLog, finishRound]);
+  }, [game, result, addLog, finishRound, nameOf]);
 
   function play(move: Move) {
     if (game.turn !== HUMAN || result) return;
@@ -197,12 +206,12 @@ export function GaplekPage() {
           }}
         >
           <div style={{ gridArea: 'atas', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
-            <Seat player={2} scores={scores} hands={game.hands} turn={game.turn} result={result} />
+            <Seat player={2} name={nameOf(2)} scores={scores} hands={game.hands} turn={game.turn} result={result} />
             <FaceDownRow count={game.hands[2]?.length ?? 0} vertical={false} />
           </div>
 
           <div style={{ gridArea: 'kiri', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <Seat player={1} scores={scores} hands={game.hands} turn={game.turn} result={result} />
+            <Seat player={1} name={nameOf(1)} scores={scores} hands={game.hands} turn={game.turn} result={result} />
             <FaceDownRow count={game.hands[1]?.length ?? 0} vertical />
           </div>
 
@@ -220,11 +229,11 @@ export function GaplekPage() {
 
           <div style={{ gridArea: 'kanan', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <FaceDownRow count={game.hands[3]?.length ?? 0} vertical />
-            <Seat player={3} scores={scores} hands={game.hands} turn={game.turn} result={result} />
+            <Seat player={3} name={nameOf(3)} scores={scores} hands={game.hands} turn={game.turn} result={result} />
           </div>
 
           <div style={{ gridArea: 'bawah', display: 'flex', justifyContent: 'center' }}>
-            <Seat player={HUMAN} scores={scores} hands={game.hands} turn={game.turn} result={result} />
+            <Seat player={HUMAN} name={nameOf(HUMAN)} scores={scores} hands={game.hands} turn={game.turn} result={result} />
           </div>
         </div>
 
@@ -275,17 +284,31 @@ export function GaplekPage() {
           >
             <strong>
               {result.ending === 'buntu' ? 'Buntu — ' : ''}
-              {PLAYER_NAMES[result.winner]} menang ronde ini, +{result.points} poin.
+              {nameOf(result.winner)} menang ronde ini dan bebas nilai.
             </strong>
             <div style={{ fontSize: '0.85rem', marginTop: '0.3rem', color: '#334155' }}>
-              Sisa mata:{' '}
-              {result.remainingPips.map((p, i) => `${PLAYER_NAMES[i]} ${p}`).join(' · ')}
+              Sisa mata ronde ini:{' '}
+              {result.remainingPips.map((p, i) => `${nameOf(i)} ${p}`).join(' · ')}
             </div>
           </div>
+        )}
+
+        {result && (
+          <RevealedHands hands={game.hands} nameOf={nameOf} winner={result.winner} />
         )}
       </div>
 
       <div style={{ flex: '1 1 19rem', minWidth: '17rem' }}>
+        <ScoreTable
+          scores={scores}
+          names={names}
+          onRename={(player, value) =>
+            setNames((prev) => prev.map((n, i) => (i === player ? value : n)))
+          }
+          nameOf={nameOf}
+          lastResult={result}
+        />
+
         {showAnalysis && (
           <AnalysisPanel analysis={analysis} insight={insight} myTurn={myTurn} />
         )}
@@ -311,15 +334,131 @@ export function GaplekPage() {
   );
 }
 
+/** Daftar nilai keempat peserta. Nama bisa diubah langsung di tabel.
+ *
+ * Nilai adalah beban: pemenang ronde tidak menambah apa pun, yang lain
+ * menambah sisa mata kartunya. Melewati ambang berarti kalah, dan yang
+ * nilainya paling kecil jadi juara. */
+function ScoreTable({
+  scores,
+  names,
+  onRename,
+  nameOf,
+  lastResult,
+}: {
+  readonly scores: readonly number[];
+  readonly names: readonly string[];
+  readonly onRename: (player: number, value: string) => void;
+  readonly nameOf: (player: number) => string;
+  readonly lastResult: RoundResult | null;
+}) {
+  const standing = matchStanding(scores);
+
+  return (
+    <div style={{ marginBottom: '0.9rem' }}>
+      <h3 style={{ margin: '0 0 0.4rem', fontSize: '0.95rem' }}>
+        Nilai Peserta <span style={{ fontWeight: 400, color: '#64748b' }}>(lewat {LOSING_SCORE} kalah)</span>
+      </h3>
+      <table className="table table--compact" style={{ width: '100%' }}>
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th style={{ width: '4.5rem', textAlign: 'right' }}>Nilai</th>
+            <th style={{ width: '6rem' }}>Keterangan</th>
+          </tr>
+        </thead>
+        <tbody>
+          {scores.map((score, player) => {
+            const out = score > LOSING_SCORE;
+            const champion = standing.finished && standing.champion === player;
+            return (
+              <tr key={player} style={{ background: champion ? '#dcfce7' : out ? '#fee2e2' : undefined }}>
+                <td>
+                  <input
+                    value={names[player] ?? ''}
+                    onChange={(e) => onRename(player, e.target.value)}
+                    aria-label={`Nama pemain ${player + 1}`}
+                    placeholder={nameOf(player)}
+                    style={{
+                      width: '100%',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '5px',
+                      padding: '0.15rem 0.35rem',
+                      font: 'inherit',
+                    }}
+                  />
+                </td>
+                <td style={{ textAlign: 'right', fontWeight: 700 }}>{score}</td>
+                <td style={{ fontSize: '0.78rem' }}>
+                  {champion ? '🏆 Juara' : out ? 'Kalah' : lastResult?.winner === player ? 'Menang ronde' : ''}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {standing.finished && (
+        <p style={{ margin: '0.4rem 0 0', fontWeight: 700, color: '#166534' }}>
+          Permainan selesai — {nameOf(standing.champion)} juara dengan nilai terkecil (
+          {scores[standing.champion]}).
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Kartu semua pemain dibuka saat ronde selesai, supaya sisa mata masing-masing
+ * bisa diperiksa. */
+function RevealedHands({
+  hands,
+  nameOf,
+  winner,
+}: {
+  readonly hands: readonly (readonly Tile[])[];
+  readonly nameOf: (player: number) => string;
+  readonly winner: number;
+}) {
+  return (
+    <div style={{ marginTop: '0.75rem' }}>
+      <h3 style={{ margin: '0 0 0.4rem', fontSize: '0.95rem' }}>Kartu Dibuka</h3>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.9rem' }}>
+        {hands.map((hand, player) => (
+          <div key={player}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>
+              {nameOf(player)}
+              {player === winner && ' 🏅'}
+              <span style={{ fontWeight: 400, color: '#64748b' }}>
+                {' '}· sisa {handPips(hand)}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+              {hand.length === 0 ? (
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>habis</span>
+              ) : (
+                hand.map((tile, i) => (
+                  <Domino key={`${tileKey(tile)}-${i}`} a={tile.a} b={tile.b} />
+                ))
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Satu dudukan pemain di tepi meja. */
 function Seat({
   player,
+  name,
   scores,
   hands,
   turn,
   result,
 }: {
   readonly player: number;
+  readonly name: string;
   readonly scores: readonly number[];
   readonly hands: readonly (readonly Tile[])[];
   readonly turn: number;
@@ -337,9 +476,9 @@ function Seat({
         whiteSpace: 'nowrap',
       }}
     >
-      <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{PLAYER_NAMES[player]}</div>
+      <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{name}</div>
       <div style={{ fontSize: '0.72rem', color: '#475569' }}>
-        Skor <strong>{scores[player]}</strong> · {hands[player]?.length ?? 0} kartu
+        Nilai <strong>{scores[player]}</strong> · {hands[player]?.length ?? 0} kartu
       </div>
     </div>
   );
@@ -500,7 +639,11 @@ function ChainSnake({
                 <DropZone label={rightLabel} title={`Sambung di ujung ${rightLabel}`} accepts={acceptsRight} onDrop={onDropRight} />
               )}
               {tile && i > 0 && i < slots.length - 1 && (
-                <DominoChain placed={tile} crosswise={isDoubleTile(tile)} />
+                <DominoChain
+                  placed={tile}
+                  crosswise={isDoubleTile(tile)}
+                  reversed={!slot.leftToRight}
+                />
               )}
             </div>
           );
@@ -642,16 +785,28 @@ function Domino({
 function DominoChain({
   placed,
   crosswise = false,
+  reversed = false,
 }: {
   readonly placed: PlacedTile;
   /** Balak dipasang melintang — tegak lurus arah rantai. */
   readonly crosswise?: boolean;
+  /** Baris yang berjalan dari kanan ke kiri: urutan kedua sisi dibalik supaya
+   * angka yang bersentuhan tetap sama seperti urutan rantai sebenarnya. */
+  readonly reversed?: boolean;
 }) {
+  const direction = crosswise
+    ? reversed
+      ? 'column-reverse'
+      : 'column'
+    : reversed
+      ? 'row-reverse'
+      : 'row';
+
   return (
     <div
       style={{
         display: 'flex',
-        flexDirection: crosswise ? 'column' : 'row',
+        flexDirection: direction,
         background: '#fffdf5',
         border: '2px solid #334155',
         borderRadius: '5px',
@@ -700,8 +855,8 @@ function PipFace({ value, size = 42 }: { readonly value: number; readonly size?:
           {filled.has(i) && (
             <span
               style={{
-                width: `${Math.max(4, size * 0.18)}px`,
-                height: `${Math.max(4, size * 0.18)}px`,
+                width: `${Math.max(6, size * 0.27)}px`,
+                height: `${Math.max(6, size * 0.27)}px`,
                 borderRadius: '50%',
                 background: PIP_COLOR,
                 display: 'block',

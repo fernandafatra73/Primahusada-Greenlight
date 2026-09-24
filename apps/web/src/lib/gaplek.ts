@@ -247,3 +247,42 @@ export function unseenTiles(state: GameState, player: number): Tile[] {
 export function countUnseenWith(state: GameState, player: number, pip: number): number {
   return unseenTiles(state, player).filter((t) => t.a === pip || t.b === pip).length;
 }
+
+/** Ambang kekalahan: pemain yang nilainya melebihi angka ini kalah dan
+ * permainan berhenti. */
+export const LOSING_SCORE = 101;
+
+/** Nilai ronde ditambahkan ke setiap pemain: pemenang ronde tidak menambah
+ * apa pun, yang lain menambah sisa mata kartunya sendiri. Jadi nilai adalah
+ * beban — makin kecil makin baik. */
+export function applyRoundScores(
+  scores: readonly number[],
+  result: RoundResult,
+): number[] {
+  return scores.map((score, player) =>
+    player === result.winner ? score : score + (result.remainingPips[player] ?? 0),
+  );
+}
+
+export interface MatchStanding {
+  /** Permainan berhenti begitu ada yang melewati ambang. */
+  readonly finished: boolean;
+  /** Nilai terkecil. Bila seri, pemain dengan nomor urut terkecil. */
+  readonly champion: number;
+  /** Pemain yang nilainya sudah melewati ambang. */
+  readonly eliminated: readonly number[];
+}
+
+export function matchStanding(scores: readonly number[]): MatchStanding {
+  const eliminated = scores
+    .map((score, player) => ({ score, player }))
+    .filter((entry) => entry.score > LOSING_SCORE)
+    .map((entry) => entry.player);
+
+  let champion = 0;
+  for (let player = 1; player < scores.length; player++) {
+    if ((scores[player] as number) < (scores[champion] as number)) champion = player;
+  }
+
+  return { finished: eliminated.length > 0, champion, eliminated };
+}

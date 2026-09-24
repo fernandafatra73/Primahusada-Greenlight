@@ -76,6 +76,24 @@ describe('layoutSnake', () => {
   test('handles an empty chain', () => {
     expect(layoutSnake([])).toEqual([]);
   });
+
+  test('marks which way each row runs, so reversed rows can be drawn flipped', () => {
+    const slots = layoutSnake([200, 200, 200, 200]);
+    expect(slots.map((s) => s.leftToRight)).toEqual([true, false, true, false]);
+  });
+
+  test('every piece in the same row shares that row direction', () => {
+    const slots = layoutSnake([100, 100, 100, 100, 100, 100]);
+    const rows = new Map<number, boolean[]>();
+    for (const slot of slots) {
+      const list = rows.get(slot.y) ?? [];
+      list.push(slot.leftToRight);
+      rows.set(slot.y, list);
+    }
+    for (const list of rows.values()) {
+      expect(new Set(list).size).toBe(1);
+    }
+  });
 });
 
 describe('chainWidths', () => {

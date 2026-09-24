@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import {
   HAND_SIZE,
+  LOSING_SCORE,
   PLAYER_COUNT,
   applyMove,
   applyPass,
+  applyRoundScores,
   createDeck,
   dealRound,
   findStartingPlayer,
@@ -11,6 +13,7 @@ import {
   isBlocked,
   leftEnd,
   legalMoves,
+  matchStanding,
   rightEnd,
   roundResult,
   shuffle,
@@ -230,5 +233,58 @@ describe('shuffle', () => {
     const first = deck[0] as Tile;
     shuffle(deck, () => 0.9);
     expect(deck[0]).toBe(first);
+  });
+});
+
+describe('applyRoundScores', () => {
+  const result = {
+    winner: 1,
+    ending: 'habis' as const,
+    points: 20,
+    remainingPips: [8, 0, 5, 7],
+  };
+
+  test('the round winner adds nothing, everyone else adds their own pips', () => {
+    expect(applyRoundScores([0, 0, 0, 0], result)).toEqual([8, 0, 5, 7]);
+  });
+
+  test('scores build up across rounds', () => {
+    expect(applyRoundScores([10, 30, 4, 0], result)).toEqual([18, 30, 9, 7]);
+  });
+
+  test('a blocked round still spares the winner, who keeps tiles in hand', () => {
+    const blocked = {
+      winner: 2,
+      ending: 'buntu' as const,
+      points: 30,
+      remainingPips: [12, 9, 3, 6],
+    };
+    expect(applyRoundScores([0, 0, 0, 0], blocked)).toEqual([12, 9, 0, 6]);
+  });
+});
+
+describe('matchStanding', () => {
+  test('keeps playing while everyone is at or below the limit', () => {
+    const standing = matchStanding([100, LOSING_SCORE, 40, 0]);
+    expect(standing.finished).toBe(false);
+    expect(standing.eliminated).toEqual([]);
+  });
+
+  test('ends as soon as someone goes over the limit', () => {
+    const standing = matchStanding([102, 40, 30, 10]);
+    expect(standing.finished).toBe(true);
+    expect(standing.eliminated).toEqual([0]);
+  });
+
+  test('the lowest score is champion', () => {
+    expect(matchStanding([102, 40, 30, 55]).champion).toBe(2);
+  });
+
+  test('a tie for lowest goes to the earlier seat', () => {
+    expect(matchStanding([110, 12, 12, 30]).champion).toBe(1);
+  });
+
+  test('reports everyone who went over, not just the first', () => {
+    expect(matchStanding([120, 5, 130, 40]).eliminated).toEqual([0, 2]);
   });
 });

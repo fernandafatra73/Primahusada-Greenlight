@@ -20,6 +20,10 @@ export interface ChainSlot {
   readonly x: number;
   readonly y: number;
   readonly width: number;
+  /** Arah jalannya baris ini. Baris yang berjalan mundur harus menggambar
+   * kedua sisi kartu terbalik, kalau tidak angka yang bersentuhan terlihat
+   * tidak menyambung padahal rantainya benar. */
+  readonly leftToRight: boolean;
 }
 
 export function isDoubleTile(tile: PlacedTile): boolean {
@@ -51,6 +55,7 @@ export function layoutSnake(widths: readonly number[]): ChainSlot[] {
       x: leftToRight ? cursor : ROW_W - cursor - width,
       y: row * ROW_H,
       width,
+      leftToRight,
     });
     cursor += width;
   }
