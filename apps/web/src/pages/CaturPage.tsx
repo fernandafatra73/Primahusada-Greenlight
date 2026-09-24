@@ -20,6 +20,13 @@ import {
   type Square,
 } from '../lib/chess.ts';
 import { DIFFICULTY_LABELS, chooseMove, type Difficulty } from '../lib/chessAi.ts';
+import {
+  DEFAULT_TIME_CONTROL_ID,
+  TIME_CONTROLS,
+  findTimeControl,
+  formatClock,
+  isLowTime,
+} from '../lib/chessClock.ts';
 import '../components/ui/ui.css';
 
 const GLYPH: Record<PieceType, string> = {
@@ -31,10 +38,32 @@ const GLYPH: Record<PieceType, string> = {
   p: '♟',
 };
 
-const LIGHT_SQUARE = '#eadfc8';
-const DARK_SQUARE = '#b08968';
-const LIGHT_LAST_MOVE = '#dbe7a0';
-const DARK_LAST_MOVE = '#9db068';
+// Warna papan kayu sheesham: kotak terang kayu boxwood, kotak gelap kayu
+// jati kemerahan, dengan bingkai mahoni lebih tua di sekelilingnya.
+const LIGHT_SQUARE = '#f0dfc0';
+const DARK_SQUARE = '#a2703f';
+const LIGHT_LAST_MOVE = '#e2d08a';
+const DARK_LAST_MOVE = '#94733a';
+const FRAME = '#5c3a22';
+const FRAME_EDGE = '#3f2717';
+
+/** Pemain dunia yang bisa dipilih sebagai lawan. */
+const WORLD_PLAYERS: readonly string[] = [
+  'Magnus Carlsen',
+  'Garry Kasparov',
+  'Bobby Fischer',
+  'Anatoly Karpov',
+  'Viswanathan Anand',
+  'Vladimir Kramnik',
+  'Mikhail Tal',
+  'José Raúl Capablanca',
+  'Emanuel Lasker',
+  'Alexander Alekhine',
+  'Judit Polgár',
+  'Ding Liren',
+  'Hikaru Nakamura',
+  'Hou Yifan',
+];
 
 const COLOR_LABEL: Record<Color, string> = { w: 'Putih', b: 'Hitam' };
 
@@ -47,11 +76,18 @@ const STATUS_TEXT: Record<GameStatus, string> = {
   'fifty-move': 'Remis — 50 langkah tanpa makan atau jalan pion',
 };
 
+const TICK_MS = 200;
+
 interface GameSnapshot {
   readonly position: Position;
   /** Langkah yang menghasilkan posisi ini, untuk menyorot langkah terakhir. */
   readonly lastMove: Move | null;
   readonly san: string | null;
+}
+
+interface Clocks {
+  readonly w: number;
+  readonly b: number;
 }
 
 function initialSnapshot(): GameSnapshot {
@@ -75,10 +111,18 @@ export function CaturPage() {
   const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null);
   const [thinking, setThinking] = useState(false);
 
+  const [namaPemain, setNamaPemain] = useState('Anda');
+  const [namaLawan, setNamaLawan] = useState<string>(WORLD_PLAYERS[0] as string);
+
+  const [timeControlId, setTimeControlId] = useState(DEFAULT_TIME_CONTROL_ID);
+  const timeControl = findTimeControl(timeControlId);
+  const [clocks, setClocks] = useState<Clocks | null>(null);
+  const [flagged, setFlagged] = useState<Color | null>(null);
+
   const current = history[history.length - 1] ?? initialSnapshot();
   const position = current.position;
   const status = useMemo(() => gameStatus(position), [position]);
-  const over = isGameOver(status);
+  const over = isGameOver(status) || flagged !== null;
   const legalMoves = useMemo(() => generateMoves(position), [position]);
 
   const sans = useMemo(
@@ -87,6 +131,24 @@ export function CaturPage() {
   );
 
   const playerTurn = position.turn === playerColor;
+  const started = history.length > 1;
+
+  const resetClocks = useCallback((ms: number | null) => {
+    setClocks(ms === null ? null : { w: ms, b: ms });
+    setFlagged(null);
+  }, []);
+
+  const startNewGame = useCallback(
+    (color: Color, controlId: string) => {
+      setHistory([initialSnapshot()]);
+      setSelected(null);
+      setPendingPromotion(null);
+      setPlayerColor(color);
+      setTimeControlId(controlId);
+      resetClocks(findTimeControl(controlId).ms);
+    },
+    [resetClocks],
+  );
 
   const pushMove = useCallback((move: Move) => {
     setHistory((prev) => {
@@ -103,6 +165,23 @@ export function CaturPage() {
     });
     setSelected(null);
   }, []);
+
+  // Jam hanya berjalan setelah langkah pertama, supaya waktu tidak habis
+  // selagi papan masih dibaca.
+  useEffect(() => {
+    if (!clocks || over || !started) return;
+    const turn = position.turn;
+    const timer = setInterval(() => {
+      setClocks((prev) => (prev ? { ...prev, [turn]: Math.max(0, prev[turn] - TICK_MS) } : prev));
+    }, TICK_MS);
+    return () => clearInterval(timer);
+  }, [clocks !== null, over, started, position.turn]);
+
+  useEffect(() => {
+    if (!clocks || flagged) return;
+    if (clocks.w === 0) setFlagged('w');
+    else if (clocks.b === 0) setFlagged('b');
+  }, [clocks, flagged]);
 
   // Giliran komputer dijalankan lewat timer supaya papan sempat tergambar
   // ulang dulu; pencarian langkah memblokir thread selama beberapa ratus ms.
@@ -158,13 +237,6 @@ export function CaturPage() {
     if (move) pushMove(move);
   }
 
-  function newGame(color: Color = playerColor) {
-    setHistory([initialSnapshot()]);
-    setSelected(null);
-    setPendingPromotion(null);
-    setPlayerColor(color);
-  }
-
   /** Mundur dua langkah (langkah komputer dan langkah sendiri) supaya giliran
    * kembali ke pemain. */
   function undo() {
@@ -183,81 +255,152 @@ export function CaturPage() {
   }, [flipped]);
 
   const targetSquares = new Set(movesForSelected.map((m) => m.to));
-  const captured = useMemo(() => capturedTally(position), [position]);
+  const advantage = useMemo(() => materialAdvantage(position), [position]);
 
-  const winner = status === 'checkmate' ? opposite(position.turn) : null;
-  const statusLine = over
-    ? winner
-      ? `Skakmat — ${COLOR_LABEL[winner]} menang`
-      : STATUS_TEXT[status]
-    : thinking
-      ? 'Komputer sedang berpikir…'
-      : `Giliran ${COLOR_LABEL[position.turn]}${status === 'check' ? ' — Skak!' : ''}`;
+  const opponentColor = opposite(playerColor);
+  const winner = status === 'checkmate' ? opposite(position.turn) : flagged ? opposite(flagged) : null;
+  const nameOf = (color: Color) => (color === playerColor ? namaPemain || 'Anda' : namaLawan);
+
+  const statusLine = flagged
+    ? `Waktu ${COLOR_LABEL[flagged]} habis — ${nameOf(opposite(flagged))} menang`
+    : over
+      ? winner
+        ? `Skakmat — ${nameOf(winner)} menang`
+        : STATUS_TEXT[status]
+      : thinking
+        ? `${namaLawan} sedang berpikir…`
+        : `Giliran ${nameOf(position.turn)}${status === 'check' ? ' — Skak!' : ''}`;
 
   return (
     <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
       <div>
+        <PlayerBar
+          name={namaLawan}
+          color={opponentColor}
+          clockMs={clocks ? clocks[opponentColor] : null}
+          active={!over && position.turn === opponentColor}
+        />
+
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(8, min(9vw, 62px))',
-            gridTemplateRows: 'repeat(8, min(9vw, 62px))',
-            border: '3px solid #6f4e37',
+            background: FRAME,
+            padding: '18px',
             borderRadius: '6px',
-            overflow: 'hidden',
-            boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
+            border: `2px solid ${FRAME_EDGE}`,
+            boxShadow: '0 8px 22px rgba(0,0,0,0.25)',
+            display: 'inline-block',
+            position: 'relative',
           }}
         >
-          {squares.map((sq) => (
-            <SquareCell
-              key={sq}
-              square={sq}
-              piece={position.board[sq] ?? null}
-              selected={selected === sq}
-              isTarget={targetSquares.has(sq)}
-              isLastMove={current.lastMove?.from === sq || current.lastMove?.to === sq}
-              onClick={() => handleSquareClick(sq)}
-            />
-          ))}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(8, min(8.6vw, 60px))',
+              gridTemplateRows: 'repeat(8, min(8.6vw, 60px))',
+              boxShadow: 'inset 0 0 0 2px rgba(0,0,0,0.35)',
+            }}
+          >
+            {squares.map((sq) => (
+              <SquareCell
+                key={sq}
+                square={sq}
+                piece={position.board[sq] ?? null}
+                selected={selected === sq}
+                isTarget={targetSquares.has(sq)}
+                isLastMove={current.lastMove?.from === sq || current.lastMove?.to === sq}
+                onClick={() => handleSquareClick(sq)}
+              />
+            ))}
+          </div>
         </div>
 
+        <PlayerBar
+          name={namaPemain || 'Anda'}
+          color={playerColor}
+          clockMs={clocks ? clocks[playerColor] : null}
+          active={!over && position.turn === playerColor}
+        />
+
         <p
-          style={{
-            margin: '0.6rem 0 0',
-            fontWeight: 700,
-            color: over ? '#b91c1c' : 'inherit',
-          }}
+          style={{ margin: '0.5rem 0 0', fontWeight: 700, color: over ? '#b91c1c' : 'inherit' }}
           aria-live="polite"
         >
           {statusLine}
         </p>
         <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#64748b' }}>
-          Anda bermain {COLOR_LABEL[playerColor]} · Lawan {DIFFICULTY_LABELS[difficulty]}
-          {captured.advantage !== 0 &&
-            ` · Selisih materi ${captured.advantage > 0 ? '+' : ''}${captured.advantage}`}
+          Anda bermain {COLOR_LABEL[playerColor]} · Lawan {DIFFICULTY_LABELS[difficulty]} ·{' '}
+          {timeControl.label}
+          {advantage !== 0 && ` · Selisih materi ${advantage > 0 ? '+' : ''}${advantage}`}
         </p>
       </div>
 
-      <div style={{ minWidth: '15rem', flex: '1 1 15rem' }}>
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
-          <button type="button" className="btn btn--sm btn--primary" onClick={() => newGame()}>
+      <div style={{ minWidth: '16rem', flex: '1 1 16rem' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.7rem' }}>
+          <button
+            type="button"
+            className="btn btn--sm btn--primary"
+            onClick={() => startNewGame(playerColor, timeControlId)}
+          >
             ♟️ Permainan Baru
           </button>
           <button
             type="button"
             className="btn btn--sm btn--secondary"
             onClick={undo}
-            disabled={history.length <= 1 || thinking}
+            disabled={history.length <= 1 || thinking || over}
           >
             ↩️ Batalkan Langkah
           </button>
           <button
             type="button"
             className="btn btn--sm btn--secondary"
-            onClick={() => newGame(opposite(playerColor))}
+            onClick={() => startNewGame(opposite(playerColor), timeControlId)}
           >
             🔄 Main sebagai {COLOR_LABEL[opposite(playerColor)]}
           </button>
+        </div>
+
+        <div className="form-field" style={{ marginBottom: '0.6rem' }}>
+          <label htmlFor="catur-nama">Nama Anda</label>
+          <input
+            id="catur-nama"
+            value={namaPemain}
+            onChange={(e) => setNamaPemain(e.target.value)}
+            placeholder="Anda"
+          />
+        </div>
+
+        <div className="form-field" style={{ marginBottom: '0.6rem' }}>
+          <label htmlFor="catur-lawan">Lawan</label>
+          <select id="catur-lawan" value={namaLawan} onChange={(e) => setNamaLawan(e.target.value)}>
+            {WORLD_PLAYERS.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <p className="form-hint">
+            Nama pemain dunia hanya dipakai sebagai label lawan; kekuatan mainnya diatur lewat
+            tingkat kesulitan di bawah.
+          </p>
+        </div>
+
+        <div className="form-field" style={{ marginBottom: '0.6rem' }}>
+          <label htmlFor="catur-waktu">Waktu Permainan</label>
+          <select
+            id="catur-waktu"
+            value={timeControlId}
+            onChange={(e) => startNewGame(playerColor, e.target.value)}
+          >
+            {TIME_CONTROLS.map((tc) => (
+              <option key={tc.id} value={tc.id}>
+                {tc.label}
+              </option>
+            ))}
+          </select>
+          <p className="form-hint">
+            Jam mulai berjalan setelah langkah pertama. Mengubah pilihan ini memulai permainan baru.
+          </p>
         </div>
 
         <div className="form-field" style={{ marginBottom: '0.75rem' }}>
@@ -284,7 +427,7 @@ export function CaturPage() {
             Belum ada langkah. Klik bidak Anda untuk melihat langkah yang boleh dijalankan.
           </p>
         ) : (
-          <div style={{ maxHeight: '18rem', overflowY: 'auto' }}>
+          <div style={{ maxHeight: '16rem', overflowY: 'auto' }}>
             <table className="table table--compact">
               <thead>
                 <tr>
@@ -343,6 +486,58 @@ export function CaturPage() {
   );
 }
 
+interface PlayerBarProps {
+  readonly name: string;
+  readonly color: Color;
+  readonly clockMs: number | null;
+  readonly active: boolean;
+}
+
+function PlayerBar({ name, color, clockMs, active }: PlayerBarProps) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '0.75rem',
+        padding: '0.35rem 0.6rem',
+        margin: '0.35rem 0',
+        borderRadius: '6px',
+        background: active ? '#fef3c7' : '#f1f5f9',
+        border: `1px solid ${active ? '#f2c14e' : 'var(--color-border)'}`,
+      }}
+    >
+      <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
+        <span
+          style={{
+            width: '0.85rem',
+            height: '0.85rem',
+            borderRadius: '50%',
+            background: color === 'w' ? '#fffdf7' : '#1b1b1b',
+            border: '1px solid #64748b',
+            display: 'inline-block',
+          }}
+          aria-hidden="true"
+        />
+        {name}
+      </span>
+      {clockMs !== null && (
+        <span
+          style={{
+            fontVariantNumeric: 'tabular-nums',
+            fontWeight: 700,
+            fontSize: '1.05rem',
+            color: isLowTime(clockMs) ? '#b91c1c' : '#0f172a',
+          }}
+        >
+          {formatClock(clockMs)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 interface SquareCellProps {
   readonly square: Square;
   readonly piece: Piece | null;
@@ -355,7 +550,7 @@ interface SquareCellProps {
 function SquareCell({ square, piece, selected, isTarget, isLastMove, onClick }: SquareCellProps) {
   const isLight = (fileOf(square) + rankOf(square)) % 2 === 0;
   const background = selected
-    ? '#f2c14e'
+    ? '#e0c060'
     : isLastMove
       ? isLight
         ? LIGHT_LAST_MOVE
@@ -378,10 +573,13 @@ function SquareCell({ square, piece, selected, isTarget, isLastMove, onClick }: 
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 'min(6.5vw, 44px)',
+        fontSize: 'min(6.2vw, 42px)',
         lineHeight: 1,
-        color: piece?.color === 'w' ? '#fffdf7' : '#1b1b1b',
-        textShadow: piece?.color === 'w' ? '0 0 2px #000, 0 1px 2px rgba(0,0,0,0.6)' : 'none',
+        color: piece?.color === 'w' ? '#fffaf0' : '#1c1310',
+        textShadow:
+          piece?.color === 'w'
+            ? '0 0 2px #3b2a1a, 0 1px 2px rgba(0,0,0,0.55)'
+            : '0 1px 1px rgba(255,255,255,0.25)',
       }}
     >
       {piece ? GLYPH[piece.type] : ''}
@@ -392,8 +590,8 @@ function SquareCell({ square, piece, selected, isTarget, isLastMove, onClick }: 
             width: piece ? '86%' : '30%',
             height: piece ? '86%' : '30%',
             borderRadius: '50%',
-            background: piece ? 'transparent' : 'rgba(20,83,45,0.45)',
-            border: piece ? '4px solid rgba(20,83,45,0.55)' : 'none',
+            background: piece ? 'transparent' : 'rgba(20,83,45,0.4)',
+            border: piece ? '4px solid rgba(20,83,45,0.5)' : 'none',
             pointerEvents: 'none',
           }}
         />
@@ -405,11 +603,11 @@ function SquareCell({ square, piece, selected, isTarget, isLastMove, onClick }: 
 const MATERIAL_VALUE: Record<PieceType, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
 /** Selisih materi putih dikurangi hitam, dihitung dari bidak yang masih ada. */
-function capturedTally(pos: Position): { advantage: number } {
+function materialAdvantage(pos: Position): number {
   let advantage = 0;
   for (const piece of pos.board) {
     if (!piece) continue;
     advantage += piece.color === 'w' ? MATERIAL_VALUE[piece.type] : -MATERIAL_VALUE[piece.type];
   }
-  return { advantage };
+  return advantage;
 }
