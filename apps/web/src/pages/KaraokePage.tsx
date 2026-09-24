@@ -8,6 +8,7 @@ import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.t
 import { useMutationReload } from '../hooks/useMutationReload.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiDelete, apiPatch, apiPost } from '../lib/api.ts';
+import { VOLUME_STEP, stepPlayerVolume, toVolumePercent } from '../lib/playerVolume.ts';
 import { resolveSiaranTvPlayable, type SiaranTvPlayable } from '../lib/siaranTv.ts';
 import '../components/ui/ui.css';
 
@@ -49,6 +50,7 @@ export function KaraokePage() {
   const [antrian, setAntrian] = useState<readonly AntrianItem[]>([]);
   const [replayKey, setReplayKey] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [volume, setVolume] = useState(1);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -252,6 +254,30 @@ export function KaraokePage() {
     setIsPaused((p) => !p);
   }
 
+  function postVolumeToYouTube(value: number) {
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func: 'setVolume', args: [toVolumePercent(value)] }),
+      '*',
+    );
+  }
+
+  const playableKind = playable?.kind;
+  const playableSrc = playable?.src;
+
+  // Volume dipasang lewat efek, bukan atribut: elemen <video> dibuat ulang tiap
+  // ganti lagu/ulangi (key berubah) sehingga nilainya harus dipasang lagi.
+  useEffect(() => {
+    if (playableKind === 'video') {
+      if (videoRef.current) videoRef.current.volume = volume;
+      return;
+    }
+    if (playableKind === 'youtube') postVolumeToYouTube(volume);
+  }, [volume, playableKind, playableSrc, replayKey]);
+
+  function changeVolume(delta: number) {
+    setVolume((prev) => stepPlayerVolume(prev, delta));
+  }
+
   const form = (
     <form onSubmit={(e) => void onSubmit(e)} className="form-grid">
       <div className="form-field form-grid--full">
@@ -317,9 +343,35 @@ export function KaraokePage() {
               </div>
               <div style={{ display: 'flex', gap: '0.4rem' }}>
                 {playable.kind !== 'iframe' && (
-                  <button type="button" className="btn btn--sm btn--secondary" onClick={togglePause}>
-                    {isPaused ? '▶️ Lanjutkan' : '⏸️ Jeda'}
-                  </button>
+                  <>
+                    <button type="button" className="btn btn--sm btn--secondary" onClick={togglePause}>
+                      {isPaused ? '▶️ Lanjutkan' : '⏸️ Jeda'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--sm btn--secondary"
+                      onClick={() => changeVolume(-VOLUME_STEP)}
+                      disabled={volume === 0}
+                      title="Volume turun"
+                    >
+                      🔉 −
+                    </button>
+                    <span
+                      style={{ alignSelf: 'center', minWidth: '3rem', textAlign: 'center', fontSize: '0.8rem' }}
+                      aria-live="polite"
+                    >
+                      {toVolumePercent(volume)}%
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn--sm btn--secondary"
+                      onClick={() => changeVolume(VOLUME_STEP)}
+                      disabled={volume === 1}
+                      title="Volume naik"
+                    >
+                      🔊 +
+                    </button>
+                  </>
                 )}
                 <button type="button" className="btn btn--sm btn--secondary" onClick={() => setReplayKey((k) => k + 1)}>
                   🔁 Ulangi
@@ -349,6 +401,7 @@ export function KaraokePage() {
                   key={`${playable.src}-${replayKey}`}
                   ref={iframeRef}
                   src={playable.src}
+                  onLoad={() => postVolumeToYouTube(volume)}
                   title={nowPlaying.lagu.judul}
                   allow="autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
