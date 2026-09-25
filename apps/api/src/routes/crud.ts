@@ -5056,6 +5056,35 @@ Aturan PENTING:
     return { ok: true };
   });
 
+  // ─── Galeri Masjid (dari halaman Jam) ───────────────────────────────────────
+
+  app.get<{ Querystring: ListQuery }>('/api/galeri-masjid', async (req) => {
+    const { page, limit, skip } = parsePagination(req.query);
+    const [total, items] = await Promise.all([
+      prisma.galeriMasjid.count(),
+      prisma.galeriMasjid.findMany({
+        orderBy: { createdAt: 'asc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+    return { items, pagination: buildPaginationMeta(total, page, limit) };
+  });
+
+  app.post<{ Body: { judul: string; gambar: string } }>('/api/galeri-masjid', async (req, reply) => {
+    if (!req.body.judul?.trim()) return badRequest(reply, 'Judul wajib diisi');
+    if (!req.body.gambar?.trim()) return badRequest(reply, 'Gambar wajib diunggah');
+    const item = await prisma.galeriMasjid.create({
+      data: { judul: req.body.judul.trim(), gambar: req.body.gambar },
+    });
+    return reply.status(201).send({ item });
+  });
+
+  app.delete<{ Params: { id: string } }>('/api/galeri-masjid/:id', async (req) => {
+    await prisma.galeriMasjid.delete({ where: { id: req.params.id } });
+    return { ok: true };
+  });
+
   // ─── Hari Libur (Kalender) ──────────────────────────────────────────────────
 
   app.get<{ Querystring: { year?: string } }>('/api/hari-libur', async (req) => {

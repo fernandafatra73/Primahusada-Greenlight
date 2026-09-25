@@ -323,6 +323,16 @@ model RekeningBank {
   updatedAt   DateTime @updatedAt
 }
 
+/// Foto masjid dari seluruh dunia untuk galeri berganti-ganti di halaman Jam
+/// (di samping jam digital & jadwal sholat).
+model GaleriMasjid {
+  id        String   @id @default(cuid())
+  judul     String
+  gambar    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 /// Tanggal merah selain hari Minggu & 5 hari libur nasional tanggal tetap
 /// (yang sudah dihitung langsung di kode) — mis. Idul Fitri, Idul Adha, cuti
 /// bersama, dsb. Diinput manual oleh admin sesuai kalender resmi tahun berjalan.

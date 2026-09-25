@@ -12,6 +12,7 @@ import { AiGeminiPage } from './AiGeminiPage.tsx';
 import { ExpertisePage } from './ExpertisePage.tsx';
 import { SiaranTvPage } from './SiaranTvPage.tsx';
 import { KaraokePage } from './KaraokePage.tsx';
+import { JamPage } from './JamPage.tsx';
 import { CaturPage } from './CaturPage.tsx';
 import { GaplekPage } from './GaplekPage.tsx';
 import { KoneksiPhPage } from './KoneksiPhPage.tsx';
@@ -20,6 +21,7 @@ const MEGA_DATA_TABS = [
   { id: 'fatra', label: 'Fatra' },
   { id: 'musik-ph', label: 'Musik-PH' },
   { id: 'bernyanyi', label: 'Bernyanyi' },
+  { id: 'jam', label: 'Jam' },
   { id: 'siaran-tv', label: 'Siaran TV' },
   { id: 'catur', label: 'Catur' },
   { id: 'gaplek', label: 'Gaplek' },
@@ -45,6 +47,8 @@ function renderTabContent(tabId: MegaDataTabId) {
       return <MusikPage />;
     case 'bernyanyi':
       return <KaraokePage />;
+    case 'jam':
+      return <JamPage />;
     case 'siaran-tv':
       return <SiaranTvPage />;
     case 'catur':
