@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { calcPersentaseKehadiran, countHariKerja } from '../../apps/api/src/lib/absensiRekap.ts';
+import { calcHariAbsen, calcPersentaseKehadiran, countHariKerja } from '../../apps/api/src/lib/absensiRekap.ts';
 
 describe('countHariKerja', () => {
   test('excludes Sundays across a full past year', () => {
@@ -31,5 +31,24 @@ describe('calcPersentaseKehadiran', () => {
 
   test('returns 100 for full attendance', () => {
     expect(calcPersentaseKehadiran(210, 210)).toBe(100);
+  });
+});
+
+describe('calcHariAbsen', () => {
+  test('is the working days not attended', () => {
+    expect(calcHariAbsen(200, 230)).toBe(30);
+  });
+
+  test('is zero for a perfect record', () => {
+    expect(calcHariAbsen(230, 230)).toBe(0);
+  });
+
+  test('never goes negative when attendance exceeds working days', () => {
+    // Bisa terjadi bila ada absensi di hari Minggu, yang bukan hari kerja.
+    expect(calcHariAbsen(235, 230)).toBe(0);
+  });
+
+  test('counts every working day as absent when nobody came', () => {
+    expect(calcHariAbsen(0, 230)).toBe(230);
   });
 });

@@ -6,7 +6,7 @@ import {
   type TransactionClient,
 } from '../generated/prisma/internal/prismaNamespace.js';
 import { prisma } from '../lib/prisma.js';
-import { calcPersentaseKehadiran, countHariKerja } from '../lib/absensiRekap.js';
+import { calcHariAbsen, calcPersentaseKehadiran, countHariKerja } from '../lib/absensiRekap.js';
 import { normalizeCoordinate } from '../lib/geoLocation.js';
 import { registrationTimestamp } from '../lib/dateOnly.js';
 import { calcTotalSharing, sumHarga } from '../lib/pasienFinance.js';
@@ -831,12 +831,63 @@ export async function registerCrudRoutes(app: FastifyInstance) {
     return { items, pagination: buildPaginationMeta(total, page, limit) };
   });
 
-  app.post<{ Body: { nama: string; noHp?: string } }>('/api/admin-klinik', async (req, reply) => {
+  /** Daftar karyawan: data master digabung dengan rekap kehadiran tahun
+   * berjalan, supaya kolom Hadir/Absen tidak perlu dihitung ulang di layar. */
+  app.get<{ Querystring: { tahun?: string } }>('/api/admin-klinik/daftar-karyawan', async (req) => {
+    const tahun = Number(req.query.tahun) || new Date().getFullYear();
+    const hariKerja = countHariKerja(tahun);
+
+    const [karyawan, absensi] = await Promise.all([
+      prisma.adminKlinik.findMany({ orderBy: { nama: 'asc' } }),
+      prisma.absensiAdminKlinik.findMany({
+        where: { tanggal: { startsWith: `${tahun}-` } },
+        select: { adminKlinikId: true, tanggal: true },
+      }),
+    ]);
+
+    // Satu orang bisa punya beberapa baris di tanggal yang sama pada data
+    // lama, jadi tanggalnya dihitung sebagai himpunan.
+    const hariPerOrang = new Map<string, Set<string>>();
+    for (const baris of absensi) {
+      const kumpulan = hariPerOrang.get(baris.adminKlinikId) ?? new Set<string>();
+      kumpulan.add(baris.tanggal);
+      hariPerOrang.set(baris.adminKlinikId, kumpulan);
+    }
+
+    const items = karyawan.map((orang) => {
+      const hadir = hariPerOrang.get(orang.id)?.size ?? 0;
+      return {
+        ...orang,
+        hadir,
+        absen: calcHariAbsen(hadir, hariKerja),
+        persentase: calcPersentaseKehadiran(hadir, hariKerja),
+      };
+    });
+
+    return { tahun, hariKerja, items };
+  });
+
+  app.post<{
+    Body: {
+      nama: string;
+      nk?: string;
+      noHp?: string;
+      alamat?: string;
+      bagian?: string;
+      foto?: string;
+      keterangan?: string;
+    };
+  }>('/api/admin-klinik', async (req, reply) => {
     if (!req.body.nama?.trim()) return badRequest(reply, 'nama wajib diisi');
     const item = await prisma.adminKlinik.create({
       data: {
         nama: req.body.nama.trim(),
+        nk: req.body.nk?.trim() || null,
         noHp: req.body.noHp?.trim() || null,
+        alamat: req.body.alamat?.trim() || null,
+        bagian: req.body.bagian?.trim() || null,
+        foto: req.body.foto ? saveImageDataUrl(req.body.foto, 'karyawan') : null,
+        keterangan: req.body.keterangan?.trim() || null,
       },
     });
     return reply.status(201).send({ item });
@@ -844,15 +895,41 @@ export async function registerCrudRoutes(app: FastifyInstance) {
 
   app.patch<{
     Params: { id: string };
-    Body: { nama?: string; noHp?: string; statusHadir?: string | null; statusTanggal?: string | null };
+    Body: {
+      nama?: string;
+      nk?: string;
+      noHp?: string;
+      alamat?: string;
+      bagian?: string;
+      foto?: string;
+      keterangan?: string;
+      statusHadir?: string | null;
+      statusTanggal?: string | null;
+    };
   }>('/api/admin-klinik/:id', async (req, reply) => {
     const existing = await prisma.adminKlinik.findUnique({ where: { id: req.params.id } });
     if (!existing) return reply.status(404).send({ error: 'Admin klinik tidak ditemukan' });
+
+    const teks = (nilai: string | undefined, lama: string | null): string | null =>
+      nilai !== undefined ? nilai.trim() || null : lama;
+
     const item = await prisma.adminKlinik.update({
       where: { id: req.params.id },
       data: {
         nama: req.body.nama?.trim() ?? existing.nama,
-        noHp: req.body.noHp !== undefined ? req.body.noHp?.trim() || null : existing.noHp,
+        nk: teks(req.body.nk, existing.nk),
+        noHp: teks(req.body.noHp, existing.noHp),
+        alamat: teks(req.body.alamat, existing.alamat),
+        bagian: teks(req.body.bagian, existing.bagian),
+        // Foto lama dipertahankan kalau tidak dikirim sama sekali; dikirim
+        // sebagai string kosong berarti fotonya sengaja dihapus.
+        foto:
+          req.body.foto === undefined
+            ? existing.foto
+            : req.body.foto === ''
+              ? null
+              : saveImageDataUrl(req.body.foto, 'karyawan'),
+        keterangan: teks(req.body.keterangan, existing.keterangan),
         statusHadir: req.body.statusHadir !== undefined ? req.body.statusHadir : existing.statusHadir,
         statusTanggal: req.body.statusTanggal !== undefined ? req.body.statusTanggal : existing.statusTanggal,
       },

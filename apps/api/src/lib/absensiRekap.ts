@@ -24,3 +24,12 @@ export function calcPersentaseKehadiran(hariHadir: number, hariKerja: number): n
   if (hariKerja <= 0) return 0;
   return Math.round((hariHadir / hariKerja) * 1000) / 10;
 }
+
+/** Jumlah hari seorang karyawan tidak hadir: hari kerja dikurangi hari hadir.
+ *
+ * Dijaga tidak pernah negatif — data absensi bisa saja memuat baris di hari
+ * Minggu (mis. lembur), yang tidak dihitung sebagai hari kerja, sehingga hari
+ * hadir bisa melebihi penyebutnya. */
+export function calcHariAbsen(hariHadir: number, hariKerja: number): number {
+  return Math.max(0, hariKerja - hariHadir);
+}

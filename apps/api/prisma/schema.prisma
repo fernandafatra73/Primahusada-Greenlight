@@ -116,8 +116,16 @@ model Radiografer {
 /// ketiganya (kwitansi, sharing radiolog, registrasi pasien).
 model AdminKlinik {
   id            String   @id @default(cuid())
+  /// Nomor karyawan (NK) — dipakai di daftar karyawan, boleh kosong untuk
+  /// data lama yang belum diberi nomor.
+  nk            String?
   nama          String
   noHp          String?
+  alamat        String?
+  bagian        String?
+  /// Path `/uploads/...`, bukan base64.
+  foto          String?
+  keterangan    String?
   statusHadir   String?
   statusTanggal String?
   createdAt     DateTime @default(now())

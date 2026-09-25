@@ -4,6 +4,7 @@ import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ModalFormFooter } from '../components/ui/ModalFormFooter.tsx';
 import { TableRowActions } from '../components/ui/TableRowActions.tsx';
+import { DaftarKaryawanSection } from '../components/DaftarKaryawanSection.tsx';
 import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.ts';
 import { useMutationReload } from '../hooks/useMutationReload.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
@@ -40,6 +41,8 @@ export function AdminKlinikPage() {
   const [noHp, setNoHp] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  /** Tampilan penuh data karyawan, di balik tombol "Daftar Karyawan". */
+  const [daftarKaryawanOpen, setDaftarKaryawanOpen] = useState(false);
 
   function openCreate() {
     setNama('');
@@ -122,6 +125,22 @@ export function AdminKlinikPage() {
     }
   }
 
+  if (daftarKaryawanOpen) {
+    return (
+      <div className="page-frame">
+        <button
+          type="button"
+          className="btn btn--sm btn--secondary"
+          onClick={() => setDaftarKaryawanOpen(false)}
+          style={{ marginBottom: '0.75rem' }}
+        >
+          ← Kembali ke Admin Klinik
+        </button>
+        <DaftarKaryawanSection />
+      </div>
+    );
+  }
+
   return (
     <ListPageShell
       title="Admin Klinik"
@@ -143,9 +162,18 @@ export function AdminKlinikPage() {
       pagination={pagination}
       onPageChange={setPage}
       action={
-        <button type="button" className="btn btn--primary" onClick={openCreate}>
-          + Tambah Admin Klinik
-        </button>
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => setDaftarKaryawanOpen(true)}
+          >
+            👥 Daftar Karyawan
+          </button>
+          <button type="button" className="btn btn--secondary" onClick={openCreate}>
+            + Tambah Admin Klinik
+          </button>
+        </div>
       }
     >
       <table className="data-table">
