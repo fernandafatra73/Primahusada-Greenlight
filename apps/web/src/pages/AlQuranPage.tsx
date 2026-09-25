@@ -7,6 +7,7 @@ import {
   QURAN_RECITERS,
   type QuranAyahPair,
   type QuranSearchResult,
+  type QuranSurahRef,
 } from '../lib/quranApi.ts';
 import '../components/ui/ui.css';
 
@@ -21,6 +22,26 @@ function loadReciter(): string {
   }
 }
 
+interface SurahGroup {
+  readonly surah: QuranSurahRef;
+  /** Ayat surah ini, dengan index aslinya di array `ayat` satu juz penuh —
+   * dipakai supaya tombol putar tetap bisa memutar berurutan lintas surah. */
+  readonly items: readonly { readonly ayah: QuranAyahPair; readonly index: number }[];
+}
+
+function groupBySurah(ayat: readonly QuranAyahPair[]): readonly SurahGroup[] {
+  const groups: SurahGroup[] = [];
+  ayat.forEach((ayah, index) => {
+    const last = groups[groups.length - 1];
+    if (last && last.surah.number === ayah.surah.number) {
+      (last.items as { ayah: QuranAyahPair; index: number }[]).push({ ayah, index });
+    } else {
+      groups.push({ surah: ayah.surah, items: [{ ayah, index }] });
+    }
+  });
+  return groups;
+}
+
 /** Halaman "Dirimu" — Al-Qur'an & terjemahan per juz, bisa dibacakan
  * (audio) berurutan ayat demi ayat, dengan pilihan 2 irama/qari. */
 export function AlQuranPage() {
@@ -29,6 +50,9 @@ export function AlQuranPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reciterId, setReciterId] = useState(loadReciter);
+  // Surah yang sedang dibuka ayat-ayatnya — null berarti cuma daftar surah
+  // yang tampil, belum ada ayat yang dikeluarkan.
+  const [expandedSurah, setExpandedSurah] = useState<number | null>(null);
 
   const [playIndex, setPlayIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -88,6 +112,7 @@ export function AlQuranPage() {
   async function loadJuz(n: number) {
     stopAudio();
     setJuz(n);
+    setExpandedSurah(null);
     setLoading(true);
     setError(null);
     try {
@@ -99,6 +124,10 @@ export function AlQuranPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function toggleSurah(surahNumber: number) {
+    setExpandedSurah((cur) => (cur === surahNumber ? null : surahNumber));
   }
 
   // ── Pencarian ────────────────────────────────────────────────────────
@@ -136,6 +165,7 @@ export function AlQuranPage() {
       closeSearch();
       setJumpTarget(result.number);
       await loadJuz(targetJuz);
+      setExpandedSurah(result.surah.number);
     } catch (err: unknown) {
       setSearchError(err instanceof Error ? err.message : 'Gagal membuka ayat ini');
     }
@@ -165,12 +195,12 @@ export function AlQuranPage() {
     if (juz !== null) void loadJuz(juz);
   }
 
-  let lastSurahNumber: number | null = null;
+  const surahGroups = groupBySurah(ayat);
 
   return (
     <ListPageShell
       title="Dirimu — Al-Qur'an & Terjemahan"
-      subtitle="Pilih Juz 1–30, bisa dibacakan (audio) berurutan ayat demi ayat"
+      subtitle="Pilih Juz 1–30 → pilih surahnya → ayatnya baru tampil, bisa dibacakan (audio) berurutan"
     >
       <div style={{ padding: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
@@ -318,75 +348,95 @@ export function AlQuranPage() {
         {loading && <p style={{ textAlign: 'center', color: '#64748b' }}>Memuat Juz {juz}…</p>}
 
         {!loading &&
-          ayat.map((a, i) => {
-            const showSurahHeader = a.surah.number !== lastSurahNumber;
-            lastSurahNumber = a.surah.number;
+          surahGroups.map((group) => {
+            const isExpanded = expandedSurah === group.surah.number;
             return (
-              <div key={a.number} id={`ayat-${a.number}`}>
-                {showSurahHeader && (
-                  <div
-                    style={{
-                      margin: '1.25rem 0 0.75rem',
-                      padding: '0.5rem 0.75rem',
-                      background: '#f1f5f9',
-                      borderRadius: '8px',
-                      fontWeight: 700,
-                      color: '#0f172a',
-                    }}
-                  >
-                    {a.surah.englishName} — {a.surah.name}
-                  </div>
-                )}
-                <div
+              <div key={group.surah.number} style={{ marginBottom: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => toggleSurah(group.surah.number)}
                   style={{
-                    padding: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    background: isExpanded ? '#0f172a' : '#f1f5f9',
+                    color: isExpanded ? '#fff' : '#0f172a',
+                    border: 'none',
                     borderRadius: '8px',
-                    marginBottom: '0.5rem',
-                    background: playIndex === i || highlightNumber === a.number ? '#eff6ff' : 'transparent',
-                    border:
-                      playIndex === i || highlightNumber === a.number ? '1px solid #93c5fd' : '1px solid transparent',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    textAlign: 'left',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        fontSize: '0.7rem',
-                        color: '#94a3b8',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '999px',
-                        width: '1.6rem',
-                        height: '1.6rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {a.numberInSurah}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => playFromIndex(i)}
-                      title="Putar dari ayat ini"
-                      style={{
-                        border: 'none',
-                        background: 'none',
-                        padding: 0,
-                        cursor: a.audio ? 'pointer' : 'default',
-                        flex: 1,
-                        textAlign: 'right',
-                        fontSize: '1.4rem',
-                        lineHeight: 2,
-                        direction: 'rtl',
-                        fontFamily: 'inherit',
-                      }}
-                      disabled={!a.audio}
-                    >
-                      {a.arab}
-                    </button>
-                  </div>
-                  <p style={{ margin: '0.35rem 0 0 2.1rem', color: '#334155', fontSize: '0.9rem' }}>{a.terjemahan}</p>
-                </div>
+                  <span>
+                    {group.surah.englishName} — {group.surah.name}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 400, opacity: 0.8 }}>
+                    {group.items.length} ayat {isExpanded ? '▲' : '▼'}
+                  </span>
+                </button>
+
+                {isExpanded &&
+                  group.items.map(({ ayah: a, index: i }) => (
+                    <div key={a.number} id={`ayat-${a.number}`}>
+                      <div
+                        style={{
+                          padding: '0.75rem',
+                          borderRadius: '8px',
+                          marginBottom: '0.5rem',
+                          background: playIndex === i || highlightNumber === a.number ? '#eff6ff' : 'transparent',
+                          border:
+                            playIndex === i || highlightNumber === a.number
+                              ? '1px solid #93c5fd'
+                              : '1px solid transparent',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                          <span
+                            style={{
+                              flexShrink: 0,
+                              fontSize: '0.7rem',
+                              color: '#94a3b8',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '999px',
+                              width: '1.6rem',
+                              height: '1.6rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {a.numberInSurah}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => playFromIndex(i)}
+                            title="Putar dari ayat ini"
+                            style={{
+                              border: 'none',
+                              background: 'none',
+                              padding: 0,
+                              cursor: a.audio ? 'pointer' : 'default',
+                              flex: 1,
+                              textAlign: 'right',
+                              fontSize: '1.4rem',
+                              lineHeight: 2,
+                              direction: 'rtl',
+                              fontFamily: 'inherit',
+                            }}
+                            disabled={!a.audio}
+                          >
+                            {a.arab}
+                          </button>
+                        </div>
+                        <p style={{ margin: '0.35rem 0 0 2.1rem', color: '#334155', fontSize: '0.9rem' }}>
+                          {a.terjemahan}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
               </div>
             );
           })}
