@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
-import { fetchJuz, QURAN_RECITERS, type QuranAyahPair } from '../lib/quranApi.ts';
+import {
+  fetchAyahJuz,
+  fetchJuz,
+  searchQuran,
+  QURAN_RECITERS,
+  type QuranAyahPair,
+  type QuranSearchResult,
+} from '../lib/quranApi.ts';
 import '../components/ui/ui.css';
 
 const JUZ_NUMBERS = Array.from({ length: 30 }, (_, i) => i + 1);
@@ -94,6 +101,60 @@ export function AlQuranPage() {
     }
   }
 
+  // ── Pencarian ────────────────────────────────────────────────────────
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<readonly QuranSearchResult[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [jumpTarget, setJumpTarget] = useState<number | null>(null);
+  const [highlightNumber, setHighlightNumber] = useState<number | null>(null);
+
+  async function onSearchSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSearchLoading(true);
+    setSearchError(null);
+    try {
+      const results = await searchQuran(searchTerm);
+      setSearchResults(results);
+    } catch (err: unknown) {
+      setSearchError(err instanceof Error ? err.message : 'Pencarian gagal');
+      setSearchResults(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  }
+
+  function closeSearch() {
+    setSearchResults(null);
+    setSearchTerm('');
+    setSearchError(null);
+  }
+
+  async function goToResult(result: QuranSearchResult) {
+    try {
+      const targetJuz = await fetchAyahJuz(result.number);
+      closeSearch();
+      setJumpTarget(result.number);
+      await loadJuz(targetJuz);
+    } catch (err: unknown) {
+      setSearchError(err instanceof Error ? err.message : 'Gagal membuka ayat ini');
+    }
+  }
+
+  // Begitu ayat hasil pencarian sudah termuat, gulir ke situ & sorot sebentar.
+  useEffect(() => {
+    if (jumpTarget === null || loading) return;
+    const el = document.getElementById(`ayat-${jumpTarget}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightNumber(jumpTarget);
+      const id = window.setTimeout(() => setHighlightNumber(null), 4000);
+      setJumpTarget(null);
+      return () => window.clearTimeout(id);
+    }
+    setJumpTarget(null);
+  }, [jumpTarget, loading, ayat]);
+
   function changeReciter(id: string) {
     setReciterId(id);
     try {
@@ -126,6 +187,73 @@ export function AlQuranPage() {
             ))}
           </select>
         </div>
+
+        <form onSubmit={(e) => void onSearchSubmit(e)} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Cari kata/topik dalam Al-Qur'an, mis. sabar, rezeki, puasa…"
+            style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+          />
+          <button type="submit" className="btn btn--sm btn--primary" disabled={searchLoading || !searchTerm.trim()}>
+            {searchLoading ? '⏳ Mencari…' : '🔍 Cari'}
+          </button>
+          {searchResults !== null && (
+            <button type="button" className="btn btn--sm btn--secondary" onClick={closeSearch}>
+              ✕ Tutup
+            </button>
+          )}
+        </form>
+
+        {searchError && <div className="alert alert--error" style={{ marginBottom: '1rem' }}>{searchError}</div>}
+
+        {searchResults !== null && (
+          <div
+            style={{
+              border: '1px solid #e2e8f0',
+              borderRadius: '10px',
+              marginBottom: '1.25rem',
+              maxHeight: '22rem',
+              overflowY: 'auto',
+            }}
+          >
+            <div
+              style={{
+                padding: '0.6rem 0.85rem',
+                background: '#f1f5f9',
+                fontWeight: 700,
+                color: '#0f172a',
+                fontSize: '0.85rem',
+              }}
+            >
+              {searchResults.length === 0
+                ? `Tidak ada hasil untuk "${searchTerm}"`
+                : `${searchResults.length} ayat ditemukan untuk "${searchTerm}"`}
+            </div>
+            {searchResults.map((r) => (
+              <button
+                key={r.number}
+                type="button"
+                onClick={() => void goToResult(r)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '0.65rem 0.85rem',
+                  border: 'none',
+                  borderTop: '1px solid #e2e8f0',
+                  background: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: '0.8rem', color: '#0369a1', marginBottom: '0.15rem' }}>
+                  {r.surah.englishName} : {r.numberInSurah}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#334155' }}>{r.cuplikan}</div>
+              </button>
+            ))}
+          </div>
+        )}
 
         <div
           style={{
@@ -194,7 +322,7 @@ export function AlQuranPage() {
             const showSurahHeader = a.surah.number !== lastSurahNumber;
             lastSurahNumber = a.surah.number;
             return (
-              <div key={a.number}>
+              <div key={a.number} id={`ayat-${a.number}`}>
                 {showSurahHeader && (
                   <div
                     style={{
@@ -214,8 +342,9 @@ export function AlQuranPage() {
                     padding: '0.75rem',
                     borderRadius: '8px',
                     marginBottom: '0.5rem',
-                    background: playIndex === i ? '#eff6ff' : 'transparent',
-                    border: playIndex === i ? '1px solid #93c5fd' : '1px solid transparent',
+                    background: playIndex === i || highlightNumber === a.number ? '#eff6ff' : 'transparent',
+                    border:
+                      playIndex === i || highlightNumber === a.number ? '1px solid #93c5fd' : '1px solid transparent',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>

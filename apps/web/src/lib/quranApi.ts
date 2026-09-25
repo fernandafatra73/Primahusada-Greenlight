@@ -17,12 +17,13 @@ export interface QuranReciter {
   readonly label: string;
 }
 
-/** Dua pilihan qari/irama bacaan. "Al-Madruk" yang diminta tidak bisa
- * dipastikan namanya di API Quran publik, jadi diganti dengan qari lain
- * yang beneran ada rekamannya — bisa diganti kalau ada nama pastinya. */
+/** Syaikh Abdullah Al-Mathrud ada di data API Qur'an ini, tapi tidak
+ * menyertakan rekaman audio sama sekali (sudah dicoba dua ejaan identifier
+ * berbeda, keduanya cuma berisi teks) — jadi belum bisa dijadikan pilihan
+ * irama yang bisa dibunyikan. Kalau ada link audio resminya, bisa ditambah. */
 export const QURAN_RECITERS: readonly QuranReciter[] = [
   { id: 'ar.mahermuaiqly', label: '🕋 Irama Mekkah — Syaikh Maher Al Muaiqly (Imam Masjidil Haram)' },
-  { id: 'ar.husary', label: '🎙️ Irama Lain — Syaikh Mahmoud Khalil Al-Husary' },
+  { id: 'ar.alafasy', label: '🎙️ Irama Bayyati — Syaikh Mishary Rashid Alafasy' },
 ];
 
 const API_BASE = 'https://api.alquran.cloud/v1';
@@ -35,9 +36,9 @@ interface AlquranCloudResponse {
   };
 }
 
-async function fetchJuzEdition(juz: number, edition: string): Promise<readonly QuranAyah[]> {
+async function fetchEdition(juz: number, edition: string): Promise<readonly QuranAyah[]> {
   const res = await fetch(`${API_BASE}/juz/${juz}/${edition}`);
-  if (!res.ok) throw new Error(`Gagal mengambil data Juz ${juz} (${res.status})`);
+  if (!res.ok) throw new Error(`Gagal mengambil data juz ${juz} (${res.status})`);
   const json = (await res.json()) as AlquranCloudResponse;
   if (json.code !== 200 || !json.data) throw new Error(`Juz ${juz} tidak ditemukan`);
   return json.data.ayahs;
@@ -52,13 +53,7 @@ export interface QuranAyahPair {
   readonly audio: string | null;
 }
 
-/** Ayat Arab + terjemahan Indonesia satu juz, digabung per nomor ayat global
- * (urutannya sama persis di kedua edisi API-nya). */
-export async function fetchJuz(juz: number, reciterId: string): Promise<readonly QuranAyahPair[]> {
-  const [arab, terjemahan] = await Promise.all([
-    fetchJuzEdition(juz, reciterId),
-    fetchJuzEdition(juz, TRANSLATION_EDITION),
-  ]);
+function pairUp(arab: readonly QuranAyah[], terjemahan: readonly QuranAyah[]): readonly QuranAyahPair[] {
   return arab.map((a, i) => ({
     number: a.number,
     numberInSurah: a.numberInSurah,
@@ -67,4 +62,61 @@ export async function fetchJuz(juz: number, reciterId: string): Promise<readonly
     terjemahan: terjemahan[i]?.text ?? '',
     audio: a.audio ?? null,
   }));
+}
+
+/** Ayat Arab + terjemahan Indonesia satu juz, digabung per nomor ayat global
+ * (urutannya sama persis di kedua edisi API-nya). */
+export async function fetchJuz(juz: number, reciterId: string): Promise<readonly QuranAyahPair[]> {
+  const [arab, terjemahan] = await Promise.all([
+    fetchEdition(juz, reciterId),
+    fetchEdition(juz, TRANSLATION_EDITION),
+  ]);
+  return pairUp(arab, terjemahan);
+}
+
+export interface QuranSearchResult {
+  readonly number: number;
+  readonly numberInSurah: number;
+  readonly surah: QuranSurahRef;
+  readonly cuplikan: string;
+}
+
+interface SearchResponse {
+  readonly code: number;
+  readonly data?: {
+    readonly count: number;
+    readonly matches: readonly {
+      readonly number: number;
+      readonly numberInSurah: number;
+      readonly text: string;
+      readonly surah: QuranSurahRef;
+    }[];
+  };
+}
+
+/** Cari kata kunci di terjemahan Indonesia, di seluruh 30 juz sekaligus. */
+export async function searchQuran(keyword: string): Promise<readonly QuranSearchResult[]> {
+  const term = keyword.trim();
+  if (!term) return [];
+  const res = await fetch(`${API_BASE}/search/${encodeURIComponent(term)}/all/${TRANSLATION_EDITION}`);
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`Pencarian gagal (${res.status})`);
+  const json = (await res.json()) as SearchResponse;
+  if (json.code !== 200 || !json.data) return [];
+  return json.data.matches.map((m) => ({
+    number: m.number,
+    numberInSurah: m.numberInSurah,
+    surah: m.surah,
+    cuplikan: m.text,
+  }));
+}
+
+/** Juz tempat satu ayat (nomor global 1–6236) berada — dipakai untuk
+ * lompat ke hasil pencarian. */
+export async function fetchAyahJuz(globalAyahNumber: number): Promise<number> {
+  const res = await fetch(`${API_BASE}/ayah/${globalAyahNumber}/quran-uthmani`);
+  if (!res.ok) throw new Error(`Gagal menemukan lokasi ayat (${res.status})`);
+  const json = (await res.json()) as { code: number; data?: { juz?: number } };
+  if (json.code !== 200 || !json.data?.juz) throw new Error('Lokasi ayat tidak ditemukan');
+  return json.data.juz;
 }
