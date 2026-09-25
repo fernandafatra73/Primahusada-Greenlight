@@ -20,7 +20,7 @@ import { registerKlinikRoutes } from './routes/klinik.js';
 import { registerKoneksiPhRoutes } from './routes/koneksiPh.js';
 import { registerKwitansiRincianRoutes } from './routes/kwitansiRincian.js';
 import { registerRad2Routes } from './routes/rad2.js';
-import { registerTabelAiRoutes } from './routes/tabelAi.js';
+import { registerFotoPasienAnalisaRoutes, registerTabelAiRoutes } from './routes/tabelAi.js';
 import { registerTransferRoutes } from './routes/transfer.js';
 import { startCandlePatternJob } from './lib/candlePatternJob.js';
 import { startDailyTradingPivotJob } from './lib/dailyTradingPivotJob.js';
@@ -62,6 +62,7 @@ await registerKoneksiPhRoutes(app);
 await registerKwitansiRincianRoutes(app);
 await registerRad2Routes(app);
 await registerTabelAiRoutes(app);
+await registerFotoPasienAnalisaRoutes(app);
 await registerTransferRoutes(app);
 
 if (hasWebDist) {

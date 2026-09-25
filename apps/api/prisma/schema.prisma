@@ -1160,3 +1160,20 @@ model TabelAi {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+/// Arsip foto pasien beserta analisanya, diisi dari modal Edit³ di halaman
+/// Pasien. Terpisah dari TabelAi karena yang ini melekat pada satu pasien —
+/// dicari lewat `pasienId` dan ditampilkan di modal pasien bersangkutan.
+///
+/// `foto` disimpan sebagai path `/uploads/...`, bukan base64.
+model FotoPasienAnalisa {
+  id         String   @id @default(cuid())
+  pasienId   String
+  namaPasien String
+  foto       String
+  analisa    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([pasienId])
+}

@@ -22,6 +22,7 @@ import { readFileAsDataUrl, validateFotoFile } from '../lib/fotoUpload.ts';
 import { formatAiFotoAnalisa, formatTbScreeningAnalisa } from '../lib/aiFotoAnalisa.ts';
 import { AiHasilActions } from '../components/AiHasilActions.tsx';
 import { TabelAiModal } from '../components/TabelAiModal.tsx';
+import { FotoAnalisaTabel } from '../components/FotoAnalisaTabel.tsx';
 import { applyPhotoAdjustments } from '../lib/imageAdjust.ts';
 import { formatSharingShort } from '../lib/pilihanSharing.ts';
 import {
@@ -2990,9 +2991,22 @@ export function PasienPage() {
                   🗑 Hapus analisa
                 </button>
               </div>
-              <span className="form-hint">Draft AI — wajib ditinjau radiolog/dokter. Tidak disimpan.</span>
+              <span className="form-hint">
+                Draft AI — wajib ditinjau radiolog/dokter. Simpan ke arsip di bawah bila ingin
+                disimpan.
+              </span>
             </div>
           </div>
+
+          {fotoEditTarget && (
+            <FotoAnalisaTabel
+              pasienId={fotoEditTarget.id}
+              namaPasien={fotoEditTarget.nama}
+              fotoSaatIni={fotoEditFoto}
+              analisaSaatIni={fotoEditAnalisa}
+            />
+          )}
+
           <ModalFormFooter
             onCancel={() => setFotoEditTarget(null)}
             submitLabel="Simpan"
