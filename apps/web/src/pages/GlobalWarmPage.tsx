@@ -43,6 +43,17 @@ export function GlobalWarmPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [disalinId, setDisalinId] = useState<string | null>(null);
+
+  async function salinNoRekening(item: RekeningBankItem) {
+    try {
+      await navigator.clipboard.writeText(item.noRekening);
+      setDisalinId(item.id);
+      setTimeout(() => setDisalinId(null), 2000);
+    } catch {
+      setError('Tidak bisa menyalin otomatis — silakan salin manual.');
+    }
+  }
 
   function openAdd() {
     setForm(emptyForm);
@@ -143,7 +154,7 @@ export function GlobalWarmPage() {
               <th>Nama</th>
               <th>Bank</th>
               <th>No Rekening</th>
-              <th style={{ width: '8rem' }}>Aksi</th>
+              <th style={{ width: '13rem' }}>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -161,12 +172,22 @@ export function GlobalWarmPage() {
                   <td>{item.bank}</td>
                   <td>{item.noRekening}</td>
                   <td>
-                    <TableRowActions
-                      onEdit={() => openEdit(item)}
-                      onDelete={() => setDeleteTarget({ id: item.id, label: item.nama })}
-                      editLabel="Ubah rekening"
-                      deleteLabel="Hapus rekening"
-                    />
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="btn btn--sm btn--secondary"
+                        onClick={() => void salinNoRekening(item)}
+                        title="Salin no rekening"
+                      >
+                        {disalinId === item.id ? '✅' : '📋 Salin'}
+                      </button>
+                      <TableRowActions
+                        onEdit={() => openEdit(item)}
+                        onDelete={() => setDeleteTarget({ id: item.id, label: item.nama })}
+                        editLabel="Ubah rekening"
+                        deleteLabel="Hapus rekening"
+                      />
+                    </div>
                   </td>
                 </tr>
               ))
