@@ -23,6 +23,15 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: BLACK,
   },
+  frame: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    right: 14,
+    bottom: 14,
+    borderWidth: 1.5,
+    borderColor: BLUE,
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -113,6 +122,7 @@ export function PendaftaranKopSuratDocument({ data }: { readonly data: Pendaftar
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        <View style={styles.frame} fixed />
         <View style={styles.headerRow}>
           {data.logoSrc ? <Image style={styles.logo} src={data.logoSrc} /> : null}
           <View style={styles.headerText}>
