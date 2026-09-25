@@ -20,7 +20,17 @@ export const AZAN_TRACKS: readonly AzanTrack[] = [
   { id: 'azan10', label: 'Azan 9', src: '/azan/azan10.mp3' },
 ];
 
-export function playAzanTrack(id: string): void {
+/** Mengembalikan elemen Audio yang sudah diputar, supaya pemanggilnya bisa
+ * menghentikannya lagi lewat `stopSound`. */
+export function playAzanTrack(id: string): HTMLAudioElement {
   const track = AZAN_TRACKS.find((t) => t.id === id) ?? AZAN_TRACKS[0]!;
-  void new Audio(track.src).play();
+  const audio = new Audio(track.src);
+  void audio.play();
+  return audio;
+}
+
+export function stopSound(audio: HTMLAudioElement | null): void {
+  if (!audio) return;
+  audio.pause();
+  audio.currentTime = 0;
 }

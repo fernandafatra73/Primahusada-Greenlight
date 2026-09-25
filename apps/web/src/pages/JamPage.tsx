@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { MasjidGallery } from '../components/MasjidGallery.tsx';
-import { AZAN_TRACKS, playAzanTrack } from '../lib/azanTracks.ts';
+import { AZAN_TRACKS, playAzanTrack, stopSound } from '../lib/azanTracks.ts';
 import { fetchPrayerTimes, type PrayerTime } from '../lib/prayerTimes.ts';
 import '../components/ui/ui.css';
 
@@ -18,6 +18,7 @@ const ALARMS_KEY = 'jam-alarms';
 const LOKASI_KEY = 'jam-lokasi-sholat';
 const SOUND_ID_KEY = 'jam-suara-terpilih';
 const CUSTOM_SOUND_KEY = 'jam-suara-custom';
+const AZAN_URUTAN_INDEX_KEY = 'jam-azan-urutan-index';
 
 function loadJson<T>(key: string, fallback: T): T {
   try {
@@ -74,18 +75,54 @@ export function JamPage() {
     e.target.value = '';
   }
 
-  const playSelectedSound = useCallback(() => {
-    if (soundId === CUSTOM_SOUND_ID && customSound) {
-      void new Audio(customSound).play();
-      return;
-    }
-    playAzanTrack(soundId);
-  }, [soundId, customSound]);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [soundPlaying, setSoundPlaying] = useState(false);
+
+  const stopCurrentSound = useCallback(() => {
+    stopSound(currentAudioRef.current);
+    currentAudioRef.current = null;
+    setSoundPlaying(false);
+  }, []);
+
+  const playSoundById = useCallback(
+    (id: string) => {
+      stopSound(currentAudioRef.current);
+      const audio = id === CUSTOM_SOUND_ID && customSound ? new Audio(customSound) : playAzanTrack(id);
+      if (id === CUSTOM_SOUND_ID && customSound) void audio.play();
+      currentAudioRef.current = audio;
+      setSoundPlaying(true);
+      audio.addEventListener('ended', () => {
+        if (currentAudioRef.current === audio) {
+          currentAudioRef.current = null;
+          setSoundPlaying(false);
+        }
+      });
+      return audio;
+    },
+    [customSound],
+  );
+
+  const playSelectedSound = useCallback(() => playSoundById(soundId), [playSoundById, soundId]);
 
   // Ref supaya efek pemicu di bawah tidak perlu daftar ulang tiap kali
   // suara diganti — hanya boleh berjalan ulang saat waktu/data berubah.
   const playSelectedSoundRef = useRef(playSelectedSound);
   playSelectedSoundRef.current = playSelectedSound;
+
+  // Azan waktu sholat berbunyi bergiliran mengikuti urutan Azan 1..9 (lalu
+  // ulang dari awal) tiap kali jadwal sholat berikutnya masuk — bukan selalu
+  // rekaman yang sama. Indeksnya disimpan supaya urutannya lanjut walau
+  // halaman dimuat ulang.
+  const playNextAzanInSequence = useCallback(() => {
+    const idx = loadJson(AZAN_URUTAN_INDEX_KEY, 0) % AZAN_TRACKS.length;
+    const track = AZAN_TRACKS[idx]!;
+    playSoundById(track.id);
+    saveJson(AZAN_URUTAN_INDEX_KEY, (idx + 1) % AZAN_TRACKS.length);
+    return track;
+  }, [playSoundById]);
+
+  const playNextAzanInSequenceRef = useRef(playNextAzanInSequence);
+  playNextAzanInSequenceRef.current = playNextAzanInSequence;
 
   // ── Alarm ──────────────────────────────────────────────────────────────
   const [alarms, setAlarms] = useState<readonly Alarm[]>(() => loadJson(ALARMS_KEY, []));
@@ -128,6 +165,7 @@ export function JamPage() {
   const [prayerLoading, setPrayerLoading] = useState(true);
   const [prayerError, setPrayerError] = useState<string | null>(null);
   const [azanRinging, setAzanRinging] = useState<PrayerTime | null>(null);
+  const [azanRingingTrackLabel, setAzanRingingTrackLabel] = useState<string | null>(null);
   const firedAzanKeyRef = useRef<string | null>(null);
 
   const loadPrayerTimes = useCallback(async (loc: { city: string; country: string }) => {
@@ -170,8 +208,9 @@ export function JamPage() {
     const key = match ? `${todayKey(now)}-${match.id}` : null;
     if (match && key && firedAzanKeyRef.current !== key) {
       firedAzanKeyRef.current = key;
-      playSelectedSoundRef.current();
+      const track = playNextAzanInSequenceRef.current();
       setAzanRinging(match);
+      setAzanRingingTrackLabel(track.label);
     }
   }, [now, prayerTimes]);
 
@@ -182,7 +221,7 @@ export function JamPage() {
 
   const soundPicker = (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>🕌 Suara alarm &amp; azan</span>
+      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>🕌 Suara alarm</span>
       <select
         value={soundId}
         onChange={(e) => changeSoundId(e.target.value)}
@@ -202,6 +241,11 @@ export function JamPage() {
       <button type="button" className="btn btn--sm btn--secondary" onClick={playSelectedSound}>
         ▶️ Coba
       </button>
+      {soundPlaying && (
+        <button type="button" className="btn btn--sm btn--danger" onClick={stopCurrentSound}>
+          ⏹️ Stop
+        </button>
+      )}
     </div>
   );
 
@@ -257,8 +301,15 @@ export function JamPage() {
                 <span>
                   ⏰ Alarm{alarmRinging.label ? ` — ${alarmRinging.label}` : ''} ({alarmRinging.time})
                 </span>
-                <button type="button" className="btn btn--sm btn--secondary" onClick={() => setAlarmRinging(null)}>
-                  Tutup
+                <button
+                  type="button"
+                  className="btn btn--sm btn--secondary"
+                  onClick={() => {
+                    stopCurrentSound();
+                    setAlarmRinging(null);
+                  }}
+                >
+                  ⏹️ Stop Azan
                 </button>
               </div>
             )}
@@ -365,9 +416,19 @@ export function JamPage() {
                   gap: '0.5rem',
                 }}
               >
-                <span>🕌 Waktu {azanRinging.id} telah masuk ({azanRinging.time})</span>
-                <button type="button" className="btn btn--sm btn--secondary" onClick={() => setAzanRinging(null)}>
-                  Tutup
+                <span>
+                  🕌 Waktu {azanRinging.id} telah masuk ({azanRinging.time})
+                  {azanRingingTrackLabel ? ` — ${azanRingingTrackLabel}` : ''}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--secondary"
+                  onClick={() => {
+                    stopCurrentSound();
+                    setAzanRinging(null);
+                  }}
+                >
+                  ⏹️ Stop Azan
                 </button>
               </div>
             )}
@@ -438,8 +499,8 @@ export function JamPage() {
               )}
 
               <p className="form-hint" style={{ margin: 0 }}>
-                Azan berbunyi otomatis tiap masuk waktu sholat, memakai suara yang dipilih di panel Alarm
-                (kiri) — bisa diganti kapan saja.
+                Azan berbunyi otomatis tiap masuk waktu sholat, bergiliran sesuai urutan Azan 1 → Azan{' '}
+                {AZAN_TRACKS.length} lalu berulang dari awal — bukan rekaman yang sama terus-menerus.
               </p>
             </div>
 
