@@ -14,7 +14,6 @@ import { SiaranTvPage } from './SiaranTvPage.tsx';
 import { KaraokePage } from './KaraokePage.tsx';
 import { JamPage } from './JamPage.tsx';
 import { AlQuranPage } from './AlQuranPage.tsx';
-import { MazhabHanafiPage } from './MazhabHanafiPage.tsx';
 import { CaturPage } from './CaturPage.tsx';
 import { GaplekPage } from './GaplekPage.tsx';
 import { KoneksiPhPage } from './KoneksiPhPage.tsx';
@@ -25,7 +24,6 @@ const MEGA_DATA_TABS = [
   { id: 'bernyanyi', label: 'Bernyanyi' },
   { id: 'jam', label: 'Jam' },
   { id: 'dirimu', label: 'Dirimu' },
-  { id: 'hn', label: 'HN' },
   { id: 'siaran-tv', label: 'Siaran TV' },
   { id: 'catur', label: 'Catur' },
   { id: 'gaplek', label: 'Gaplek' },
@@ -55,8 +53,6 @@ function renderTabContent(tabId: MegaDataTabId) {
       return <JamPage />;
     case 'dirimu':
       return <AlQuranPage />;
-    case 'hn':
-      return <MazhabHanafiPage />;
     case 'siaran-tv':
       return <SiaranTvPage />;
     case 'catur':
