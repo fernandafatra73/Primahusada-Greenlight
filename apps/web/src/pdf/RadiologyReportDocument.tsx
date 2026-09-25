@@ -38,6 +38,12 @@ export interface RadiologyReportData {
 }
 
 const BLUE = '#2b4c9b';
+/** Garis tepi versi tanpa kerangka: tebalnya tetap dihitung tata letak, tapi
+ * warnanya putih sehingga tidak terlihat di layar dan tidak tercetak — printer
+ * tidak punya tinta putih, jadi kerangka yang sudah tercetak di kertas tetap
+ * kelihatan. `rgba(0,0,0,0)` tidak dipakai karena react-pdf tidak mengenalinya
+ * dan malah menggambar garis hitam. */
+const INVISIBLE = '#FFFFFF';
 const BLACK = '#1a1a1a';
 
 const styles = StyleSheet.create({
@@ -62,6 +68,42 @@ const styles = StyleSheet.create({
   frameBorder: {
     borderWidth: 1,
     borderColor: BLACK,
+  },
+  /** Menyembunyikan isi tanpa menghapus ruangnya.
+   *
+   * Varian "tanpa kerangka" dicetak di atas kertas yang kop dan kerangkanya
+   * sudah tercetak duluan, jadi isinya harus jatuh persis di tempat yang sama
+   * dengan varian berkerangka. Kalau elemennya dibuang (render null), tinggi
+   * yang ditempatinya ikut hilang dan seluruh isi di bawahnya naik. */
+  hidden: {
+    opacity: 0,
+  },
+  /** Garis tepi versi tak terlihat. Tebalnya tetap dihitung oleh tata letak,
+   * jadi isi tidak bergeser 1pt tiap kotak seperti bila bordernya dihapus. */
+  frameBorderHidden: {
+    borderWidth: 1,
+    borderColor: INVISIBLE,
+  },
+  recipientBoxBorderHidden: {
+    borderWidth: 1,
+    borderColor: INVISIBLE,
+  },
+  patientTableBorderHidden: {
+    borderWidth: 1,
+    borderColor: INVISIBLE,
+  },
+  patientRowBorderHidden: {
+    borderBottomWidth: 1,
+    borderBottomColor: INVISIBLE,
+  },
+  colColonBorderHidden: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: INVISIBLE,
+  },
+  colValueLeftBorderHidden: {
+    borderRightWidth: 1,
+    borderColor: INVISIBLE,
   },
   headerRow: {
     flexDirection: 'row',
@@ -320,11 +362,13 @@ function PatientRow({
     ? styles.patientRowLast
     : includeFrame
       ? [styles.patientRow, styles.patientRowBorder]
-      : styles.patientRow;
-  const colColonStyle = includeFrame ? [styles.colColon, styles.colColonBorder] : styles.colColon;
+      : [styles.patientRow, styles.patientRowBorderHidden];
+  const colColonStyle = includeFrame
+    ? [styles.colColon, styles.colColonBorder]
+    : [styles.colColon, styles.colColonBorderHidden];
   const colValueLeftStyle = includeFrame
     ? [styles.colValueLeft, styles.colValueLeftBorder]
-    : styles.colValueLeft;
+    : [styles.colValueLeft, styles.colValueLeftBorderHidden];
 
   return (
     <View style={rowStyle}>
@@ -369,42 +413,38 @@ export function RadiologyReportDocument({ data }: { readonly data: RadiologyRepo
     <Document>
       {/* 425.20 pt x 595.28 pt = 15cm x 21cm (28.3465 pt/cm) */}
       <Page size={[425.2, 595.28]} style={styles.page}>
-        <View style={includeFrame ? [styles.frame, styles.frameBorder] : styles.frame}>
-          {includeFrame ? (
-            <>
-              <View style={styles.headerRow}>
-                <Image style={styles.logo} src={data.logoSrc} />
-                <View style={styles.headerText}>
-                  <Text style={styles.clinicSmall}>KLINIK ROENTGEN DAN USG</Text>
-                  <Text style={styles.clinicName}>PRIMA HUSADA</Text>
-                  <Text style={styles.clinicAddress}>
-                    Jl Siliwangi No 28 A Parung Kuda Telp. 0857-1932-5557
-                  </Text>
-                </View>
+        <View style={includeFrame ? [styles.frame, styles.frameBorder] : [styles.frame, styles.frameBorderHidden]}>
+          <View style={includeFrame ? undefined : styles.hidden}>
+            <View style={styles.headerRow}>
+              <Image style={styles.logo} src={data.logoSrc} />
+              <View style={styles.headerText}>
+                <Text style={styles.clinicSmall}>KLINIK ROENTGEN DAN USG</Text>
+                <Text style={styles.clinicName}>PRIMA HUSADA</Text>
+                <Text style={styles.clinicAddress}>
+                  Jl Siliwangi No 28 A Parung Kuda Telp. 0857-1932-5557
+                </Text>
               </View>
+            </View>
 
-              <View style={styles.divider} />
-            </>
-          ) : null}
+            <View style={styles.divider} />
+          </View>
 
           <View style={styles.topRow}>
-            <View style={includeFrame ? [styles.recipientBox, styles.recipientBoxBorder] : styles.recipientBox}>
-              {includeFrame ? (
-                <>
-                  <Text style={styles.recipientLine}>Kepada Yang terhormat</Text>
-                  <Text style={styles.recipientLine}>
-                    <Text>TS : </Text>
-                    <Text style={styles.recipientDoctor}>{dokter}</Text>
-                  </Text>
-                  <Text style={styles.recipientLine}>Di Tempat</Text>
-                </>
-              ) : (
-                <Text style={[styles.recipientLine, styles.recipientDoctor]}>{dokter}</Text>
-              )}
+            <View style={includeFrame ? [styles.recipientBox, styles.recipientBoxBorder] : [styles.recipientBox, styles.recipientBoxBorderHidden]}>
+              <Text style={includeFrame ? styles.recipientLine : [styles.recipientLine, styles.hidden]}>
+                Kepada Yang terhormat
+              </Text>
+              <Text style={styles.recipientLine}>
+                <Text style={includeFrame ? undefined : styles.hidden}>TS : </Text>
+                <Text style={styles.recipientDoctor}>{dokter}</Text>
+              </Text>
+              <Text style={includeFrame ? styles.recipientLine : [styles.recipientLine, styles.hidden]}>
+                Di Tempat
+              </Text>
             </View>
           </View>
 
-          <View style={includeFrame ? [styles.patientTable, styles.patientTableBorder] : styles.patientTable}>
+          <View style={includeFrame ? [styles.patientTable, styles.patientTableBorder] : [styles.patientTable, styles.patientTableBorderHidden]}>
             <PatientRow
               leftLabel="Nama Pasien"
               leftValue={data.nama}
@@ -429,11 +469,17 @@ export function RadiologyReportDocument({ data }: { readonly data: RadiologyRepo
             />
           </View>
 
-          {includeFrame ? <Text style={styles.title}>HASIL PEMERIKSAAN RADIOLOGI</Text> : null}
+          <Text style={includeFrame ? styles.title : [styles.title, styles.hidden]}>
+            HASIL PEMERIKSAAN RADIOLOGI
+          </Text>
 
           <View style={styles.klinisBlock}>
             <View style={styles.clinicalRow}>
-              {includeFrame ? <Text style={styles.clinicalInlineLabel}>Klinis : </Text> : null}
+              <Text
+                style={includeFrame ? styles.clinicalInlineLabel : [styles.clinicalInlineLabel, styles.hidden]}
+              >
+                Klinis :{' '}
+              </Text>
               <View style={styles.clinicalValueWrap}>
                 <Text style={clinicalValueStyle}>
                   {formatPdfClinicalText(data.klinis)}
@@ -443,7 +489,11 @@ export function RadiologyReportDocument({ data }: { readonly data: RadiologyRepo
             </View>
             {data.includeTemuan && data.temuan ? (
               <View style={[styles.clinicalRow, styles.temuanRow]}>
-                {includeFrame ? <Text style={styles.clinicalInlineLabel}>Temuan : </Text> : null}
+                <Text
+                  style={includeFrame ? styles.clinicalInlineLabel : [styles.clinicalInlineLabel, styles.hidden]}
+                >
+                  Temuan :{' '}
+                </Text>
                 <View style={styles.clinicalValueWrap}>
                   <Text style={clinicalValueStyle}>{formatPdfClinicalText(data.temuan)}</Text>
                 </View>
@@ -454,7 +504,11 @@ export function RadiologyReportDocument({ data }: { readonly data: RadiologyRepo
           <View style={styles.bodyMiddle}>
             <View style={data.templatBacaan ? styles.kesanBlockNoOffset : styles.kesanBlock}>
               <View style={styles.clinicalRow}>
-                {includeFrame ? <Text style={styles.clinicalInlineLabel}>Kesan : </Text> : null}
+                <Text
+                  style={includeFrame ? styles.clinicalInlineLabel : [styles.clinicalInlineLabel, styles.hidden]}
+                >
+                  Kesan :{' '}
+                </Text>
                 <View style={styles.clinicalValueWrap}>
                   <Text style={clinicalValueStyle}>
                     {formatPdfClinicalText(data.kesan)}
@@ -466,14 +520,18 @@ export function RadiologyReportDocument({ data }: { readonly data: RadiologyRepo
 
           <View style={data.templatBacaan ? styles.signatureWrapTight : styles.signatureWrap}>
             <View style={styles.signature}>
-              {includeFrame ? <Text style={styles.signatureLine}>Salam Sejawat,</Text> : null}
+              <Text style={includeFrame ? styles.signatureLine : [styles.signatureLine, styles.hidden]}>
+                Salam Sejawat,
+              </Text>
               {data.includeSignature && data.signatureSrc ? (
                 <Image style={styles.signatureImage} src={data.signatureSrc} />
               ) : (
                 <View style={styles.signatureGap} />
               )}
               <Text style={styles.signatureName}>{truncatePdfCell(data.radiologNama, 40)}</Text>
-              {includeFrame ? <Text style={styles.signatureLine}>RADIOLOG</Text> : null}
+              <Text style={includeFrame ? styles.signatureLine : [styles.signatureLine, styles.hidden]}>
+                RADIOLOG
+              </Text>
             </View>
           </View>
         </View>
