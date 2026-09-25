@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
+import { KwitansiRincianEditor } from '../components/KwitansiRincianEditor.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ModalFormFooter } from '../components/ui/ModalFormFooter.tsx';
@@ -42,6 +43,8 @@ export function KwitansiLaboratoriumPage() {
 
   const [logoSrc, setLogoSrc] = useState('');
   const [previewItem, setPreviewItem] = useState<PasienDuplikatLabItem | null>(null);
+  /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
+  const [rincianKwitansi, setRincianKwitansi] = useState<readonly { nama: string; harga: number }[] | null>(null);
 
   const [kasirList, setKasirList] = useState<PetugasKasirItem[]>([]);
   const [editItem, setEditItem] = useState<PasienDuplikatLabItem | null>(null);
@@ -92,7 +95,14 @@ export function KwitansiLaboratoriumPage() {
     }
   }
 
+  /** Rincian bawaan kwitansi ini bila belum pernah disunting. */
+  function rincianBawaan(p: PasienDuplikatLabItem): { nama: string; harga: number }[] {
+    return [{ nama: p.pemeriksaanNama || 'Pemeriksaan Laboratorium', harga: Number(p.totalHarga) }];
+  }
+
   function buildKwitansiData(p: PasienDuplikatLabItem): KwitansiReportData {
+    const rincian = rincianKwitansi ?? rincianBawaan(p);
+    const totalRincian = rincian.reduce((jumlah: number, r) => jumlah + r.harga, 0);
     return {
       logoSrc,
       noKwitansi: p.regCode,
@@ -101,9 +111,9 @@ export function KwitansiLaboratoriumPage() {
       umur: formatUmurDetail(p.tanggalLahir),
       alamat: p.alamat || '—',
       dokterPengirim: p.pengirimNama || '—',
-      items: [{ nama: p.pemeriksaanNama || 'Pemeriksaan Laboratorium', hargaFormatted: formatRupiah(p.totalHarga) }],
-      totalFormatted: formatRupiah(p.totalHarga),
-      terbilang: terbilangRupiah(p.totalHarga),
+      items: rincian.map((r) => ({ nama: r.nama, hargaFormatted: formatRupiah(r.harga) })),
+      totalFormatted: formatRupiah(totalRincian),
+      terbilang: terbilangRupiah(totalRincian),
       paymentStatus: p.paymentStatus,
       kasirNama: p.petugasKasir || '',
     };
@@ -233,9 +243,18 @@ export function KwitansiLaboratoriumPage() {
         <Modal
           title={`Pratinjau Kwitansi — ${previewItem.regCode}`}
           open={true}
-          onClose={() => setPreviewItem(null)}
+          onClose={() => {
+            setPreviewItem(null);
+            setRincianKwitansi(null);
+          }}
           size="xl"
         >
+          <KwitansiRincianEditor
+            jenis="LABORATORIUM"
+            nomor={previewItem.regCode}
+            bawaan={rincianBawaan(previewItem)}
+            onChange={setRincianKwitansi}
+          />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
             <button
               type="button"

@@ -1112,3 +1112,34 @@ model KomputerKlinik {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+/// Jenis kwitansi, menentukan halaman asal nomornya.
+enum KwitansiJenis {
+  PENDAFTARAN_UMUM
+  RADIOLOGI
+  LABORATORIUM
+  FARMASI
+}
+
+/// Baris rincian kwitansi yang bisa disunting sebelum dicetak.
+///
+/// Dikunci ke (jenis, nomor) dan bukan relasi ke satu tabel tertentu, karena
+/// nomor kwitansi berasal dari empat halaman berbeda (pendaftaran umum,
+/// radiologi, laboratorium, farmasi). Baris disimpan supaya kwitansi yang
+/// sudah dicetak bisa dicetak ulang persis sama.
+///
+/// Kalau sebuah nomor belum punya baris sama sekali, kwitansi memakai rincian
+/// bawaannya — baris di sini baru dibuat saat pertama kali disunting.
+model KwitansiRincian {
+  id        String        @id @default(cuid())
+  jenis     KwitansiJenis
+  nomor     String
+  nama      String
+  harga     Decimal       @default(0)
+  /// Urutan tampil; dipakai supaya baris baru selalu di bawah.
+  urutan    Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([jenis, nomor])
+}

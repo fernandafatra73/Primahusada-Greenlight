@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
+import { KwitansiRincianEditor } from '../components/KwitansiRincianEditor.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ModalFormFooter } from '../components/ui/ModalFormFooter.tsx';
@@ -50,6 +51,8 @@ export function KwitansiRadiologiPage() {
 
   const [logoSrc, setLogoSrc] = useState('');
   const [previewItem, setPreviewItem] = useState<KwitansiPasienItem | null>(null);
+  /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
+  const [rincianKwitansi, setRincianKwitansi] = useState<readonly { nama: string; harga: number }[] | null>(null);
 
   const [jenisList, setJenisList] = useState<JenisItem[]>([]);
   const [kasirList, setKasirList] = useState<PetugasKasirItem[]>([]);
@@ -133,7 +136,14 @@ export function KwitansiRadiologiPage() {
     }
   }
 
+  /** Rincian bawaan kwitansi ini bila belum pernah disunting. */
+  function rincianBawaan(p: KwitansiPasienItem): { nama: string; harga: number }[] {
+    return p.pemeriksaan.map((x) => ({ nama: x.nama, harga: Number(x.harga) }));
+  }
+
   function buildKwitansiData(p: KwitansiPasienItem): KwitansiReportData {
+    const rincian = rincianKwitansi ?? rincianBawaan(p);
+    const totalRincian = rincian.reduce((jumlah, r) => jumlah + r.harga, 0);
     return {
       logoSrc,
       noKwitansi: p.regCode,
@@ -142,9 +152,9 @@ export function KwitansiRadiologiPage() {
       umur: formatUmurDetail(p.tanggalLahir),
       alamat: p.alamat || '—',
       dokterPengirim: p.pengirim.nama,
-      items: p.pemeriksaan.map((x) => ({ nama: x.nama, hargaFormatted: formatRupiah(x.harga) })),
-      totalFormatted: formatRupiah(p.totalHarga),
-      terbilang: terbilangRupiah(p.totalHarga),
+      items: rincian.map((r) => ({ nama: r.nama, hargaFormatted: formatRupiah(r.harga) })),
+      totalFormatted: formatRupiah(totalRincian),
+      terbilang: terbilangRupiah(totalRincian),
       paymentStatus: p.paymentStatus,
       kasirNama: p.petugasKasir || '',
     };
@@ -277,9 +287,18 @@ export function KwitansiRadiologiPage() {
         <Modal
           title={`Pratinjau Kwitansi — ${previewItem.regCode}`}
           open={true}
-          onClose={() => setPreviewItem(null)}
+          onClose={() => {
+            setPreviewItem(null);
+            setRincianKwitansi(null);
+          }}
           size="xl"
         >
+          <KwitansiRincianEditor
+            jenis="RADIOLOGI"
+            nomor={previewItem.regCode}
+            bawaan={rincianBawaan(previewItem)}
+            onChange={setRincianKwitansi}
+          />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
             <button
               type="button"

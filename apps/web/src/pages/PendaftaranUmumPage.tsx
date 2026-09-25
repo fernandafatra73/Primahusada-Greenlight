@@ -16,6 +16,7 @@ import { formatRupiah } from '../lib/format.ts';
 import { PendaftaranReportDocument } from '../pdf/PendaftaranReportDocument.tsx';
 import { PendaftaranKopSuratDocument } from '../pdf/PendaftaranKopSuratDocument.tsx';
 import { KwitansiReportDocument, type KwitansiReportData } from '../pdf/KwitansiReportDocument.tsx';
+import { KwitansiRincianEditor } from '../components/KwitansiRincianEditor.tsx';
 import { loadLogoDataUrl } from '../pdf/loadLogoDataUrl.ts';
 import { angkaKeKata, terbilangRupiah } from '../lib/terbilang.ts';
 import { getSpeechRecognitionConstructor, type SpeechRecognitionLike } from '../lib/speechRecognition.ts';
@@ -204,6 +205,8 @@ export function PendaftaranUmumPage() {
   const [previewItem, setPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [kopSuratPreviewItem, setKopSuratPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [kwitansiPreviewItem, setKwitansiPreviewItem] = useState<PendaftaranUmumItem | null>(null);
+  /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
+  const [kwitansiRincian, setKwitansiRincian] = useState<readonly { nama: string; harga: number }[] | null>(null);
   const [amplopPreviewItem, setAmplopPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [labelPreviewItem, setLabelPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [logoSrc, setLogoSrc] = useState('');
@@ -529,7 +532,14 @@ export function PendaftaranUmumPage() {
     }
   }
 
+  /** Rincian bawaan kwitansi ini bila belum pernah disunting. */
+  function rincianBawaan(item: PendaftaranUmumItem): { nama: string; harga: number }[] {
+    return [{ nama: 'Biaya Pendaftaran', harga: Number(item.biayaPendaftaran) }];
+  }
+
   function buildKwitansiData(item: PendaftaranUmumItem): KwitansiReportData {
+    const rincian = kwitansiRincian ?? rincianBawaan(item);
+    const total = rincian.reduce((jumlah, r) => jumlah + r.harga, 0);
     return {
       logoSrc,
       noKwitansi: item.noRegistrasi,
@@ -538,9 +548,9 @@ export function PendaftaranUmumPage() {
       umur: item.umur || '-',
       alamat: item.alamat || '-',
       dokterPengirim: item.dokterPengirim || '-',
-      items: [{ nama: 'Biaya Pendaftaran', hargaFormatted: formatRupiah(item.biayaPendaftaran) }],
-      totalFormatted: formatRupiah(item.biayaPendaftaran),
-      terbilang: terbilangRupiah(item.biayaPendaftaran),
+      items: rincian.map((r) => ({ nama: r.nama, hargaFormatted: formatRupiah(r.harga) })),
+      totalFormatted: formatRupiah(total),
+      terbilang: terbilangRupiah(total),
       paymentStatus: item.paymentStatus,
       kasirNama: item.petugasKasir || '',
     };
@@ -1255,9 +1265,18 @@ export function PendaftaranUmumPage() {
         <Modal
           title={`Pratinjau Kwitansi — ${kwitansiPreviewItem.noRegistrasi}`}
           open={true}
-          onClose={() => setKwitansiPreviewItem(null)}
+          onClose={() => {
+            setKwitansiPreviewItem(null);
+            setKwitansiRincian(null);
+          }}
           size="xl"
         >
+          <KwitansiRincianEditor
+            jenis="PENDAFTARAN_UMUM"
+            nomor={kwitansiPreviewItem.noRegistrasi}
+            bawaan={rincianBawaan(kwitansiPreviewItem)}
+            onChange={setKwitansiRincian}
+          />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
             <button
               type="button"

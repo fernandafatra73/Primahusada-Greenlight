@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
+import { KwitansiRincianEditor } from '../components/KwitansiRincianEditor.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ModalFormFooter } from '../components/ui/ModalFormFooter.tsx';
@@ -92,6 +93,8 @@ export function FarmasiKwitansiPage() {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [previewItem, setPreviewItem] = useState<FarmasiKwitansiRecord | null>(null);
+  /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
+  const [rincianKwitansi, setRincianKwitansi] = useState<readonly { nama: string; harga: number }[] | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<FarmasiKwitansiRecord | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -223,20 +226,35 @@ export function FarmasiKwitansiPage() {
     }
   }
 
+  /** Rincian bawaan kwitansi ini bila belum pernah disunting.
+   *
+   * Kwitansi farmasi punya kolom jumlah dan harga satuan, sedangkan penyunting
+   * rincian hanya mengenal nama dan harga. Jumlahnya karena itu dibawa ke
+   * dalam nama ("Paracetamol x2") dan hargany memakai subtotal, supaya tidak
+   * ada angka yang hilang saat baris disunting. */
+  function rincianBawaan(k: FarmasiKwitansiRecord): { nama: string; harga: number }[] {
+    return k.items.map((it) => ({
+      nama: it.qty > 1 ? `${it.nama} x${it.qty}` : it.nama,
+      harga: Number(it.subtotal),
+    }));
+  }
+
   function buildReportData(k: FarmasiKwitansiRecord): FarmasiKwitansiReportData {
+    const rincian = rincianKwitansi ?? rincianBawaan(k);
+    const totalRincian = rincian.reduce((jumlah: number, r) => jumlah + r.harga, 0);
     return {
       logoSrc,
       noKwitansi: k.noKwitansi,
       tanggal: formatDateShort(k.tanggal),
       namaPasien: k.namaPasien,
-      items: k.items.map((it) => ({
-        nama: it.nama,
-        qty: it.qty,
-        hargaSatuanFormatted: formatRupiah(it.hargaSatuan),
-        subtotalFormatted: formatRupiah(it.subtotal),
+      items: rincian.map((r) => ({
+        nama: r.nama,
+        qty: 1,
+        hargaSatuanFormatted: formatRupiah(r.harga),
+        subtotalFormatted: formatRupiah(r.harga),
       })),
-      totalFormatted: formatRupiah(k.totalHarga),
-      terbilang: terbilangRupiah(k.totalHarga),
+      totalFormatted: formatRupiah(totalRincian),
+      terbilang: terbilangRupiah(totalRincian),
       paymentStatus: k.paymentStatus,
       kasirNama: k.petugasKasir || '',
     };
@@ -491,7 +509,21 @@ export function FarmasiKwitansiPage() {
       )}
 
       {previewItem && (
-        <Modal title={`Pratinjau Kwitansi — ${previewItem.noKwitansi}`} open={true} onClose={() => setPreviewItem(null)} size="xl">
+        <Modal
+          title={`Pratinjau Kwitansi — ${previewItem.noKwitansi}`}
+          open={true}
+          onClose={() => {
+            setPreviewItem(null);
+            setRincianKwitansi(null);
+          }}
+          size="xl"
+        >
+          <KwitansiRincianEditor
+            jenis="FARMASI"
+            nomor={previewItem.noKwitansi}
+            bawaan={rincianBawaan(previewItem)}
+            onChange={setRincianKwitansi}
+          />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
             <button type="button" className="btn btn--primary" onClick={() => void handleDownload(previewItem)} style={{ fontWeight: 600 }}>
               ⬇️ Unduh / Cetak Kwitansi
