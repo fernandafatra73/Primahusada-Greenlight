@@ -5,6 +5,19 @@ import './ui/ui.css';
 
 export type KwitansiJenis = 'PENDAFTARAN_UMUM' | 'RADIOLOGI' | 'LABORATORIUM' | 'FARMASI';
 
+/** Pilihan nama rincian yang sering dipakai. Ditawarkan lewat datalist, bukan
+ * dropdown, supaya nama di luar daftar tetap bisa diketik langsung. */
+const PILIHAN_RINCIAN: readonly string[] = [
+  'Biaya Pendaftaran',
+  'Thorax',
+  'BNO',
+  'Lumbo-sacral Ap/Lat',
+  'Ekstremitas Atas',
+  'Ekstremitas Bawah',
+];
+
+const DAFTAR_PILIHAN_ID = 'kwitansi-rincian-pilihan';
+
 export interface RincianBaris {
   readonly id: string;
   readonly nama: string;
@@ -175,6 +188,7 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
               <tr key={baris.id}>
                 <td>
                   <input
+                    list={DAFTAR_PILIHAN_ID}
                     value={baris.nama}
                     onChange={(e) =>
                       setItems((prev) =>
@@ -223,8 +237,15 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
         </table>
       )}
 
+      <datalist id={DAFTAR_PILIHAN_ID}>
+        {PILIHAN_RINCIAN.map((nama) => (
+          <option key={nama} value={nama} />
+        ))}
+      </datalist>
+
       <p style={{ margin: '0.45rem 0 0', fontSize: '0.78rem', color: '#64748b' }}>
-        Perubahan tersimpan otomatis dan ikut saat kwitansi dicetak ulang.
+        Nama rincian bisa dipilih dari daftar atau diketik sendiri. Perubahan tersimpan otomatis
+        dan ikut saat kwitansi dicetak ulang.
       </p>
     </div>
   );

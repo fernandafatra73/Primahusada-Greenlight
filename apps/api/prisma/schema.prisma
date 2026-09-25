@@ -1143,3 +1143,20 @@ model KwitansiRincian {
 
   @@index([jenis, nomor])
 }
+
+/// Arsip hasil pembacaan AI, terpisah dari tabel AI Foto.
+///
+/// Diisi lewat tombol "Simpan" pada modal AI Foto dan AI Banding 2, lalu
+/// dibuka lewat tombol "Tabel AI" di halaman Pasien. `foto` disimpan sebagai
+/// path `/uploads/...`, bukan base64, supaya database tidak membengkak.
+model TabelAi {
+  id           String   @id @default(cuid())
+  namaPenyakit String?
+  foto         String
+  hasilAnalisa String
+  /// Modal asal hasil ini: "AI Foto" atau "AI Banding 2".
+  asal         String?
+  namaPasien   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

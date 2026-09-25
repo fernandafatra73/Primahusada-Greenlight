@@ -20,6 +20,8 @@ import { isValidBirthDate } from '../lib/birthDate.ts';
 import { clampClinicalInput } from '../lib/clinicalText.ts';
 import { readFileAsDataUrl, validateFotoFile } from '../lib/fotoUpload.ts';
 import { formatAiFotoAnalisa, formatTbScreeningAnalisa } from '../lib/aiFotoAnalisa.ts';
+import { AiHasilActions } from '../components/AiHasilActions.tsx';
+import { TabelAiModal } from '../components/TabelAiModal.tsx';
 import { applyPhotoAdjustments } from '../lib/imageAdjust.ts';
 import { formatSharingShort } from '../lib/pilihanSharing.ts';
 import {
@@ -358,6 +360,7 @@ export function PasienPage() {
   const [aiFotoNamaPenyakit, setAiFotoNamaPenyakit] = useState('');
   const [aiFotoKesan, setAiFotoKesan] = useState('');
   const [aiBanding2Open, setAiBanding2Open] = useState(false);
+  const [tabelAiOpen, setTabelAiOpen] = useState(false);
   const [aiBanding2Model, setAiBanding2Model] = useState('');
   const [aiBanding2DataUrl, setAiBanding2DataUrl] = useState('');
   const [aiBanding2DragOver, setAiBanding2DragOver] = useState(false);
@@ -1879,22 +1882,21 @@ export function PasienPage() {
             <button
               type="button"
               className="btn btn--sm btn--ghost"
+              onClick={() => setTabelAiOpen(true)}
+              style={{ border: '1px solid var(--color-border)' }}
+              title="Arsip hasil analisa AI yang sudah disimpan"
+            >
+              🗂️ Tabel AI
+            </button>
+            <button
+              type="button"
+              className="btn btn--sm btn--ghost"
               onClick={openAiBanding2Modal}
               style={{ border: '1px solid var(--color-border)' }}
               title="Analisa TB X-Ray dengan AI (pilih model version)"
             >
               🩻 AI Banding 2
             </button>
-            <a
-              href="https://tbscreen.ai/login"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn--sm btn--ghost"
-              style={{ border: '1px solid var(--color-border)', textDecoration: 'none' }}
-              title="Buka TBScreen.ai untuk banding hasil AI"
-            >
-              🤖 AI Banding
-            </a>
             <button
               type="button"
               className={`btn btn--sm ${timeFilter === 'today' ? 'btn--primary' : 'btn--ghost'}`}
@@ -2999,6 +3001,8 @@ export function PasienPage() {
         </form>
       </Modal>
 
+      <TabelAiModal open={tabelAiOpen} onClose={() => setTabelAiOpen(false)} />
+
       <Modal open={aiFotoOpen} title="✨ AI Foto — Analisa & Isi Kesan Otomatis" onClose={() => setAiFotoOpen(false)} size="xl">
         <div className="form-grid">
           {aiFotoError && <div className="alert alert--error form-grid--full">{aiFotoError}</div>}
@@ -3055,9 +3059,16 @@ export function PasienPage() {
                   onChange={(e) => setAiFotoKesan(e.target.value)}
                 />
               </div>
+              <AiHasilActions
+                namaPasien={nama}
+                pemeriksaan="AI Foto"
+                namaPenyakit={aiFotoNamaPenyakit}
+                fotoDataUrl={aiFotoDataUrl}
+                kesan={aiFotoKesan}
+              />
               <div className="form-field form-grid--full">
                 <button type="button" className="btn btn--primary" onClick={handleSaveAiFotoKesan}>
-                  Simpan
+                  Simpan &amp; Isi Kesan Pasien
                 </button>
               </div>
             </>
@@ -3298,6 +3309,13 @@ export function PasienPage() {
                   Simpan ke Kesan
                 </button>
               </div>
+              <AiHasilActions
+                namaPasien={nama}
+                pemeriksaan="AI Banding 2 — Skrining TB"
+                namaPenyakit={aiBanding2Result.diagnosis}
+                fotoDataUrl={aiBanding2DataUrl}
+                kesan={formatTbScreeningAnalisa(aiBanding2Result)}
+              />
             </div>
           )}
         </div>
