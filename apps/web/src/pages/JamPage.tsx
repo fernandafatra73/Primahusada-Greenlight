@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { MasjidGallery } from '../components/MasjidGallery.tsx';
+import { SholatGuideModal } from '../components/SholatGuideModal.tsx';
 import { AZAN_TRACKS, playAzanTrack, stopSound } from '../lib/azanTracks.ts';
 import { fetchPrayerTimes, type PrayerTime } from '../lib/prayerTimes.ts';
 import '../components/ui/ui.css';
@@ -209,6 +210,9 @@ export function JamPage() {
   const [azanRinging, setAzanRinging] = useState<PrayerTime | null>(null);
   const [azanRingingTrackLabel, setAzanRingingTrackLabel] = useState<string | null>(null);
   const firedAzanKeyRef = useRef<string | null>(null);
+  // Nama sholat yang tuntunannya sedang/akan ditampilkan otomatis begitu
+  // azan-nya selesai berbunyi (lihat efek pemicu azan di bawah).
+  const [sholatGuideFor, setSholatGuideFor] = useState<string | null>(null);
 
   const loadPrayerTimes = useCallback(async (loc: { city: string; country: string }) => {
     setPrayerLoading(true);
@@ -253,6 +257,8 @@ export function JamPage() {
       const track = playNextAzanInSequenceRef.current();
       setAzanRinging(match);
       setAzanRingingTrackLabel(track.label);
+      // Begitu audio azan ini selesai, buka tuntunan sholatnya otomatis.
+      currentAudioRef.current?.addEventListener('ended', () => setSholatGuideFor(match.id), { once: true });
     }
   }, [now, prayerTimes]);
 
@@ -596,6 +602,10 @@ export function JamPage() {
           </div>
         </div>
       </ListPageShell>
+
+      {sholatGuideFor && (
+        <SholatGuideModal namaSholat={sholatGuideFor} onClose={() => setSholatGuideFor(null)} />
+      )}
     </>
   );
 }
