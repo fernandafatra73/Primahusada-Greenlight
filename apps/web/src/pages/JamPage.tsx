@@ -19,6 +19,16 @@ const LOKASI_KEY = 'jam-lokasi-sholat';
 const SOUND_ID_KEY = 'jam-suara-terpilih';
 const CUSTOM_SOUND_KEY = 'jam-suara-custom';
 const AZAN_URUTAN_INDEX_KEY = 'jam-azan-urutan-index';
+const OFFSET_MS_KEY = 'jam-offset-ms';
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+/** Format untuk value <input type="datetime-local">: "YYYY-MM-DDTHH:mm:ss". */
+function toDatetimeLocalValue(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
 
 function loadJson<T>(key: string, fallback: T): T {
   try {
@@ -46,11 +56,43 @@ function todayKey(d: Date): string {
 }
 
 export function JamPage() {
-  const [now, setNow] = useState(() => new Date());
+  // Browser tidak bisa mengubah jam sistem — "menyetel jam" di sini berarti
+  // menyimpan selisih (offset) terhadap jam sistem, lalu menerapkannya ke
+  // semua perhitungan waktu di halaman ini (alarm, azan, dst).
+  const [offsetMs, setOffsetMs] = useState(() => loadJson(OFFSET_MS_KEY, 0));
+  const [now, setNow] = useState(() => new Date(Date.now() + offsetMs));
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000);
+    // Diset langsung (bukan cuma lewat interval) supaya perubahan offset —
+    // mis. setelah "Setel Jam" atau "Samakan dengan Jam Sistem" — langsung
+    // terlihat, tidak menunggu tik interval berikutnya (sampai 1 detik).
+    setNow(new Date(Date.now() + offsetMs));
+    const id = window.setInterval(() => setNow(new Date(Date.now() + offsetMs)), 1000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [offsetMs]);
+
+  const [editingClock, setEditingClock] = useState(false);
+  const [clockDraft, setClockDraft] = useState('');
+
+  function openEditClock() {
+    setClockDraft(toDatetimeLocalValue(now));
+    setEditingClock(true);
+  }
+
+  function saveClock(e: FormEvent) {
+    e.preventDefault();
+    const chosen = new Date(clockDraft);
+    if (isNaN(chosen.getTime())) return;
+    const nextOffset = chosen.getTime() - Date.now();
+    setOffsetMs(nextOffset);
+    saveJson(OFFSET_MS_KEY, nextOffset);
+    setEditingClock(false);
+  }
+
+  function resetClock() {
+    setOffsetMs(0);
+    saveJson(OFFSET_MS_KEY, 0);
+    setEditingClock(false);
+  }
 
   // ── Suara alarm & azan (dipakai bersama oleh Alarm dan jadwal sholat) ───
   const [soundId, setSoundId] = useState(() => loadJson(SOUND_ID_KEY, AZAN_TRACKS[0]!.id));
@@ -282,6 +324,52 @@ export function JamPage() {
                   year: 'numeric',
                 })}
               </div>
+
+              {!editingClock ? (
+                <div style={{ marginTop: '0.85rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                  <button type="button" className="btn btn--sm btn--secondary" onClick={openEditClock}>
+                    ✏️ Setel Jam
+                  </button>
+                  {offsetMs !== 0 && (
+                    <button type="button" className="btn btn--sm btn--secondary" onClick={resetClock}>
+                      ↺ Samakan dengan Jam Sistem
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <form
+                  onSubmit={saveClock}
+                  style={{
+                    marginTop: '0.85rem',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <input
+                    type="datetime-local"
+                    step="1"
+                    required
+                    value={clockDraft}
+                    onChange={(e) => setClockDraft(e.target.value)}
+                    style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <button type="submit" className="btn btn--sm btn--primary">
+                    Simpan
+                  </button>
+                  <button type="button" className="btn btn--sm btn--secondary" onClick={() => setEditingClock(false)}>
+                    Batal
+                  </button>
+                </form>
+              )}
+
+              {offsetMs !== 0 && !editingClock && (
+                <div style={{ marginTop: '0.5rem', fontSize: '0.72rem', color: '#94a3b8' }}>
+                  Jam disetel manual ({offsetMs > 0 ? '+' : ''}
+                  {Math.round(offsetMs / 60000)} menit dari jam sistem)
+                </div>
+              )}
             </div>
 
             {alarmRinging && (
