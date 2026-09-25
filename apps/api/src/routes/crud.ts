@@ -7,6 +7,7 @@ import {
 } from '../generated/prisma/internal/prismaNamespace.js';
 import { prisma } from '../lib/prisma.js';
 import { calcPersentaseKehadiran, countHariKerja } from '../lib/absensiRekap.js';
+import { normalizeCoordinate } from '../lib/geoLocation.js';
 import { registrationTimestamp } from '../lib/dateOnly.js';
 import { calcTotalSharing, sumHarga } from '../lib/pasienFinance.js';
 import { hashPassword } from '../lib/password.js';
@@ -923,12 +924,29 @@ export async function registerCrudRoutes(app: FastifyInstance) {
     return { tahun, hariKerja, items };
   });
 
-  app.post<{ Body: { adminKlinikId: string; jamDatang?: string; jamPulang?: string } }>(
+  app.post<{
+    Body: {
+      adminKlinikId: string;
+      jamDatang?: string;
+      jamPulang?: string;
+      foto?: string;
+      lat?: number;
+      lng?: number;
+      akurasi?: number;
+    };
+  }>(
     '/api/absensi-admin-klinik',
     async (req, reply) => {
       if (!req.body.adminKlinikId) return badRequest(reply, 'adminKlinikId wajib diisi');
       const admin = await prisma.adminKlinik.findUnique({ where: { id: req.body.adminKlinikId } });
       if (!admin) return badRequest(reply, 'Admin klinik tidak ditemukan');
+
+      // Foto dan lokasi menempel pada jam yang sedang dicatat: kalau yang
+      // diisi jam pulang, keduanya masuk ke kolom pulang.
+      const untukPulang = !req.body.jamDatang?.trim() && !!req.body.jamPulang?.trim();
+      const foto = req.body.foto ? saveImageDataUrl(req.body.foto, 'absensi') : null;
+      const titik = normalizeCoordinate(req.body.lat, req.body.lng, req.body.akurasi);
+
       try {
         const item = await prisma.absensiAdminKlinik.create({
           data: {
@@ -937,6 +955,19 @@ export async function registerCrudRoutes(app: FastifyInstance) {
             tanggal: todayDateStr(),
             jamDatang: req.body.jamDatang?.trim() || null,
             jamPulang: req.body.jamPulang?.trim() || null,
+            ...(untukPulang
+              ? {
+                  fotoPulang: foto,
+                  latPulang: titik?.lat ?? null,
+                  lngPulang: titik?.lng ?? null,
+                  akurasiPulang: titik?.akurasi ?? null,
+                }
+              : {
+                  fotoDatang: foto,
+                  latDatang: titik?.lat ?? null,
+                  lngDatang: titik?.lng ?? null,
+                  akurasiDatang: titik?.akurasi ?? null,
+                }),
           },
         });
         return reply.status(201).send({ item });
@@ -949,16 +980,55 @@ export async function registerCrudRoutes(app: FastifyInstance) {
     },
   );
 
-  app.patch<{ Params: { id: string }; Body: { jamDatang?: string; jamPulang?: string } }>(
+  app.patch<{
+    Params: { id: string };
+    Body: {
+      jamDatang?: string;
+      jamPulang?: string;
+      foto?: string;
+      lat?: number;
+      lng?: number;
+      akurasi?: number;
+      /** Sisi mana yang sedang direkam fotonya; menentukan kolom tujuan. */
+      sisi?: 'datang' | 'pulang';
+    };
+  }>(
     '/api/absensi-admin-klinik/:id',
     async (req, reply) => {
       const existing = await prisma.absensiAdminKlinik.findUnique({ where: { id: req.params.id } });
       if (!existing) return reply.status(404).send({ error: 'Data absensi tidak ditemukan' });
+
+      const untukPulang =
+        req.body.sisi === 'pulang' ||
+        (req.body.sisi === undefined && req.body.jamPulang !== undefined && req.body.jamDatang === undefined);
+      const foto = req.body.foto ? saveImageDataUrl(req.body.foto, 'absensi') : null;
+      const titik = normalizeCoordinate(req.body.lat, req.body.lng, req.body.akurasi);
+
+      // Foto/lokasi lama hanya ditimpa kalau ada yang baru dikirim, supaya
+      // menyunting jam saja tidak menghapus bukti yang sudah terekam.
+      const rekamanBaru = foto || titik ? true : false;
+
       const item = await prisma.absensiAdminKlinik.update({
         where: { id: req.params.id },
         data: {
           jamDatang: req.body.jamDatang !== undefined ? req.body.jamDatang?.trim() || null : existing.jamDatang,
           jamPulang: req.body.jamPulang !== undefined ? req.body.jamPulang?.trim() || null : existing.jamPulang,
+          ...(rekamanBaru && untukPulang
+            ? {
+                fotoPulang: foto ?? existing.fotoPulang,
+                latPulang: titik?.lat ?? existing.latPulang,
+                lngPulang: titik?.lng ?? existing.lngPulang,
+                akurasiPulang: titik?.akurasi ?? existing.akurasiPulang,
+              }
+            : {}),
+          ...(rekamanBaru && !untukPulang
+            ? {
+                fotoDatang: foto ?? existing.fotoDatang,
+                latDatang: titik?.lat ?? existing.latDatang,
+                lngDatang: titik?.lng ?? existing.lngDatang,
+                akurasiDatang: titik?.akurasi ?? existing.akurasiDatang,
+              }
+            : {}),
         },
       });
       return { item };

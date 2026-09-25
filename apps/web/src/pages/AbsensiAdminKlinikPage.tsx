@@ -5,6 +5,7 @@ import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ModalFormFooter } from '../components/ui/ModalFormFooter.tsx';
 import { TableRowActions } from '../components/ui/TableRowActions.tsx';
+import { AbsensiCaptureModal, type AbsensiCapture } from '../components/AbsensiCaptureModal.tsx';
 import { SharingPdfPreviewModal } from '../components/ui/SharingPdfPreviewModal.tsx';
 import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.ts';
 import { useMutationReload } from '../hooks/useMutationReload.ts';
@@ -29,6 +30,14 @@ interface AbsensiItem {
   readonly tanggal: string;
   readonly jamDatang: string | null;
   readonly jamPulang: string | null;
+  readonly fotoDatang: string | null;
+  readonly latDatang: number | null;
+  readonly lngDatang: number | null;
+  readonly akurasiDatang: number | null;
+  readonly fotoPulang: string | null;
+  readonly latPulang: number | null;
+  readonly lngPulang: number | null;
+  readonly akurasiPulang: number | null;
 }
 
 interface RekapItem {
@@ -136,6 +145,12 @@ function AbsensiRekapSection() {
   const [adminKlinikId, setAdminKlinikId] = useState('');
   const [jamDatang, setJamDatang] = useState('');
   const [jamPulang, setJamPulang] = useState('');
+
+  /** Alur "Absen Sekarang": pilih karyawan & sisi dulu, lalu ambil foto. */
+  const [pilihOpen, setPilihOpen] = useState(false);
+  const [absenSisi, setAbsenSisi] = useState<'datang' | 'pulang'>('datang');
+  const [absenAdminId, setAbsenAdminId] = useState('');
+  const [captureOpen, setCaptureOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const loadRekap = useCallback(async () => {
@@ -190,6 +205,45 @@ function AbsensiRekapSection() {
       await loadRekap();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal mencatat absensi');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  /** Menyimpan hasil kamera. Kalau karyawan ini sudah punya baris hari ini,
+   * barisnya diperbarui — tabel hanya mengizinkan satu baris per orang per
+   * hari, jadi mencatat pulang harus lewat PATCH, bukan POST. */
+  async function simpanAbsen(hasil: AbsensiCapture) {
+    if (!absenAdminId) return;
+    setSubmitting(true);
+    setError(null);
+    const jam = new Date().toTimeString().slice(0, 5);
+    const sudahAda = items.find((it) => it.adminKlinikId === absenAdminId);
+    try {
+      if (sudahAda) {
+        await apiPatch(`/api/absensi-admin-klinik/${sudahAda.id}`, {
+          ...(absenSisi === 'pulang' ? { jamPulang: jam } : { jamDatang: jam }),
+          sisi: absenSisi,
+          foto: hasil.foto,
+          lat: hasil.lat,
+          lng: hasil.lng,
+          akurasi: hasil.akurasi,
+        });
+      } else {
+        await apiPost('/api/absensi-admin-klinik', {
+          adminKlinikId: absenAdminId,
+          ...(absenSisi === 'pulang' ? { jamPulang: jam } : { jamDatang: jam }),
+          foto: hasil.foto,
+          lat: hasil.lat,
+          lng: hasil.lng,
+          akurasi: hasil.akurasi,
+        });
+      }
+      setCaptureOpen(false);
+      await reload();
+      await loadRekap();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan absensi');
     } finally {
       setSubmitting(false);
     }
@@ -318,9 +372,22 @@ function AbsensiRekapSection() {
             />
           }
           action={
-            <button type="button" className="btn btn--primary" onClick={openCreate}>
-              + Catat Kehadiran
-            </button>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => {
+                  setAbsenAdminId('');
+                  setAbsenSisi('datang');
+                  setPilihOpen(true);
+                }}
+              >
+                📷 Absen Sekarang
+              </button>
+              <button type="button" className="btn btn--secondary" onClick={openCreate}>
+                + Catat Manual
+              </button>
+            </div>
           }
         >
           <table className="data-table">
@@ -331,13 +398,14 @@ function AbsensiRekapSection() {
                 <th>Tanggal</th>
                 <th>Jam Datang</th>
                 <th>Jam Pulang</th>
+                <th>Foto &amp; Lokasi</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
                     Belum ada data absensi untuk tanggal ini.
                   </td>
                 </tr>
@@ -351,6 +419,24 @@ function AbsensiRekapSection() {
                     <td>{formatTanggalLabel(item.tanggal)}</td>
                     <td>{item.jamDatang || '—'}</td>
                     <td>{item.jamPulang || '—'}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <BuktiAbsensi
+                          label="Datang"
+                          foto={item.fotoDatang}
+                          lat={item.latDatang}
+                          lng={item.lngDatang}
+                          akurasi={item.akurasiDatang}
+                        />
+                        <BuktiAbsensi
+                          label="Pulang"
+                          foto={item.fotoPulang}
+                          lat={item.latPulang}
+                          lng={item.lngPulang}
+                          akurasi={item.akurasiPulang}
+                        />
+                      </div>
+                    </td>
                     <td>
                       <TableRowActions
                         onEdit={() => openEdit(item)}
@@ -366,6 +452,67 @@ function AbsensiRekapSection() {
           </table>
         </ListPageShell>
       </div>
+
+      {pilihOpen && (
+        <Modal open={true} title="Absen Sekarang" onClose={() => setPilihOpen(false)}>
+          <div className="form-field form-grid--full" style={{ marginBottom: '0.75rem' }}>
+            <label htmlFor="absen-karyawan">Karyawan *</label>
+            <select
+              id="absen-karyawan"
+              value={absenAdminId}
+              onChange={(e) => setAbsenAdminId(e.target.value)}
+            >
+              <option value="">— pilih karyawan —</option>
+              {adminOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.nama}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 0 }}>
+            Jam diisi otomatis sesuai waktu sekarang. Foto dan lokasi diambil pada saat itu juga.
+          </p>
+          <div className="form-actions modal__footer">
+            <button type="button" className="btn btn--ghost" onClick={() => setPilihOpen(false)}>
+              Batal
+            </button>
+            <button
+              type="button"
+              className="btn btn--secondary"
+              disabled={!absenAdminId}
+              onClick={() => {
+                setAbsenSisi('datang');
+                setPilihOpen(false);
+                setCaptureOpen(true);
+              }}
+            >
+              🌅 Absen Datang
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={!absenAdminId}
+              onClick={() => {
+                setAbsenSisi('pulang');
+                setPilihOpen(false);
+                setCaptureOpen(true);
+              }}
+            >
+              🌇 Absen Pulang
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      <AbsensiCaptureModal
+        open={captureOpen}
+        judul={absenSisi === 'pulang' ? 'Absen Pulang' : 'Absen Datang'}
+        namaKaryawan={adminOptions.find((o) => o.id === absenAdminId)?.nama ?? ''}
+        loading={submitting}
+        onClose={() => setCaptureOpen(false)}
+        onSimpan={(hasil) => void simpanAbsen(hasil)}
+      />
 
       {createOpen && (
         <Modal open={true} title="Catat Kehadiran" onClose={() => setCreateOpen(false)}>
@@ -831,5 +978,58 @@ function SuratPeringatanSection() {
         title="Pratinjau Surat Peringatan"
       />
     </>
+  );
+}
+
+/** Bukti satu sisi absensi: foto selfie kecil yang bisa diklik untuk dibuka,
+ * dan titik lokasinya sebagai tautan peta. */
+function BuktiAbsensi({
+  label,
+  foto,
+  lat,
+  lng,
+  akurasi,
+}: {
+  readonly label: string;
+  readonly foto: string | null;
+  readonly lat: number | null;
+  readonly lng: number | null;
+  readonly akurasi: number | null;
+}) {
+  if (!foto && lat === null) return null;
+
+  return (
+    <div style={{ textAlign: 'center', fontSize: '0.7rem' }}>
+      <div style={{ color: '#64748b', marginBottom: '0.15rem' }}>{label}</div>
+      {foto && (
+        <a href={foto} target="_blank" rel="noreferrer">
+          <img
+            src={foto}
+            alt={`Foto absensi ${label}`}
+            style={{
+              width: '46px',
+              height: '46px',
+              objectFit: 'cover',
+              borderRadius: '6px',
+              border: '1px solid var(--color-border)',
+              display: 'block',
+            }}
+          />
+        </a>
+      )}
+      {lat !== null && lng !== null ? (
+        <a
+          href={`https://www.google.com/maps?q=${lat},${lng}`}
+          target="_blank"
+          rel="noreferrer"
+          title={`${lat.toFixed(6)}, ${lng.toFixed(6)}${akurasi !== null ? ` (± ${Math.round(akurasi)} m)` : ''}`}
+          style={{ display: 'inline-block', marginTop: '0.15rem' }}
+        >
+          📍 peta
+        </a>
+      ) : (
+        <span style={{ color: '#94a3b8' }}>tanpa lokasi</span>
+      )}
+    </div>
   );
 }

@@ -135,6 +135,18 @@ model AbsensiAdminKlinik {
   tanggal       String
   jamDatang     String?
   jamPulang     String?
+  /// Foto selfie dan titik lokasi direkam terpisah untuk datang dan pulang,
+  /// karena keduanya diambil pada saat yang berbeda. Foto disimpan sebagai
+  /// path `/uploads/...`, bukan base64. Lokasi bisa kosong bila perangkat
+  /// tidak bisa menentukan posisi — absensinya tetap tercatat.
+  fotoDatang    String?
+  latDatang     Float?
+  lngDatang     Float?
+  akurasiDatang Float?
+  fotoPulang    String?
+  latPulang     Float?
+  lngPulang     Float?
+  akurasiPulang Float?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

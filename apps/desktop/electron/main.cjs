@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, session } = require('electron');
 const { existsSync, copyFileSync, mkdirSync, appendFileSync, readFileSync } = require('node:fs');
 const { join, dirname } = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -98,6 +98,27 @@ async function startServer() {
   await import(pathToFileURL(entry).href);
 }
 
+/** Izin yang dibutuhkan fitur absensi: kamera untuk foto selfie dan lokasi
+ * untuk titik absensi. Tanpa penangan ini Electron menolak keduanya diam-diam
+ * dan tombol "Ambil Foto" tidak pernah berfungsi di aplikasi terpasang.
+ *
+ * Hanya halaman aplikasi sendiri yang diberi izin — halaman lain ditolak,
+ * supaya kamera tidak bisa dinyalakan dari alamat lain kalau suatu saat ada
+ * yang dimuat di dalam jendela ini. */
+function izinkanPerangkatAplikasi() {
+  const DIIZINKAN = new Set(['media', 'geolocation']);
+
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    const asal = webContents?.getURL() ?? '';
+    callback(DIIZINKAN.has(permission) && asal.startsWith(BASE_URL));
+  });
+
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, asalPemeriksa) => {
+    const asal = asalPemeriksa || webContents?.getURL() || '';
+    return DIIZINKAN.has(permission) && asal.startsWith(BASE_URL);
+  });
+}
+
 async function createWindow() {
   const win = new BrowserWindow({
     width: 1360,
@@ -127,6 +148,8 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
+
+  izinkanPerangkatAplikasi();
 
   const ready = await waitForServer(BASE_URL);
   if (!ready) {
