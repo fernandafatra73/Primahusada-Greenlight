@@ -18,19 +18,18 @@ const BLACK = '#1a1a1a';
 
 const styles = StyleSheet.create({
   page: {
-    padding: 28,
+    padding: 14,
     fontFamily: 'Helvetica',
     fontSize: 9,
     color: BLACK,
   },
+  // Wraps the content rather than the page so the bottom edge sits just under the last line.
   frame: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    right: 14,
-    bottom: 14,
     borderWidth: 1.5,
     borderColor: BLUE,
+    paddingTop: 14,
+    paddingHorizontal: 14,
+    paddingBottom: 8,
   },
   headerRow: {
     flexDirection: 'row',
@@ -122,40 +121,41 @@ export function PendaftaranKopSuratDocument({ data }: { readonly data: Pendaftar
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.frame} fixed />
-        <View style={styles.headerRow}>
-          {data.logoSrc ? <Image style={styles.logo} src={data.logoSrc} /> : null}
-          <View style={styles.headerText}>
-            <Text style={styles.clinicSmall}>KLINIK ROENTGEN DAN USG</Text>
-            <Text style={styles.clinicName}>PRIMA HUSADA</Text>
-            <Text style={styles.clinicAddress}>
-              Jl Siliwangi No 28 A Parung Kuda Telp. 0857-1932-5557
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <Text style={styles.title}>Formulir Pendaftaran Pasien</Text>
-
-        <View style={styles.table}>
-          {rows.map((cells, rowIdx) => (
-            <View key={rowIdx} style={rowIdx === rows.length - 1 ? { ...styles.row, ...styles.lastRow } : styles.row}>
-              {cells.map((cell, cellIdx) => {
-                const isLabel = cellIdx % 2 === 0;
-                const isLast = cellIdx === cells.length - 1;
-                const baseStyle = isLabel ? styles.labelCell : styles.valueCell;
-                return (
-                  <Text key={cellIdx} style={isLast ? { ...baseStyle, ...styles.lastCell } : baseStyle}>
-                    {cell}
-                  </Text>
-                );
-              })}
+        <View style={styles.frame}>
+          <View style={styles.headerRow}>
+            {data.logoSrc ? <Image style={styles.logo} src={data.logoSrc} /> : null}
+            <View style={styles.headerText}>
+              <Text style={styles.clinicSmall}>KLINIK ROENTGEN DAN USG</Text>
+              <Text style={styles.clinicName}>PRIMA HUSADA</Text>
+              <Text style={styles.clinicAddress}>
+                Jl Siliwangi No 28 A Parung Kuda Telp. 0857-1932-5557
+              </Text>
             </View>
-          ))}
-        </View>
+          </View>
 
-        <Text style={styles.footerNote}>Dicetak dari sistem LabPrima — Klinik Prima Husada</Text>
+          <View style={styles.divider} />
+
+          <Text style={styles.title}>Formulir Pendaftaran Pasien</Text>
+
+          <View style={styles.table}>
+            {rows.map((cells, rowIdx) => (
+              <View key={rowIdx} style={rowIdx === rows.length - 1 ? { ...styles.row, ...styles.lastRow } : styles.row}>
+                {cells.map((cell, cellIdx) => {
+                  const isLabel = cellIdx % 2 === 0;
+                  const isLast = cellIdx === cells.length - 1;
+                  const baseStyle = isLabel ? styles.labelCell : styles.valueCell;
+                  return (
+                    <Text key={cellIdx} style={isLast ? { ...baseStyle, ...styles.lastCell } : baseStyle}>
+                      {cell}
+                    </Text>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.footerNote}>Dicetak dari sistem LabPrima — Klinik Prima Husada</Text>
+        </View>
       </Page>
     </Document>
   );
