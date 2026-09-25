@@ -1,14 +1,14 @@
-/** Menu "Koneksi Ke PH": memakai AnyDesk yang sudah terpasang di komputer ini
- * untuk menyambung ke komputer klinik lain.
+/** Menu "Koneksi Ke PH": memakai AnyDesk atau TeamViewer yang sudah
+ * terpasang di komputer ini untuk menyambung ke komputer klinik lain.
  *
  * Aplikasi ini tidak membuat saluran jarak jauh sendiri — ia hanya memanggil
- * AnyDesk, jadi permintaan sambungan tetap harus disetujui orang di komputer
- * tujuan sebagaimana perilaku bawaan AnyDesk.
+ * AnyDesk/TeamViewer, jadi permintaan sambungan tetap harus disetujui orang
+ * di komputer tujuan sebagaimana perilaku bawaan masing-masing aplikasi.
  *
  * Endpoint di sini menjalankan program di mesin server, sehingga dijaga ketat:
- * berkas yang dijalankan hanya AnyDesk dari daftar lokasi tetap, argumennya
- * dilewatkan sebagai array (tanpa shell), dan alamat tujuan wajib lolos
- * `normalizeAnydeskAddress` lebih dulu. */
+ * berkas yang dijalankan hanya AnyDesk/TeamViewer dari daftar lokasi tetap,
+ * argumennya dilewatkan sebagai array (tanpa shell), dan ID tujuan wajib
+ * lolos `normalizeAnydeskAddress`/`normalizeTeamViewerId` lebih dulu. */
 
 import { execFile, spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -23,6 +23,7 @@ import {
   parseAnydeskIdOutput,
 } from '../lib/anydesk.js';
 import { describeIncomingAccess } from '../lib/anydeskAccess.js';
+import { findTeamViewerExecutable, formatTeamViewerId, normalizeTeamViewerId } from '../lib/teamviewer.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -127,6 +128,51 @@ export async function registerKoneksiPhRoutes(app: FastifyInstance): Promise<voi
       alamatTampil: formatAnydeskId(alamat),
       pesan:
         'Permintaan sambungan dikirim. Sesi baru mulai setelah orang di komputer tujuan menekan Terima di AnyDesk.',
+    };
+  });
+
+  /** Keadaan TeamViewer di komputer ini: terpasang atau belum. ID milik
+   * sendiri tidak dibaca di sini — beda dengan AnyDesk, TeamViewer tidak
+   * punya perintah baris-perintah resmi untuk menampilkannya. */
+  app.get('/api/koneksi-ph/teamviewer-status', async () => {
+    const exePath = findTeamViewerExecutable();
+    if (!exePath) {
+      return {
+        terpasang: false,
+        pesan: 'TeamViewer belum terpasang di komputer ini. Pasang TeamViewer lebih dulu, lalu buka kembali menu ini.',
+      };
+    }
+    return { terpasang: true, pesan: null };
+  });
+
+  /** Membuka sesi ke komputer tujuan lewat TeamViewer. Yang dijalankan hanya
+   * TeamViewer dengan opsi `-i <ID>` (dokumentasi resmi: "Starts a
+   * connection to the given partner ID"). */
+  app.post<{ Body: { id?: string } }>('/api/koneksi-ph/teamviewer-sambung', async (req, reply) => {
+    const id = normalizeTeamViewerId(req.body?.id ?? '');
+    if (!id) {
+      return badRequest(reply, 'ID TeamViewer tidak valid. Isi nomor ID (mis. 123 456 789).');
+    }
+
+    const exePath = findTeamViewerExecutable();
+    if (!exePath) {
+      return badRequest(reply, 'TeamViewer belum terpasang di komputer ini.');
+    }
+
+    // Dilepas berdiri sendiri supaya jendela TeamViewer tetap hidup walau
+    // proses server ini nanti berhenti.
+    const child = spawn(exePath, ['-i', id], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: false,
+    });
+    child.unref();
+
+    return {
+      id,
+      idTampil: formatTeamViewerId(id),
+      pesan:
+        'Permintaan sambungan dikirim. Sesi baru mulai setelah orang di komputer tujuan menyetujui di TeamViewer.',
     };
   });
 

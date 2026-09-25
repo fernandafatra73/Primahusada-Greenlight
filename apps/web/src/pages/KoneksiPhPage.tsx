@@ -28,6 +28,11 @@ interface StatusKoneksi {
   readonly aksesMasuk: AksesMasuk | null;
 }
 
+interface StatusTeamViewer {
+  readonly terpasang: boolean;
+  readonly pesan: string | null;
+}
+
 const emptyForm = { nama: '', anydeskId: '', lokasi: '', catatan: '' };
 
 /** Menampilkan ID dengan spasi tiap tiga angka, seperti tampilan AnyDesk. */
@@ -46,6 +51,10 @@ export function KoneksiPhPage() {
   const [tujuan, setTujuan] = useState('');
   const [menyambung, setMenyambung] = useState(false);
 
+  const [tvStatus, setTvStatus] = useState<StatusTeamViewer | null>(null);
+  const [tvTujuan, setTvTujuan] = useState('');
+  const [tvMenyambung, setTvMenyambung] = useState(false);
+
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -57,11 +66,13 @@ export function KoneksiPhPage() {
   const muat = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, list] = await Promise.all([
+      const [s, tv, list] = await Promise.all([
         apiGet<StatusKoneksi>('/api/koneksi-ph/status'),
+        apiGet<StatusTeamViewer>('/api/koneksi-ph/teamviewer-status'),
         apiGet<{ items: KomputerKlinik[] }>('/api/komputer-klinik'),
       ]);
       setStatus(s);
+      setTvStatus(tv);
       setItems(list.items);
       setError(null);
     } catch (err: unknown) {
@@ -90,6 +101,21 @@ export function KoneksiPhPage() {
       setError(err instanceof Error ? err.message : 'Gagal membuka sesi');
     } finally {
       setMenyambung(false);
+    }
+  }
+
+  async function sambungTeamViewer(id: string) {
+    if (!id.trim()) return;
+    setTvMenyambung(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const res = await apiPost<{ pesan: string; idTampil: string }>('/api/koneksi-ph/teamviewer-sambung', { id });
+      setInfo(`${res.idTampil} — ${res.pesan}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal membuka sesi TeamViewer');
+    } finally {
+      setTvMenyambung(false);
     }
   }
 
@@ -260,6 +286,38 @@ export function KoneksiPhPage() {
           >
             {menyambung ? 'Membuka…' : '🖥️ Sambungkan'}
           </button>
+        </div>
+
+        <div
+          style={{
+            flex: '1 1 17rem',
+            padding: '0.9rem 1rem',
+            borderRadius: '10px',
+            background: '#f8fafc',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <div className="form-field" style={{ marginBottom: '0.5rem' }}>
+            <label htmlFor="koneksi-tv-tujuan">Sambung ke ID (TeamViewer)</label>
+            <input
+              id="koneksi-tv-tujuan"
+              value={tvTujuan}
+              onChange={(e) => setTvTujuan(e.target.value)}
+              placeholder="123 456 789"
+              disabled={!tvStatus?.terpasang}
+            />
+          </div>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => void sambungTeamViewer(tvTujuan)}
+            disabled={tvMenyambung || !tvTujuan.trim() || !tvStatus?.terpasang}
+          >
+            {tvMenyambung ? 'Membuka…' : '🖥️ Sambungkan'}
+          </button>
+          {!loading && tvStatus && !tvStatus.terpasang && (
+            <p style={{ margin: '0.5rem 0 0', fontSize: '0.78rem', color: '#b91c1c' }}>{tvStatus.pesan}</p>
+          )}
         </div>
       </div>
 
