@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { BluetoothAudioPanel } from '../components/BluetoothAudioPanel.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
@@ -198,6 +199,8 @@ export function KaraokePage() {
 
   return (
     <>
+      <BluetoothAudioPanel />
+
       <div
         style={{
           background: '#0f172a',

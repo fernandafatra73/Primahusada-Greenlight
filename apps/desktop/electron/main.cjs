@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, session } = require('electron');
+const { app, BrowserWindow, dialog, session, ipcMain, shell } = require('electron');
 const { existsSync, copyFileSync, mkdirSync, appendFileSync, readFileSync } = require('node:fs');
 const { join, dirname } = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -119,6 +119,13 @@ function izinkanPerangkatAplikasi() {
   });
 }
 
+/** Membuka panel Bluetooth bawaan Windows supaya kasir/radiolog bisa
+ * mencari & memasangkan speaker/HP sendiri lewat dialog asli Windows — web
+ * page tidak bisa memasangkan perangkat audio Bluetooth secara langsung. */
+function bukaPengaturanBluetooth() {
+  ipcMain.handle('open-bluetooth-settings', () => shell.openExternal('ms-settings:bluetoothdevices'));
+}
+
 async function createWindow() {
   const win = new BrowserWindow({
     width: 1360,
@@ -130,6 +137,7 @@ async function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: join(__dirname, 'preload.cjs'),
     },
   });
 
@@ -150,6 +158,7 @@ app.whenReady().then(async () => {
   }
 
   izinkanPerangkatAplikasi();
+  bukaPengaturanBluetooth();
 
   const ready = await waitForServer(BASE_URL);
   if (!ready) {

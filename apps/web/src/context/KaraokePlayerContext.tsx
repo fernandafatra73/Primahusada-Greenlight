@@ -9,8 +9,11 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from 'react';
+import { setMediaOutputDevice } from '../lib/audioOutput.ts';
 import { stepPlayerVolume } from '../lib/playerVolume.ts';
 import { resolveSiaranTvPlayable, type SiaranTvPlayable } from '../lib/siaranTv.ts';
+
+const OUTPUT_DEVICE_KEY = 'karaoke-output-device';
 
 export interface KaraokeLagu {
   readonly id: string;
@@ -59,6 +62,10 @@ interface KaraokePlayerContextValue {
   readonly togglePause: () => void;
   readonly changeVolume: (delta: number) => void;
   readonly setIsPaused: (paused: boolean) => void;
+  /** deviceId output audio terpilih (speaker/headset Bluetooth yang sudah
+   * dipasangkan di Windows), atau '' untuk output default perangkat. */
+  readonly outputDeviceId: string;
+  readonly setOutputDeviceId: (deviceId: string) => void;
 }
 
 const KaraokePlayerContext = createContext<KaraokePlayerContextValue | null>(null);
@@ -75,6 +82,22 @@ export function KaraokePlayerProvider({ children }: { readonly children: ReactNo
   const [volume, setVolume] = useState(1);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [outputDeviceId, setOutputDeviceIdState] = useState(() => {
+    try {
+      return window.localStorage.getItem(OUTPUT_DEVICE_KEY) ?? '';
+    } catch {
+      return '';
+    }
+  });
+
+  const setOutputDeviceId = useCallback((deviceId: string) => {
+    setOutputDeviceIdState(deviceId);
+    try {
+      window.localStorage.setItem(OUTPUT_DEVICE_KEY, deviceId);
+    } catch {
+      // Penyimpanan browser diblokir — pilihan cukup berlaku untuk sesi ini saja.
+    }
+  }, []);
 
   useEffect(() => {
     setIsPaused(false);
@@ -100,6 +123,15 @@ export function KaraokePlayerProvider({ children }: { readonly children: ReactNo
     }
     if (playableKind === 'youtube') postVolumeToYouTube(volume);
   }, [volume, playableKind, playableSrc, replayKey, postVolumeToYouTube]);
+
+  // Sama seperti volume: <video> dibuat ulang tiap ganti lagu/ulangi, jadi
+  // output audio (mis. speaker Bluetooth terpilih) harus dipasang ulang.
+  useEffect(() => {
+    if (playableKind !== 'video' || !outputDeviceId) return;
+    void setMediaOutputDevice(videoRef.current, outputDeviceId).catch(() => {
+      // Perangkatnya mungkin sudah dicabut/tidak tersedia lagi — biarkan default.
+    });
+  }, [outputDeviceId, playableKind, playableSrc, replayKey]);
 
   const playNow = useCallback((lagu: KaraokeLagu) => {
     setAntrian((prev) => prev.filter((a) => a.lagu.id !== lagu.id));
@@ -189,6 +221,8 @@ export function KaraokePlayerProvider({ children }: { readonly children: ReactNo
       togglePause,
       changeVolume,
       setIsPaused,
+      outputDeviceId,
+      setOutputDeviceId,
     }),
     [
       nowPlaying,
@@ -207,6 +241,8 @@ export function KaraokePlayerProvider({ children }: { readonly children: ReactNo
       replay,
       togglePause,
       changeVolume,
+      outputDeviceId,
+      setOutputDeviceId,
     ],
   );
 
