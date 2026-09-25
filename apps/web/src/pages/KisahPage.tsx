@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
-import { HADITH_COLLECTIONS, fetchHadith, type HadithResult } from '../lib/hadithApi.ts';
+import { HADITH_COLLECTIONS } from '../lib/hadithApi.ts';
+import { useHadithReader } from '../context/HadithReaderContext.tsx';
 import {
   KISAH_25_NABI,
   KISAH_KARBALA,
@@ -10,7 +11,7 @@ import {
 } from '../lib/kisahContent.ts';
 import { fetchSurahList, type QuranSurahListItem } from '../lib/quranApi.ts';
 import { fetchTafsir, TAFSIR_EDITIONS, type TafsirAyah } from '../lib/tafsirApi.ts';
-import { withIndonesianVoice } from '../lib/speechVoice.ts';
+import { toSpeakableText, withIndonesianVoice } from '../lib/speechVoice.ts';
 import '../components/ui/ui.css';
 
 const KATEGORI = [
@@ -23,28 +24,6 @@ const KATEGORI = [
 ] as const;
 
 type KategoriId = (typeof KATEGORI)[number]['id'];
-
-function stopSpeaking(): void {
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-  }
-}
-
-function speakText(text: string, onEnd: () => void): void {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    onEnd();
-    return;
-  }
-  withIndonesianVoice((voice) => {
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = voice?.lang ?? 'id-ID';
-    if (voice) utter.voice = voice;
-    utter.onend = onEnd;
-    utter.onerror = onEnd;
-    window.speechSynthesis.speak(utter);
-  });
-}
 
 function KisahEntryList({ items }: { readonly items: readonly KisahEntry[] }) {
   return (
@@ -60,76 +39,23 @@ function KisahEntryList({ items }: { readonly items: readonly KisahEntry[] }) {
 }
 
 function HaditsSection() {
-  const [collection, setCollection] = useState(HADITH_COLLECTIONS[0]!.id);
-  const [nomor, setNomor] = useState('1');
-  const [hasil, setHasil] = useState<HadithResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  // Ref (bukan cuma state) supaya callback onEnd dari speechSynthesis tahu
-  // persis apakah mode "lanjut otomatis" masih aktif saat itu terpicu.
-  const autoPlayRef = useRef(false);
+  const { collection, current, isSpeaking, loading, error, startReading, showOnce, stop } = useHadithReader();
+  const [collectionInput, setCollectionInput] = useState(collection ?? HADITH_COLLECTIONS[0]!.id);
+  const [nomor, setNomor] = useState(current ? String(current.number) : '1');
 
-  useEffect(() => {
-    return () => {
-      autoPlayRef.current = false;
-      stopSpeaking();
-    };
-  }, []);
-
-  async function cari() {
+  function tampilkan() {
     const n = Number(nomor);
     if (!n || n < 1) return;
-    autoPlayRef.current = false;
-    stopSpeaking();
-    setIsSpeaking(false);
-    setLoading(true);
-    setError(null);
-    try {
-      setHasil(await fetchHadith(collection, n));
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Gagal mengambil hadits');
-      setHasil(null);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Membaca satu hadits, lalu — kalau mode lanjut otomatis masih aktif —
-  // langsung mengambil & membacakan nomor berikutnya, dan seterusnya,
-  // sampai ditekan "Stop" atau hadits berikutnya tidak ditemukan.
-  async function playFrom(n: number) {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await fetchHadith(collection, n);
-      setHasil(result);
-      setNomor(String(n));
-      setLoading(false);
-      if (!autoPlayRef.current) return;
-      setIsSpeaking(true);
-      speakText(result.text, () => {
-        if (autoPlayRef.current) void playFrom(n + 1);
-        else setIsSpeaking(false);
-      });
-    } catch (err: unknown) {
-      setLoading(false);
-      setIsSpeaking(false);
-      autoPlayRef.current = false;
-      setError(err instanceof Error ? err.message : 'Gagal mengambil hadits berikutnya (mungkin sudah nomor terakhir)');
-    }
+    showOnce(collectionInput, n);
   }
 
   function toggleSpeak() {
     if (isSpeaking) {
-      autoPlayRef.current = false;
-      stopSpeaking();
-      setIsSpeaking(false);
+      stop();
       return;
     }
-    if (!hasil) return;
-    autoPlayRef.current = true;
-    void playFrom(hasil.number);
+    if (!current) return;
+    startReading(collectionInput, current.number);
   }
 
   return (
@@ -140,13 +66,17 @@ function HaditsSection() {
           fawazahmed0/hadith-api
         </a>{' '}
         (terjemahan Indonesia) — bukan dari kutipan ingatan, supaya nomor & teksnya akurat. Tombol
-        "🔊 Bacakan" akan lanjut otomatis membacakan nomor berikutnya begitu satu hadits selesai
-        dibacakan, sampai ditekan "⏹️ Stop".
+        "🔊 Bacakan & Lanjut" akan terus membacakan nomor berikutnya walau Anda pindah ke menu lain — baru
+        berhenti kalau ditekan "⏹️ Stop".
       </p>
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'flex-end' }}>
         <div className="form-field" style={{ margin: 0 }}>
           <label htmlFor="kisah-kitab">Kitab</label>
-          <select id="kisah-kitab" value={collection} onChange={(e) => setCollection(e.target.value as typeof collection)}>
+          <select
+            id="kisah-kitab"
+            value={collectionInput}
+            onChange={(e) => setCollectionInput(e.target.value as typeof collectionInput)}
+          >
             {HADITH_COLLECTIONS.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.label}
@@ -158,15 +88,15 @@ function HaditsSection() {
           <label htmlFor="kisah-nomor">Nomor Hadits</label>
           <input id="kisah-nomor" type="number" min={1} value={nomor} onChange={(e) => setNomor(e.target.value)} />
         </div>
-        <button type="button" className="btn btn--primary" onClick={() => void cari()} disabled={loading}>
+        <button type="button" className="btn btn--primary" onClick={tampilkan} disabled={loading}>
           {loading ? '⏳ Memuat…' : '📖 Tampilkan'}
         </button>
-        {hasil && (
+        {current && (
           <button
             type="button"
             className={`btn btn--sm ${isSpeaking ? 'btn--danger' : 'btn--secondary'}`}
             onClick={toggleSpeak}
-            title="Bacakan hadits ini, lalu lanjut otomatis ke nomor berikutnya"
+            title="Bacakan hadits ini, lalu lanjut otomatis ke nomor berikutnya — jalan terus walau pindah menu"
           >
             {isSpeaking ? '⏹️ Stop' : '🔊 Bacakan & Lanjut'}
           </button>
@@ -175,13 +105,13 @@ function HaditsSection() {
 
       {error && <div className="alert alert--error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
-      {hasil && (
+      {current && (
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1.25rem' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.35rem' }}>
-            {hasil.collectionName}
-            {hasil.sectionName ? ` — Bab: ${hasil.sectionName}` : ''} — No. {hasil.number}
+            {current.collectionName}
+            {current.sectionName ? ` — Bab: ${current.sectionName}` : ''} — No. {current.number}
           </div>
-          <p style={{ margin: 0, color: '#334155', lineHeight: 1.8 }}>{hasil.text}</p>
+          <p style={{ margin: 0, color: '#334155', lineHeight: 1.8 }}>{current.text}</p>
         </div>
       )}
     </div>
@@ -196,6 +126,10 @@ function TafsirSection() {
   const [ayat, setAyat] = useState<readonly TafsirAyah[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [speakIndex, setSpeakIndex] = useState<number | null>(null);
+  // Ref supaya callback onEnd dari speechSynthesis tahu persis apakah mode
+  // lanjut-otomatis masih aktif saat itu terpicu.
+  const autoPlayRef = useRef(false);
 
   useEffect(() => {
     fetchSurahList()
@@ -204,7 +138,54 @@ function TafsirSection() {
       .finally(() => setSurahLoading(false));
   }, []);
 
+  useEffect(() => {
+    return () => {
+      autoPlayRef.current = false;
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  function stopSpeak() {
+    autoPlayRef.current = false;
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    setSpeakIndex(null);
+  }
+
+  function speakFrom(list: readonly TafsirAyah[], index: number) {
+    const item = list[index];
+    if (!item) {
+      autoPlayRef.current = false;
+      setSpeakIndex(null);
+      return;
+    }
+    setSpeakIndex(index);
+    withIndonesianVoice((voice) => {
+      if (!autoPlayRef.current) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(toSpeakableText(item.tafsir));
+      utter.lang = voice?.lang ?? 'id-ID';
+      if (voice) utter.voice = voice;
+      const onDone = () => {
+        if (autoPlayRef.current) speakFrom(list, index + 1);
+      };
+      utter.onend = onDone;
+      utter.onerror = onDone;
+      window.speechSynthesis.speak(utter);
+    });
+  }
+
+  function toggleSpeakTafsir() {
+    if (speakIndex !== null) {
+      stopSpeak();
+      return;
+    }
+    if (!ayat || ayat.length === 0) return;
+    autoPlayRef.current = true;
+    speakFrom(ayat, 0);
+  }
+
   async function tampilkan() {
+    stopSpeak();
     setLoading(true);
     setError(null);
     try {
@@ -227,7 +208,7 @@ function TafsirSection() {
         <a href="https://alquran.cloud" target="_blank" rel="noopener noreferrer">
           alquran.cloud
         </a>
-        .
+        . Tombol "🔊 Bacakan & Lanjut" membacakan tafsirnya ayat demi ayat secara berurutan.
       </p>
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'flex-end' }}>
         <div className="form-field" style={{ margin: 0, minWidth: '14rem' }}>
@@ -258,6 +239,16 @@ function TafsirSection() {
         <button type="button" className="btn btn--primary" onClick={() => void tampilkan()} disabled={loading || surahLoading}>
           {loading ? '⏳ Memuat…' : '📖 Tampilkan'}
         </button>
+        {ayat && ayat.length > 0 && (
+          <button
+            type="button"
+            className={`btn btn--sm ${speakIndex !== null ? 'btn--danger' : 'btn--secondary'}`}
+            onClick={toggleSpeakTafsir}
+            title="Bacakan tafsirnya ayat demi ayat"
+          >
+            {speakIndex !== null ? '⏹️ Stop' : '🔊 Bacakan & Lanjut'}
+          </button>
+        )}
       </div>
 
       {error && <div className="alert alert--error" style={{ marginBottom: '1rem' }}>{error}</div>}
@@ -269,8 +260,16 @@ function TafsirSection() {
               {currentSurah.number}. {currentSurah.englishName} — {currentSurah.name}
             </h3>
           )}
-          {ayat.map((a) => (
-            <div key={a.numberInSurah} style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
+          {ayat.map((a, i) => (
+            <div
+              key={a.numberInSurah}
+              style={{
+                marginBottom: '1rem',
+                paddingBottom: '1rem',
+                borderBottom: '1px solid #f1f5f9',
+                background: speakIndex === i ? '#eff6ff' : 'transparent',
+              }}
+            >
               <div style={{ fontSize: '1.3rem', direction: 'rtl', lineHeight: 1.9, marginBottom: '0.4rem' }}>
                 {a.arab} <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>({a.numberInSurah})</span>
               </div>

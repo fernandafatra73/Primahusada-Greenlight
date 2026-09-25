@@ -2,6 +2,8 @@ import { ListRefreshProvider } from './context/ListRefreshContext.tsx';
 import { MusicPlayerProvider, useMusicPlayer } from './context/MusicPlayerContext.tsx';
 import { KaraokePlayerProvider } from './context/KaraokePlayerContext.tsx';
 import { KaraokePlayerWidget } from './components/KaraokePlayerWidget.tsx';
+import { HadithReaderProvider } from './context/HadithReaderContext.tsx';
+import { HadithReaderWidget } from './components/HadithReaderWidget.tsx';
 import { AppShell } from './components/layout/AppShell.tsx';
 import { PdfPreviewHost } from './pdf/pdfPreviewHost.tsx';
 import {
@@ -479,14 +481,17 @@ export function App() {
     <ListRefreshProvider>
       <MusicPlayerProvider>
         <KaraokePlayerProvider>
-          {justLoggedIn && <LoginWelcomeEffect />}
-          <PdfPreviewHost>
-            <AppShell activeView={activeView} authUser={authUser} onNavigate={navigate} onLogout={handleLogout}>
-              {renderViewContent(activeView, authUser.role, authUser.departemen, navigate)}
-            </AppShell>
-            <ChatWidget />
-          </PdfPreviewHost>
-          <KaraokePlayerWidget />
+          <HadithReaderProvider>
+            {justLoggedIn && <LoginWelcomeEffect />}
+            <PdfPreviewHost>
+              <AppShell activeView={activeView} authUser={authUser} onNavigate={navigate} onLogout={handleLogout}>
+                {renderViewContent(activeView, authUser.role, authUser.departemen, navigate)}
+              </AppShell>
+              <ChatWidget />
+            </PdfPreviewHost>
+            <KaraokePlayerWidget />
+            <HadithReaderWidget />
+          </HadithReaderProvider>
         </KaraokePlayerProvider>
       </MusicPlayerProvider>
     </ListRefreshProvider>

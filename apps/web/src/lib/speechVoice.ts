@@ -67,3 +67,11 @@ export function withIndonesianVoice(callback: (voice: SpeechSynthesisVoice | nul
   synth.addEventListener('voiceschanged', start);
   setTimeout(start, 300);
 }
+
+/** Sesuaikan ejaan kata-kata tertentu supaya pelafalan voice
+ * text-to-speech browser lebih dekat ke aslinya — mis. "Allah" sering
+ * diucapkan seperti kata Inggris kalau tidak dieja ulang jadi "Alloh".
+ * Cuma dipakai untuk teks yang DIBACAKAN, bukan yang ditampilkan di layar. */
+export function toSpeakableText(text: string): string {
+  return text.replace(/\bAllah\b/gi, 'Alloh');
+}
