@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
@@ -8,36 +8,8 @@ import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.t
 import { useMutationReload } from '../hooks/useMutationReload.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiDelete, apiPatch, apiPost } from '../lib/api.ts';
-import { VOLUME_STEP, stepPlayerVolume, toVolumePercent } from '../lib/playerVolume.ts';
-import { resolveSiaranTvPlayable, type SiaranTvPlayable } from '../lib/siaranTv.ts';
+import { type KaraokeLagu, useKaraokePlayer } from '../context/KaraokePlayerContext.tsx';
 import '../components/ui/ui.css';
-
-interface KaraokeLagu {
-  readonly id: string;
-  readonly judul: string;
-  readonly penyanyi: string | null;
-  readonly url: string | null;
-  readonly hasFile: boolean;
-}
-
-/** Lagu dari file (tombol USB) diputar lewat endpoint file di server, bukan
- * dari field url — supaya tersimpan permanen dan tidak hilang saat reload. */
-function getPlayableForLagu(lagu: KaraokeLagu): SiaranTvPlayable {
-  if (lagu.hasFile) {
-    return { kind: 'video', src: `/api/karaoke-lagu/${lagu.id}/file` };
-  }
-  return resolveSiaranTvPlayable(lagu.url ?? '');
-}
-
-interface AntrianItem {
-  readonly id: string;
-  readonly namaPenyanyi: string;
-  readonly lagu: KaraokeLagu;
-}
-
-function newAntrianId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
 
 export function KaraokePage() {
   const { search, setSearch } = useListSearch();
@@ -46,17 +18,17 @@ export function KaraokePage() {
     usePaginatedList<KaraokeLagu>('/api/karaoke-lagu', queryParams);
   const reload = useMutationReload(reloadList);
 
-  const [nowPlaying, setNowPlaying] = useState<AntrianItem | null>(null);
-  const [antrian, setAntrian] = useState<readonly AntrianItem[]>([]);
-  const [replayKey, setReplayKey] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-
-  useEffect(() => {
-    setIsPaused(false);
-  }, [nowPlaying?.id, replayKey]);
+  const {
+    nowPlaying,
+    antrian,
+    playNow,
+    addToQueue,
+    playFromQueue,
+    removeFromQueue,
+    shuffleQueue,
+    clearQueue,
+    stop,
+  } = useKaraokePlayer();
 
   const [usbModalOpen, setUsbModalOpen] = useState(false);
   const [usbFile, setUsbFile] = useState<File | null>(null);
@@ -124,8 +96,8 @@ export function KaraokePage() {
     setError(null);
     try {
       await apiDelete(`/api/karaoke-lagu/${deleteTarget.id}`);
-      setAntrian((prev) => prev.filter((a) => a.lagu.id !== deleteTarget.id));
-      if (nowPlaying?.lagu.id === deleteTarget.id) setNowPlaying(null);
+      removeFromQueue(deleteTarget.id);
+      if (nowPlaying?.lagu.id === deleteTarget.id) stop();
       setDeleteTarget(null);
       await reload();
     } catch (err: unknown) {
@@ -143,36 +115,8 @@ export function KaraokePage() {
   function confirmAddToQueue(e: FormEvent) {
     e.preventDefault();
     if (!queueTarget) return;
-    const entry: AntrianItem = {
-      id: newAntrianId(),
-      namaPenyanyi: namaPenyanyiDraft.trim() || 'Tanpa nama',
-      lagu: queueTarget,
-    };
-    setAntrian((prev) => [...prev, entry]);
+    addToQueue(queueTarget, namaPenyanyiDraft);
     setQueueTarget(null);
-    if (!nowPlaying) {
-      setNowPlaying(entry);
-    }
-  }
-
-  function playNow(lagu: KaraokeLagu) {
-    setAntrian((prev) => prev.filter((a) => a.lagu.id !== lagu.id));
-    setNowPlaying({ id: newAntrianId(), namaPenyanyi: 'Anda', lagu });
-  }
-
-  function playFromQueue(entry: AntrianItem) {
-    setAntrian((prev) => prev.filter((a) => a.id !== entry.id));
-    setNowPlaying(entry);
-  }
-
-  function nextInQueue() {
-    const [next, ...rest] = antrian;
-    setAntrian(rest);
-    setNowPlaying(next ?? null);
-  }
-
-  function removeFromQueue(id: string) {
-    setAntrian((prev) => prev.filter((a) => a.id !== id));
   }
 
   function openUsbModal() {
@@ -223,61 +167,6 @@ export function KaraokePage() {
     reader.readAsDataURL(usbFile);
   }
 
-  function shuffleQueue() {
-    setAntrian((prev) => {
-      const shuffled = [...prev];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
-      }
-      return shuffled;
-    });
-  }
-
-  const playable = nowPlaying ? getPlayableForLagu(nowPlaying.lagu) : null;
-
-  function togglePause() {
-    if (!playable) return;
-    if (playable.kind === 'video') {
-      if (isPaused) {
-        videoRef.current?.play();
-      } else {
-        videoRef.current?.pause();
-      }
-      return;
-    }
-    // Kontrol YouTube lewat postMessage bawaan (butuh enablejsapi=1 di src iframe).
-    iframeRef.current?.contentWindow?.postMessage(
-      JSON.stringify({ event: 'command', func: isPaused ? 'playVideo' : 'pauseVideo', args: [] }),
-      '*',
-    );
-    setIsPaused((p) => !p);
-  }
-
-  function postVolumeToYouTube(value: number) {
-    iframeRef.current?.contentWindow?.postMessage(
-      JSON.stringify({ event: 'command', func: 'setVolume', args: [toVolumePercent(value)] }),
-      '*',
-    );
-  }
-
-  const playableKind = playable?.kind;
-  const playableSrc = playable?.src;
-
-  // Volume dipasang lewat efek, bukan atribut: elemen <video> dibuat ulang tiap
-  // ganti lagu/ulangi (key berubah) sehingga nilainya harus dipasang lagi.
-  useEffect(() => {
-    if (playableKind === 'video') {
-      if (videoRef.current) videoRef.current.volume = volume;
-      return;
-    }
-    if (playableKind === 'youtube') postVolumeToYouTube(volume);
-  }, [volume, playableKind, playableSrc, replayKey]);
-
-  function changeVolume(delta: number) {
-    setVolume((prev) => stepPlayerVolume(prev, delta));
-  }
-
   const form = (
     <form onSubmit={(e) => void onSubmit(e)} className="form-grid">
       <div className="form-field form-grid--full">
@@ -313,106 +202,20 @@ export function KaraokePage() {
         style={{
           background: '#0f172a',
           borderRadius: '10px',
-          padding: nowPlaying ? '0' : '2rem',
+          padding: '1rem 1.25rem',
           marginBottom: '1.25rem',
-          overflow: 'hidden',
           color: '#fff',
         }}
       >
-        {nowPlaying && playable ? (
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '0.5rem',
-                flexWrap: 'wrap',
-                padding: '0.75rem 1rem',
-                background: '#1e293b',
-              }}
-            >
-              <div style={{ fontWeight: 700 }}>
-                🎤 {nowPlaying.namaPenyanyi} — {nowPlaying.lagu.judul}
-                {nowPlaying.lagu.penyanyi && (
-                  <span style={{ fontWeight: 400, fontSize: '0.8rem', color: '#94a3b8' }}>
-                    {' '}
-                    ({nowPlaying.lagu.penyanyi})
-                  </span>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                {playable.kind !== 'iframe' && (
-                  <>
-                    <button type="button" className="btn btn--sm btn--secondary" onClick={togglePause}>
-                      {isPaused ? '▶️ Lanjutkan' : '⏸️ Jeda'}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn--sm btn--secondary"
-                      onClick={() => changeVolume(-VOLUME_STEP)}
-                      disabled={volume === 0}
-                      title="Volume turun"
-                    >
-                      🔉 −
-                    </button>
-                    <span
-                      style={{ alignSelf: 'center', minWidth: '3rem', textAlign: 'center', fontSize: '0.8rem' }}
-                      aria-live="polite"
-                    >
-                      {toVolumePercent(volume)}%
-                    </span>
-                    <button
-                      type="button"
-                      className="btn btn--sm btn--secondary"
-                      onClick={() => changeVolume(VOLUME_STEP)}
-                      disabled={volume === 1}
-                      title="Volume naik"
-                    >
-                      🔊 +
-                    </button>
-                  </>
-                )}
-                <button type="button" className="btn btn--sm btn--secondary" onClick={() => setReplayKey((k) => k + 1)}>
-                  🔁 Ulangi
-                </button>
-                <button type="button" className="btn btn--sm btn--secondary" onClick={nextInQueue}>
-                  ⏭️ Lagu Berikutnya
-                </button>
-                <button type="button" className="btn btn--sm btn--danger" onClick={() => setNowPlaying(null)}>
-                  ⏹️ Berhenti
-                </button>
-              </div>
-            </div>
-            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
-              {playable.kind === 'video' ? (
-                <video
-                  key={`${playable.src}-${replayKey}`}
-                  ref={videoRef}
-                  src={playable.src}
-                  controls
-                  autoPlay
-                  onPlay={() => setIsPaused(false)}
-                  onPause={() => setIsPaused(true)}
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-                />
-              ) : (
-                <iframe
-                  key={`${playable.src}-${replayKey}`}
-                  ref={iframeRef}
-                  src={playable.src}
-                  onLoad={() => postVolumeToYouTube(volume)}
-                  title={nowPlaying.lagu.judul}
-                  allow="autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-                />
-              )}
-            </div>
-          </div>
+        {nowPlaying ? (
+          <p style={{ margin: 0 }}>
+            🎤 Sedang diputar: <strong>{nowPlaying.namaPenyanyi} — {nowPlaying.lagu.judul}</strong>. Pemutarnya
+            mengambang di pojok layar dan tetap jalan meski Anda pindah ke menu lain — tekan "⏹️ Berhenti" di
+            sana untuk menghentikannya.
+          </p>
         ) : (
           <p style={{ margin: 0, textAlign: 'center', color: '#cbd5e1' }}>
-            🎤 Pilih lagu di daftar bawah untuk mulai bernyanyi — layar ini jadi TV karaoke-nya.
+            🎤 Pilih lagu di daftar bawah untuk mulai bernyanyi.
           </p>
         )}
       </div>
@@ -443,7 +246,7 @@ export function KaraokePage() {
             <button type="button" className="btn btn--sm btn--secondary" disabled={antrian.length < 2} onClick={shuffleQueue}>
               🔀 Acak Antrian
             </button>
-            <button type="button" className="btn btn--sm btn--ghost" disabled={antrian.length === 0} onClick={() => setAntrian([])}>
+            <button type="button" className="btn btn--sm btn--ghost" disabled={antrian.length === 0} onClick={clearQueue}>
               🧹 Kosongkan
             </button>
           </div>
