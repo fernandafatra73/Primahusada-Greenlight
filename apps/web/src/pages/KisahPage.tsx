@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { HADITH_COLLECTIONS, fetchHadith, type HadithResult } from '../lib/hadithApi.ts';
 import {
@@ -66,12 +66,21 @@ function HaditsSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  // Ref (bukan cuma state) supaya callback onEnd dari speechSynthesis tahu
+  // persis apakah mode "lanjut otomatis" masih aktif saat itu terpicu.
+  const autoPlayRef = useRef(false);
 
-  useEffect(() => stopSpeaking, []);
+  useEffect(() => {
+    return () => {
+      autoPlayRef.current = false;
+      stopSpeaking();
+    };
+  }, []);
 
   async function cari() {
     const n = Number(nomor);
     if (!n || n < 1) return;
+    autoPlayRef.current = false;
     stopSpeaking();
     setIsSpeaking(false);
     setLoading(true);
@@ -86,15 +95,41 @@ function HaditsSection() {
     }
   }
 
+  // Membaca satu hadits, lalu — kalau mode lanjut otomatis masih aktif —
+  // langsung mengambil & membacakan nomor berikutnya, dan seterusnya,
+  // sampai ditekan "Stop" atau hadits berikutnya tidak ditemukan.
+  async function playFrom(n: number) {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchHadith(collection, n);
+      setHasil(result);
+      setNomor(String(n));
+      setLoading(false);
+      if (!autoPlayRef.current) return;
+      setIsSpeaking(true);
+      speakText(result.text, () => {
+        if (autoPlayRef.current) void playFrom(n + 1);
+        else setIsSpeaking(false);
+      });
+    } catch (err: unknown) {
+      setLoading(false);
+      setIsSpeaking(false);
+      autoPlayRef.current = false;
+      setError(err instanceof Error ? err.message : 'Gagal mengambil hadits berikutnya (mungkin sudah nomor terakhir)');
+    }
+  }
+
   function toggleSpeak() {
     if (isSpeaking) {
+      autoPlayRef.current = false;
       stopSpeaking();
       setIsSpeaking(false);
       return;
     }
     if (!hasil) return;
-    setIsSpeaking(true);
-    speakText(hasil.text, () => setIsSpeaking(false));
+    autoPlayRef.current = true;
+    void playFrom(hasil.number);
   }
 
   return (
@@ -104,7 +139,9 @@ function HaditsSection() {
         <a href="https://github.com/fawazahmed0/hadith-api" target="_blank" rel="noopener noreferrer">
           fawazahmed0/hadith-api
         </a>{' '}
-        (terjemahan Indonesia) — bukan dari kutipan ingatan, supaya nomor & teksnya akurat.
+        (terjemahan Indonesia) — bukan dari kutipan ingatan, supaya nomor & teksnya akurat. Tombol
+        "🔊 Bacakan" akan lanjut otomatis membacakan nomor berikutnya begitu satu hadits selesai
+        dibacakan, sampai ditekan "⏹️ Stop".
       </p>
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'flex-end' }}>
         <div className="form-field" style={{ margin: 0 }}>
@@ -129,9 +166,9 @@ function HaditsSection() {
             type="button"
             className={`btn btn--sm ${isSpeaking ? 'btn--danger' : 'btn--secondary'}`}
             onClick={toggleSpeak}
-            title="Bacakan teks hadits"
+            title="Bacakan hadits ini, lalu lanjut otomatis ke nomor berikutnya"
           >
-            {isSpeaking ? '⏹️ Stop' : '🔊 Bacakan'}
+            {isSpeaking ? '⏹️ Stop' : '🔊 Bacakan & Lanjut'}
           </button>
         )}
       </div>
