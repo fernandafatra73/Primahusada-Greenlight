@@ -312,6 +312,17 @@ model DaftarAkun {
   updatedAt     DateTime @updatedAt
 }
 
+/// Daftar rekening bank untuk transfer — tampil sebagai tabel di bawah
+/// tombol akses cepat e-banking pada halaman Global Warm.
+model RekeningBank {
+  id          String   @id @default(cuid())
+  nama        String
+  bank        String
+  noRekening  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 /// Tanggal merah selain hari Minggu & 5 hari libur nasional tanggal tetap
 /// (yang sudah dihitung langsung di kode) — mis. Idul Fitri, Idul Adha, cuti
 /// bersama, dsb. Diinput manual oleh admin sesuai kalender resmi tahun berjalan.

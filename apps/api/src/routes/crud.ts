@@ -37,6 +37,7 @@ import {
   pendaftaranUmumListWhere,
   daftarAkunListWhere,
   daftarTelponListWhere,
+  rekeningBankListWhere,
   petugasLabListWhere,
   radiograferListWhere,
   radiologListWhere,
@@ -4997,6 +4998,61 @@ Aturan PENTING:
 
   app.delete<{ Params: { id: string } }>('/api/daftar-akun/:id', async (req) => {
     await prisma.daftarAkun.delete({ where: { id: req.params.id } });
+    return { ok: true };
+  });
+
+  // ─── Rekening Bank (dari halaman Global Warm) ──────────────────────────────
+
+  app.get<{ Querystring: ListQuery }>('/api/rekening-bank', async (req) => {
+    const { page, limit, skip } = parsePagination(req.query);
+    const where = rekeningBankListWhere(req.query.q);
+    const [total, items] = await Promise.all([
+      prisma.rekeningBank.count({ where }),
+      prisma.rekeningBank.findMany({
+        where,
+        orderBy: { nama: 'asc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+    return { items, pagination: buildPaginationMeta(total, page, limit) };
+  });
+
+  app.post<{
+    Body: { nama: string; bank: string; noRekening: string };
+  }>('/api/rekening-bank', async (req, reply) => {
+    if (!req.body.nama?.trim()) return badRequest(reply, 'Nama wajib diisi');
+    if (!req.body.bank?.trim()) return badRequest(reply, 'Bank wajib diisi');
+    if (!req.body.noRekening?.trim()) return badRequest(reply, 'No rekening wajib diisi');
+    const item = await prisma.rekeningBank.create({
+      data: {
+        nama: req.body.nama.trim(),
+        bank: req.body.bank.trim(),
+        noRekening: req.body.noRekening.trim(),
+      },
+    });
+    return reply.status(201).send({ item });
+  });
+
+  app.patch<{
+    Params: { id: string };
+    Body: { nama?: string; bank?: string; noRekening?: string };
+  }>('/api/rekening-bank/:id', async (req, reply) => {
+    const existing = await prisma.rekeningBank.findUnique({ where: { id: req.params.id } });
+    if (!existing) return reply.status(404).send({ error: 'Data tidak ditemukan' });
+    const item = await prisma.rekeningBank.update({
+      where: { id: req.params.id },
+      data: {
+        nama: req.body.nama?.trim() || existing.nama,
+        bank: req.body.bank?.trim() || existing.bank,
+        noRekening: req.body.noRekening?.trim() || existing.noRekening,
+      },
+    });
+    return { item };
+  });
+
+  app.delete<{ Params: { id: string } }>('/api/rekening-bank/:id', async (req) => {
+    await prisma.rekeningBank.delete({ where: { id: req.params.id } });
     return { ok: true };
   });
 

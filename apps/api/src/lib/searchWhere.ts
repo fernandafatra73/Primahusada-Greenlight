@@ -194,6 +194,18 @@ export function daftarAkunListWhere(q?: string): Prisma.DaftarAkunWhereInput {
   };
 }
 
+export function rekeningBankListWhere(q?: string): Prisma.RekeningBankWhereInput {
+  const term = searchTerm(q);
+  if (!term) return {};
+  return {
+    OR: [
+      { nama: { contains: term } },
+      { bank: { contains: term } },
+      { noRekening: { contains: term } },
+    ],
+  };
+}
+
 export function absensiAdminKlinikListWhere(q?: string): Prisma.AbsensiAdminKlinikWhereInput {
   const term = searchTerm(q);
   if (!term) return {};
