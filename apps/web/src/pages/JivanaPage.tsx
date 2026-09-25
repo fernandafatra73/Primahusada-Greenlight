@@ -58,8 +58,11 @@ export function JivanaPage() {
               <p style={{ margin: '0 0 0.5rem' }}>
                 <strong>Sifat hari {hasil.weton.hari}:</strong> {hasil.weton.sifatHari}
               </p>
-              <p style={{ margin: 0 }}>
+              <p style={{ margin: '0 0 0.5rem' }}>
                 <strong>Sifat pasaran {hasil.weton.pasaran}:</strong> {hasil.weton.sifatPasaran}
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>💰 Rejeki:</strong> {hasil.weton.rejeki}
               </p>
             </div>
 
@@ -72,7 +75,13 @@ export function JivanaPage() {
                 {hasil.zodiak.simbol} {hasil.zodiak.nama} ({hasil.zodiak.namaIndonesia})
               </h3>
               <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem' }}>{hasil.zodiak.periode}</div>
-              <p style={{ margin: 0, color: '#334155' }}>{hasil.zodiak.sifat}</p>
+              <p style={{ margin: '0 0 0.6rem', color: '#334155' }}>{hasil.zodiak.sifat}</p>
+              <p style={{ margin: '0 0 0.4rem', color: '#334155' }}>
+                <strong>💼 Cocok kerja:</strong> {hasil.zodiak.karier}
+              </p>
+              <p style={{ margin: 0, color: '#334155' }}>
+                <strong>💞 Cocok pasangan:</strong> {hasil.zodiak.pasangan}
+              </p>
             </div>
 
             {/* Catatan ilmiah */}

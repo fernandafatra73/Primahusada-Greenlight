@@ -23,6 +23,17 @@ const SIFAT_PASARAN: Record<(typeof PASARAN)[number], string> = {
   Kliwon: 'Karismatik dan penuh intuisi kuat (dipercaya punya "indra keenam" yang tajam) menurut kepercayaan Jawa.',
 };
 
+/** Menurut kepercayaan primbon Jawa — rezeki dikaitkan dengan pasaran
+ * kelahiran, bukan dari neptu total (yang lebih sering dipakai untuk
+ * petung jodoh/hari baik). */
+const REJEKI_PASARAN: Record<(typeof PASARAN)[number], string> = {
+  Legi: 'Rezekinya cenderung lancar dan mengalir lewat pergaulan luas — banyak dipercaya datang dari relasi & jejaring pertemanan.',
+  Pahing: 'Rezekinya naik-turun tapi biasanya besar saat datang — cocok merintis usaha sendiri atau posisi yang butuh pengambilan risiko.',
+  Pon: 'Rezekinya cenderung stabil, sering datang lewat kerja keras dan bantuan orang lain yang dipercaya membawa berkah.',
+  Wage: 'Rezekinya butuh usaha & kesabaran ekstra di awal, tapi menurut kepercayaan Jawa hasilnya lebih tahan lama saat sudah didapat.',
+  Kliwon: 'Rezekinya dipercaya sering datang dari jalan tak terduga — insting bisnis/intuisinya dipercaya cukup tajam untuk melihat peluang.',
+};
+
 export interface Weton {
   readonly hari: string;
   readonly pasaran: string;
@@ -31,6 +42,7 @@ export interface Weton {
   readonly neptuTotal: number;
   readonly sifatHari: string;
   readonly sifatPasaran: string;
+  readonly rejeki: string;
 }
 
 function toJulianDayNumber(date: Date): number {
@@ -70,6 +82,7 @@ export function getWeton(date: Date): Weton {
     neptuTotal: neptuHari + neptuPasaran,
     sifatHari: SIFAT_HARI[hari],
     sifatPasaran: SIFAT_PASARAN[pasaran],
+    rejeki: REJEKI_PASARAN[pasaran],
   };
 }
 
@@ -82,6 +95,8 @@ export interface ZodiacSign {
   readonly simbol: string;
   readonly periode: string;
   readonly sifat: string;
+  readonly karier: string;
+  readonly pasangan: string;
 }
 
 const ZODIAC_SIGNS: readonly ZodiacSign[] = [
@@ -92,6 +107,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♈',
     periode: '21 Maret – 19 April',
     sifat: 'Berani, penuh semangat, dan suka tantangan baru — tipe yang cepat bertindak lebih dulu ketimbang banyak pikir.',
+    karier: 'Cocok di peran yang butuh inisiatif cepat & kepemimpinan: wirausahawan, sales, manajer proyek, atlet, atau militer.',
+    pasangan: 'Paling nyambung dengan Leo dan Sagittarius (sesama elemen api), atau Gemini yang bisa mengimbangi energinya.',
   },
   {
     id: 'taurus',
@@ -100,6 +117,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♉',
     periode: '20 April – 20 Mei',
     sifat: 'Tekun, suka kenyamanan dan kestabilan, serta setia — tapi keras kepala kalau sudah punya pendirian.',
+    karier: 'Cocok di bidang yang butuh ketekunan & rasa: keuangan/perbankan, kuliner, seni, atau desain.',
+    pasangan: 'Paling nyambung dengan Virgo dan Capricorn (sesama elemen tanah), atau Cancer yang sama-sama mendambakan kestabilan.',
   },
   {
     id: 'gemini',
@@ -108,6 +127,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♊',
     periode: '21 Mei – 20 Juni',
     sifat: 'Cerdas, komunikatif, dan serba ingin tahu — cepat bosan kalau rutinitasnya itu-itu saja.',
+    karier: 'Cocok di bidang komunikasi: jurnalis, penulis, marketing, guru, atau presenter.',
+    pasangan: 'Paling nyambung dengan Libra dan Aquarius (sesama elemen udara), atau Aries yang sama-sama energik.',
   },
   {
     id: 'cancer',
@@ -116,6 +137,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♋',
     periode: '21 Juni – 22 Juli',
     sifat: 'Penyayang, sangat melindungi orang terdekat, dan peka terhadap perasaan orang lain.',
+    karier: 'Cocok di bidang perawatan & kepedulian: kesehatan, pendidikan anak, hospitality, atau pekerjaan sosial.',
+    pasangan: 'Paling nyambung dengan Scorpio dan Pisces (sesama elemen air), atau Taurus yang sama-sama mendambakan rumah yang hangat.',
   },
   {
     id: 'leo',
@@ -124,6 +147,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♌',
     periode: '23 Juli – 22 Agustus',
     sifat: 'Percaya diri, punya jiwa pemimpin, dan senang tampil — tapi butuh diakui atas usahanya.',
+    karier: 'Cocok jadi pemimpin/manajer, entertainer, public speaker, atau posisi yang menempatkannya di depan.',
+    pasangan: 'Paling nyambung dengan Aries dan Sagittarius (sesama elemen api), atau Libra yang mengagumi karismanya.',
   },
   {
     id: 'virgo',
@@ -132,6 +157,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♍',
     periode: '23 Agustus – 22 September',
     sifat: 'Teliti, perfeksionis, dan analitis — pekerja keras yang detail-oriented.',
+    karier: 'Cocok di bidang analisis: akuntansi, riset, kesehatan, quality control, atau administrasi.',
+    pasangan: 'Paling nyambung dengan Taurus dan Capricorn (sesama elemen tanah), atau Cancer yang sama-sama perhatian pada detail.',
   },
   {
     id: 'libra',
@@ -140,6 +167,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♎',
     periode: '23 September – 22 Oktober',
     sifat: 'Suka keseimbangan dan keharmonisan, diplomatis, tapi kadang sulit mengambil keputusan.',
+    karier: 'Cocok di bidang hukum, diplomasi, HR, desain, atau sebagai mediator/penengah.',
+    pasangan: 'Paling nyambung dengan Gemini dan Aquarius (sesama elemen udara), atau Leo yang melengkapi sisi sosialnya.',
   },
   {
     id: 'scorpio',
@@ -148,6 +177,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♏',
     periode: '23 Oktober – 21 November',
     sifat: 'Intens, penuh determinasi, dan loyal — tapi tertutup soal perasaannya sendiri.',
+    karier: 'Cocok di bidang investigasi & riset mendalam: kedokteran, psikologi, intelijen, atau peneliti.',
+    pasangan: 'Paling nyambung dengan Cancer dan Pisces (sesama elemen air), atau Virgo yang menghargai kedalamannya.',
   },
   {
     id: 'sagittarius',
@@ -156,6 +187,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♐',
     periode: '22 November – 21 Desember',
     sifat: 'Petualang, optimis, dan suka kebebasan — jujur apa adanya, kadang terlalu blak-blakan.',
+    karier: 'Cocok di bidang yang melibatkan perjalanan/eksplorasi: pariwisata, pendidikan tinggi, jurnalistik internasional, atau wirausaha lintas negara.',
+    pasangan: 'Paling nyambung dengan Aries dan Leo (sesama elemen api), atau Aquarius yang sama-sama menghargai kebebasan.',
   },
   {
     id: 'capricorn',
@@ -164,6 +197,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♑',
     periode: '22 Desember – 19 Januari',
     sifat: 'Disiplin, ambisius, dan bertanggung jawab — berorientasi jangka panjang dalam meraih tujuan.',
+    karier: 'Cocok di posisi struktural jangka panjang: manajemen, teknik, pemerintahan, atau kewirausahaan yang butuh perencanaan matang.',
+    pasangan: 'Paling nyambung dengan Taurus dan Virgo (sesama elemen tanah), atau Scorpio yang menghargai keseriusannya.',
   },
   {
     id: 'aquarius',
@@ -172,6 +207,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♒',
     periode: '20 Januari – 18 Februari',
     sifat: 'Independen, punya banyak ide orisinal, dan peduli isu sosial — kadang terkesan cuek.',
+    karier: 'Cocok di bidang teknologi, riset & inovasi, aktivisme sosial, atau merintis start-up.',
+    pasangan: 'Paling nyambung dengan Gemini dan Libra (sesama elemen udara), atau Sagittarius yang sama-sama independen.',
   },
   {
     id: 'pisces',
@@ -180,6 +217,8 @@ const ZODIAC_SIGNS: readonly ZodiacSign[] = [
     simbol: '♓',
     periode: '19 Februari – 20 Maret',
     sifat: 'Imajinatif, penuh empati, dan intuitif — mudah larut dalam perasaan orang lain.',
+    karier: 'Cocok di bidang seni & empati: seni rupa, musik, konseling/terapi, atau pekerjaan sosial-kemanusiaan.',
+    pasangan: 'Paling nyambung dengan Cancer dan Scorpio (sesama elemen air), atau Taurus yang menenangkan sisi sensitifnya.',
   },
 ];
 
