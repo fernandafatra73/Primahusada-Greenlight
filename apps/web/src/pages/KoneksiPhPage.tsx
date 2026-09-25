@@ -14,11 +14,18 @@ interface KomputerKlinik {
   readonly catatan: string | null;
 }
 
+interface AksesMasuk {
+  /** true = tiap sambungan masuk harus ditekan Terima di komputer ini. */
+  readonly wajibSetujui: boolean;
+  readonly pesan: string;
+}
+
 interface StatusKoneksi {
   readonly terpasang: boolean;
   readonly id: string | null;
   readonly idTampil: string | null;
   readonly pesan: string | null;
+  readonly aksesMasuk: AksesMasuk | null;
 }
 
 const emptyForm = { nama: '', anydeskId: '', lokasi: '', catatan: '' };
@@ -154,6 +161,25 @@ export function KoneksiPhPage() {
         Menyambung ke komputer klinik lain lewat AnyDesk. Sesi baru terbuka setelah orang di
         komputer tujuan menekan <strong>Terima</strong> — tidak bisa masuk diam-diam.
       </p>
+
+      {status?.aksesMasuk && (
+        <div
+          style={{
+            padding: '0.7rem 0.95rem',
+            borderRadius: '10px',
+            marginBottom: '0.9rem',
+            background: status.aksesMasuk.wajibSetujui ? '#ecfdf5' : '#fef2f2',
+            border: `1px solid ${status.aksesMasuk.wajibSetujui ? '#6ee7b7' : '#fca5a5'}`,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>
+            {status.aksesMasuk.wajibSetujui
+              ? '🔒 Sambungan masuk ke komputer ini wajib disetujui'
+              : '⚠️ Sambungan masuk ke komputer ini TIDAK wajib disetujui'}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#334155' }}>{status.aksesMasuk.pesan}</div>
+        </div>
+      )}
 
       {error && (
         <div className="alert alert--error" style={{ marginBottom: '0.75rem' }}>

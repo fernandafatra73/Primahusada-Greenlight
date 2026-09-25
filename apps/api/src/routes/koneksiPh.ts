@@ -11,6 +11,8 @@
  * `normalizeAnydeskAddress` lebih dulu. */
 
 import { execFile, spawn } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { prisma } from '../lib/prisma.js';
@@ -20,10 +22,34 @@ import {
   normalizeAnydeskAddress,
   parseAnydeskIdOutput,
 } from '../lib/anydesk.js';
+import { describeIncomingAccess } from '../lib/anydeskAccess.js';
 
 const execFileAsync = promisify(execFile);
 
 const GET_ID_TIMEOUT_MS = 8000;
+
+/** Berkas pengaturan AnyDesk. Daftarnya tetap dan tidak berasal dari masukan
+ * pengguna; isinya dibaca hanya untuk mengambil nama-nama kuncinya. */
+function anydeskConfigPaths(): string[] {
+  const folders = [process.env.APPDATA, process.env.ProgramData].filter(
+    (dir): dir is string => typeof dir === 'string' && dir !== '',
+  );
+  const berkas = ['service.conf', 'system.conf', 'user.conf'];
+  return folders.flatMap((dir) => berkas.map((nama) => join(dir, 'AnyDesk', nama)));
+}
+
+function readAnydeskConfigs(): { texts: string[]; bisaDibaca: boolean } {
+  const texts: string[] = [];
+  for (const path of anydeskConfigPaths()) {
+    if (!existsSync(path)) continue;
+    try {
+      texts.push(readFileSync(path, 'utf8'));
+    } catch {
+      // Berkas ada tapi tidak terbaca (mis. hak akses) — dianggap tidak ada.
+    }
+  }
+  return { texts, bisaDibaca: texts.length > 0 };
+}
 
 function badRequest(reply: FastifyReply, message: string) {
   return reply.status(400).send({ error: message });
@@ -54,10 +80,12 @@ export async function registerKoneksiPhRoutes(app: FastifyInstance): Promise<voi
         idTampil: null,
         pesan:
           'AnyDesk belum terpasang di komputer ini. Pasang AnyDesk lebih dulu, lalu buka kembali menu ini.',
+        aksesMasuk: null,
       };
     }
 
     const id = await readOwnId(exePath);
+    const { texts, bisaDibaca } = readAnydeskConfigs();
     return {
       terpasang: true,
       id,
@@ -65,6 +93,7 @@ export async function registerKoneksiPhRoutes(app: FastifyInstance): Promise<voi
       pesan: id
         ? null
         : 'AnyDesk terpasang tetapi ID belum terbaca. Pastikan aplikasi AnyDesk sedang berjalan.',
+      aksesMasuk: describeIncomingAccess(texts, bisaDibaca),
     };
   });
 
