@@ -3004,6 +3004,10 @@ export function PasienPage() {
               namaPasien={fotoEditTarget.nama}
               fotoSaatIni={fotoEditFoto}
               analisaSaatIni={fotoEditAnalisa}
+              onMuat={(foto, analisa) => {
+                setFotoEditFoto(foto);
+                setFotoEditAnalisa(analisa);
+              }}
             />
           )}
 

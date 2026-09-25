@@ -16,6 +16,8 @@ interface FotoAnalisaTabelProps {
   /** Foto dan analisa yang sedang terbuka di modal, untuk tombol Simpan. */
   readonly fotoSaatIni: string;
   readonly analisaSaatIni: string;
+  /** Mengembalikan isi satu baris ke form di atas, saat barisnya diklik. */
+  readonly onMuat: (foto: string, analisa: string) => void;
 }
 
 /** Arsip foto & analisa milik satu pasien, tampil di dalam modal Edit³.
@@ -27,6 +29,7 @@ export function FotoAnalisaTabel({
   namaPasien,
   fotoSaatIni,
   analisaSaatIni,
+  onMuat,
 }: FotoAnalisaTabelProps) {
   const [items, setItems] = useState<readonly FotoAnalisaItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,7 @@ export function FotoAnalisaTabel({
   const [hapus, setHapus] = useState<FotoAnalisaItem | null>(null);
   const [hapusLoading, setHapusLoading] = useState(false);
   const [fotoBesar, setFotoBesar] = useState<string | null>(null);
+  const [disalinId, setDisalinId] = useState<string | null>(null);
 
   const muat = useCallback(async () => {
     if (!pasienId) return;
@@ -99,6 +103,16 @@ export function FotoAnalisaTabel({
     }
   }
 
+  async function salin(item: FotoAnalisaItem) {
+    try {
+      await navigator.clipboard.writeText(item.analisa);
+      setDisalinId(item.id);
+      setTimeout(() => setDisalinId(null), 2000);
+    } catch {
+      setError('Tidak bisa menyalin otomatis — silakan salin manual.');
+    }
+  }
+
   async function konfirmasiHapus() {
     if (!hapus) return;
     setHapusLoading(true);
@@ -125,7 +139,12 @@ export function FotoAnalisaTabel({
           marginBottom: '0.45rem',
         }}
       >
-        <strong style={{ fontSize: '0.92rem' }}>Arsip Foto &amp; Analisa Pasien Ini</strong>
+        <div>
+          <strong style={{ fontSize: '0.92rem' }}>Arsip Foto &amp; Analisa Pasien Ini</strong>
+          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+            Klik salah satu baris untuk memuat foto &amp; analisanya kembali ke form di atas.
+          </div>
+        </div>
         <button
           type="button"
           className="btn btn--sm btn--primary"
@@ -165,11 +184,23 @@ export function FotoAnalisaTabel({
             </tr>
           ) : (
             items.map((item) => (
-              <tr key={item.id}>
+              <tr
+                key={item.id}
+                onClick={() => {
+                  // Saat sedang menyunting, klik baris tidak memuat ulang —
+                  // kalau tidak, ketikan yang belum disimpan akan tertimpa.
+                  if (editId !== item.id) onMuat(item.foto, item.analisa);
+                }}
+                title={editId === item.id ? undefined : 'Klik untuk memuat foto & analisa ini ke form di atas'}
+                style={{ cursor: editId === item.id ? 'default' : 'pointer' }}
+              >
                 <td>
                   <button
                     type="button"
-                    onClick={() => setFotoBesar(item.foto)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFotoBesar(item.foto);
+                    }}
                     title="Klik untuk perbesar"
                     style={{ border: 'none', background: 'none', padding: 0, cursor: 'zoom-in' }}
                   >
@@ -213,7 +244,7 @@ export function FotoAnalisaTabel({
                     </div>
                   )}
                 </td>
-                <td>
+                <td onClick={(e) => e.stopPropagation()}>
                   <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
                     {editId === item.id ? (
                       <>
@@ -245,6 +276,14 @@ export function FotoAnalisaTabel({
                           }}
                         >
                           ✏️ Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--sm btn--secondary"
+                          onClick={() => void salin(item)}
+                          title="Salin analisa ke clipboard"
+                        >
+                          {disalinId === item.id ? '✅' : '📋 Salin'}
                         </button>
                         <button
                           type="button"
