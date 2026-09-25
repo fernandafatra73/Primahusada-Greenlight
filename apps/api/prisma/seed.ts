@@ -98,17 +98,27 @@ async function main() {
     ],
   });
 
-  const dokter = await prisma.dokter.create({
-    data: {
-      nama: 'dr. Andi Wijaya',
-      spesialisasi: 'Dokter Umum',
-      noTelepon: '081234567890',
-      defaultSharingAmount: 50000,
-    },
+  // Dokter pengirim. "Dr. Luar" adalah entri penampung untuk rujukan dari
+  // dokter di luar daftar ini.
+  const dokter = await prisma.dokter.create({ data: { nama: 'Dr. Anna Diah' } });
+  await prisma.dokter.createMany({
+    data: [
+      { nama: 'Dr. Eva Christiani' },
+      { nama: 'Dr. Iman Purnawan' },
+      { nama: 'Dr. Luar' },
+    ],
   });
 
   const radiolog = await prisma.radiolog.create({
-    data: { nama: 'dr. Siti Radiologi', noTelepon: '081298765432' },
+    data: { nama: 'Dr. Toto Kuntoro, Sp.Rad' },
+  });
+
+  await prisma.petugasLab.create({ data: { nama: 'Susan Eka S, AmdAk' } });
+
+  await prisma.radiografer.create({ data: { nama: "Chalimatusa'diah, SST" } });
+
+  await prisma.adminKlinik.createMany({
+    data: [{ nama: 'Zakiah' }, { nama: 'Agung Priyatna' }],
   });
 
   const thorax = await prisma.jenisPemeriksaan.create({ data: { nama: 'Rontgen Thorax' } });
