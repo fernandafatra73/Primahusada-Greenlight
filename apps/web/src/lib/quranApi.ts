@@ -120,3 +120,18 @@ export async function fetchAyahJuz(globalAyahNumber: number): Promise<number> {
   if (json.code !== 200 || !json.data?.juz) throw new Error('Lokasi ayat tidak ditemukan');
   return json.data.juz;
 }
+
+export interface QuranSurahListItem extends QuranSurahRef {
+  readonly englishNameTranslation: string;
+  readonly numberOfAyahs: number;
+}
+
+/** Daftar ringkas 114 surah (nomor, nama, jumlah ayat) — dipakai untuk
+ * pemilih surah, mis. di halaman Kisah untuk membaca tafsir per surah. */
+export async function fetchSurahList(): Promise<readonly QuranSurahListItem[]> {
+  const res = await fetch(`${API_BASE}/surah`);
+  if (!res.ok) throw new Error(`Gagal mengambil daftar surah (${res.status})`);
+  const json = (await res.json()) as { code: number; data?: readonly QuranSurahListItem[] };
+  if (json.code !== 200 || !json.data) throw new Error('Daftar surah tidak ditemukan');
+  return json.data;
+}

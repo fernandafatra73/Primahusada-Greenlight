@@ -15,6 +15,7 @@ import { KaraokePage } from './KaraokePage.tsx';
 import { JamPage } from './JamPage.tsx';
 import { AlQuranPage } from './AlQuranPage.tsx';
 import { JivanaPage } from './JivanaPage.tsx';
+import { KisahPage } from './KisahPage.tsx';
 import { CaturPage } from './CaturPage.tsx';
 import { GaplekPage } from './GaplekPage.tsx';
 import { KoneksiPhPage } from './KoneksiPhPage.tsx';
@@ -26,6 +27,7 @@ const MEGA_DATA_TABS = [
   { id: 'jam', label: 'Jam' },
   { id: 'dirimu', label: 'Dirimu' },
   { id: 'jivana', label: 'Jivana' },
+  { id: 'kisah', label: 'Kisah' },
   { id: 'siaran-tv', label: 'Siaran TV' },
   { id: 'catur', label: 'Catur' },
   { id: 'gaplek', label: 'Gaplek' },
@@ -57,6 +59,8 @@ function renderTabContent(tabId: MegaDataTabId) {
       return <AlQuranPage />;
     case 'jivana':
       return <JivanaPage />;
+    case 'kisah':
+      return <KisahPage />;
     case 'siaran-tv':
       return <SiaranTvPage />;
     case 'catur':
