@@ -582,3 +582,63 @@ textarea:focus {
 html {
   font-size: 17px;
 }
+
+/* ---- Biru, hijau, merah ---- */
+:root {
+  --dl-green: #1a8a34;
+  --dl-green-dark: #0f5c22;
+  --dl-green-pale: #e3f5e6;
+}
+
+/* Strip tiga warna di bawah navbar */
+.app-shell__accent-bar span:nth-child(1) { background: var(--dl-blue) !important; }
+.app-shell__accent-bar span:nth-child(2) { background: var(--dl-green) !important; }
+.app-shell__accent-bar span:nth-child(3) { background: var(--dl-red) !important; }
+.app-navbar { border-bottom-color: var(--dl-green); }
+
+/* Menu aktif hijau, tombol tutup/hapus tetap merah */
+.app-navbar__link--active,
+.app-navbar__link--open {
+  background: linear-gradient(180deg, #34b350, var(--dl-green-dark)) !important;
+  border-color: #0a3d17 #8fe0a1 #8fe0a1 #0a3d17 !important;
+}
+.app-navbar__avatar { background: var(--dl-green) !important; }
+
+/* Tombol simpan/tambah = hijau */
+.btn--success,
+.btn--save,
+.icon-btn--print {
+  background: linear-gradient(180deg, #34b350, var(--dl-green)) !important;
+  color: #fff !important;
+  border-color: #a5e8b4 #0a3d17 #0a3d17 #a5e8b4 !important;
+  text-shadow: 1px 1px 0 #0a3d17 !important;
+}
+
+/* Tabel: baris selang-seling hijau muda, sorot hijau */
+.data-table tbody tr:nth-child(even) td { background: var(--dl-green-pale); }
+.data-table tbody tr:hover,
+.data-table tbody tr:hover td { background: var(--dl-green) !important; color: #fff !important; }
+
+/* Kartu ringkasan & judul */
+.metric-card,
+.page-summary-card { border-left-color: var(--dl-green) !important; }
+.metric-card__value,
+.page-summary-card__value { color: var(--dl-green-dark); }
+.app-content h1,
+.app-content h2 { border-bottom-color: var(--dl-green); }
+
+.modal__header,
+.modal__header--orange,
+.modal__header--sky-red,
+.expertise-modal__topbar,
+.aifoto-frame__titlebar { border-bottom-color: var(--dl-green); }
+
+.pagination__page[aria-current='page'],
+.pagination__page--active { background: var(--dl-green) !important; }
+.alert--success { border-color: var(--dl-green); }
+
+/* Login */
+.login-panel { outline-color: var(--dl-green); }
+.login-panel__divider {
+  background: linear-gradient(90deg, var(--dl-blue) 0 33.3%, var(--dl-green) 33.3% 66.6%, var(--dl-red) 66.6% 100%) !important;
+}
