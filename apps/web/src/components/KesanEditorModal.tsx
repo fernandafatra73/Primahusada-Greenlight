@@ -86,6 +86,12 @@ export function KesanEditorModal({
     setKesan(result.text);
   }
 
+  function handleClear() {
+    // Hanya mengosongkan kotak teks; baru tersimpan setelah tombol simpan ditekan.
+    pendingCursorRef.current = 0;
+    setKesan('');
+  }
+
   function openAdd() {
     setNewJudul('');
     // Isi awal diambil dari kotak teks supaya kesan yang baru diketik bisa langsung dijadikan template.
@@ -167,6 +173,15 @@ export function KesanEditorModal({
             aria-label="Pencarian cepat kesan"
             style={{ minWidth: '200px' }}
           />
+          <button
+            type="button"
+            className="btn btn--danger"
+            onClick={handleClear}
+            disabled={saving || kesan === ''}
+            title="Kosongkan kotak kesan (belum tersimpan sebelum Simpan ditekan)"
+          >
+            Kosongkan Kesan
+          </button>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
             Batal
           </button>
