@@ -346,3 +346,234 @@ legend {
 .pagination__info {
   color: #000;
 }
+
+/* ---- Warna: biru & merah ---- */
+:root {
+  --dl-blue: #0a3d91;
+  --dl-blue-light: #3a7bd5;
+  --dl-blue-pale: #e3edfb;
+  --dl-red: #c0121f;
+  --dl-red-dark: #7a0a12;
+  --color-bg-page: #b9c9e0;
+}
+
+body,
+.app-shell {
+  background: #b9c9e0 !important;
+}
+
+/* Strip bendera biru-merah di atas navbar */
+.app-shell__accent-bar {
+  display: flex;
+  height: 4px;
+}
+.app-shell__accent-bar span:nth-child(1) { background: var(--dl-blue) !important; }
+.app-shell__accent-bar span:nth-child(2) { background: #ffffff !important; }
+.app-shell__accent-bar span:nth-child(3) { background: var(--dl-red) !important; }
+
+/* Navbar = title bar biru */
+.app-navbar {
+  background: linear-gradient(180deg, #2f6fd0 0%, var(--dl-blue) 60%, #06285f 100%) !important;
+  border-top: 1px solid #7fb0f5;
+  border-bottom: 3px solid var(--dl-red);
+  padding: 4px 8px;
+}
+.app-navbar__title,
+.app-navbar__credit,
+.app-navbar__user,
+.app-navbar__user-credit {
+  color: #fff !important;
+  text-shadow: 1px 1px 0 #041a44 !important;
+}
+.app-navbar__logo {
+  width: 30px;
+  height: 30px;
+  background: #fff;
+  border: 1px solid #fff;
+}
+.app-navbar__link {
+  background: linear-gradient(180deg, #4d8be0, #1a55b5) !important;
+  color: #fff !important;
+  border-color: #9cc3f7 #06285f #06285f #9cc3f7 !important;
+  text-shadow: 1px 1px 0 #041a44 !important;
+}
+.app-navbar__link:hover {
+  background: linear-gradient(180deg, #6ba2ee, #2a67cc) !important;
+  color: #fff !important;
+  border-color: #c4dcfb #06285f #06285f #c4dcfb !important;
+}
+.app-navbar__link--active,
+.app-navbar__link--open {
+  background: linear-gradient(180deg, var(--dl-red), var(--dl-red-dark)) !important;
+  color: #fff !important;
+  border-color: #5a070d #ff8a92 #ff8a92 #5a070d !important;
+}
+.app-navbar__caret { color: #fff; }
+.app-navbar__icon-btn {
+  background: linear-gradient(180deg, #4d8be0, #1a55b5) !important;
+  color: #fff !important;
+  border-color: #9cc3f7 #06285f #06285f #9cc3f7 !important;
+}
+.app-navbar__avatar {
+  background: var(--dl-red) !important;
+  color: #fff !important;
+  border: 2px solid #fff;
+}
+
+/* Dropdown */
+.app-navbar__dropdown,
+.app-navbar__dropdown--radiologi,
+.app-navbar__dropdown--laboratorium,
+.app-navbar__dropdown--keuangan {
+  background: #f4f7fd !important;
+  border-color: #fff var(--dl-blue) var(--dl-blue) #fff;
+}
+.app-navbar__dropdown-link { color: var(--dl-blue); font-weight: 700; }
+.app-navbar__dropdown-link:hover,
+.app-navbar__dropdown-link--active {
+  background: linear-gradient(90deg, var(--dl-blue), var(--dl-blue-light)) !important;
+  color: #fff !important;
+}
+
+/* Tombol */
+.btn--primary {
+  background: linear-gradient(180deg, #4d8be0, var(--dl-blue)) !important;
+  color: #fff !important;
+  border-color: #9cc3f7 #06285f #06285f #9cc3f7 !important;
+  text-shadow: 1px 1px 0 #041a44 !important;
+}
+.btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #6ba2ee, #1a55b5) !important;
+}
+.btn--danger,
+.icon-btn--delete {
+  background: linear-gradient(180deg, #e8404c, var(--dl-red)) !important;
+  color: #fff !important;
+  border-color: #ffa3aa #5a070d #5a070d #ffa3aa !important;
+  text-shadow: 1px 1px 0 #4a050a !important;
+}
+.icon-btn--edit { color: var(--dl-blue) !important; }
+.icon-btn--print { color: #1a6b2a !important; }
+.filter-tab--active,
+.filter-pill--active,
+.filter-chip--active {
+  background: var(--dl-blue) !important;
+  color: #fff !important;
+}
+
+/* Title bar form: biru, tombol tutup merah */
+.modal__header,
+.modal__header--orange,
+.modal__header--sky-red,
+.expertise-modal__topbar,
+.aifoto-frame__titlebar {
+  background: linear-gradient(90deg, #06285f, var(--dl-blue) 50%, var(--dl-blue-light)) !important;
+  border-bottom: 2px solid var(--dl-red);
+}
+.modal {
+  border-color: #9cc3f7 var(--dl-blue) var(--dl-blue) #9cc3f7;
+  outline-color: var(--dl-blue);
+}
+.modal__close {
+  background: linear-gradient(180deg, #e8404c, var(--dl-red)) !important;
+  color: #fff !important;
+  border-color: #ffa3aa #5a070d #5a070d #ffa3aa !important;
+  font-weight: 700 !important;
+}
+
+/* Tabel: header biru, baris selang-seling */
+.data-table th {
+  background: linear-gradient(180deg, #4d8be0, var(--dl-blue)) !important;
+  color: #fff !important;
+  font-weight: 700;
+  border-color: #9cc3f7 #06285f #06285f #9cc3f7;
+  text-shadow: 1px 1px 0 #041a44 !important;
+}
+.data-table tbody tr:nth-child(even) td { background: var(--dl-blue-pale); }
+.data-table tbody tr:hover,
+.data-table tbody tr:hover td {
+  background: var(--dl-red) !important;
+  color: #fff !important;
+}
+
+/* Panel & kartu ringkasan */
+.data-card,
+.chart-card,
+.expertise-card,
+.expertise-form-card {
+  background: #f4f7fd !important;
+  border-color: #fff var(--dl-blue) var(--dl-blue) #fff !important;
+}
+.metric-card,
+.page-summary-card {
+  background: linear-gradient(180deg, #f4f7fd, #d3e2f8) !important;
+  border-color: #fff var(--dl-blue) var(--dl-blue) #fff !important;
+  border-left: 5px solid var(--dl-red) !important;
+}
+.metric-card__value,
+.page-summary-card__value { color: var(--dl-blue); font-weight: 700; }
+.chart-card__title,
+.list-page__header h1,
+.list-page__header h2 { color: var(--dl-blue); }
+
+.legacy-groupbox > legend,
+.groupbox--abu-abu > legend,
+.legacy-groupbox--biru-hitam > legend,
+legend {
+  color: var(--dl-blue) !important;
+  font-weight: 700;
+}
+
+/* Input fokus & status */
+input:focus,
+select:focus,
+textarea:focus {
+  background: #fffff0 !important;
+  border-color: var(--dl-blue) var(--dl-blue-light) var(--dl-blue-light) var(--dl-blue) !important;
+}
+.badge--ok { background: #d6f5d6 !important; color: #0b5d1e !important; }
+.badge--warn,
+.badge--pending { background: #fff2b8 !important; color: #6b4e00 !important; }
+.badge--unpaid { background: #ffd6d9 !important; color: var(--dl-red-dark) !important; }
+.alert--error { background: #ffd6d9 !important; color: var(--dl-red-dark) !important; border-color: var(--dl-red); }
+.alert--success { background: #d6f5d6 !important; color: #0b5d1e !important; border-color: #1a8a34; }
+.link-btn { color: var(--dl-blue); font-weight: 700; }
+.pagination__page[aria-current='page'],
+.pagination__page--active {
+  background: var(--dl-red) !important;
+  color: #fff !important;
+}
+
+/* Login */
+.login-page {
+  background: linear-gradient(135deg, #06285f 0%, var(--dl-blue) 45%, #3a7bd5 100%) !important;
+}
+.login-panel {
+  background: var(--dl-face) !important;
+  border: 2px solid !important;
+  border-color: #fff var(--dl-dark) var(--dl-dark) #fff !important;
+  outline: 3px solid var(--dl-red);
+  outline-offset: 2px;
+}
+.login-panel__divider {
+  background: linear-gradient(90deg, var(--dl-blue) 0 50%, var(--dl-red) 50% 100%) !important;
+  height: 4px;
+}
+.login-panel__title,
+.login-panel__eyebrow { color: var(--dl-blue) !important; }
+.login-form .btn,
+.login-form button[type='submit'] {
+  background: linear-gradient(180deg, #4d8be0, var(--dl-blue)) !important;
+  color: #fff !important;
+  border-color: #9cc3f7 #06285f #06285f #9cc3f7 !important;
+  font-weight: 700 !important;
+  padding: 5px 10px;
+}
+
+.app-content h1,
+.app-content h2 {
+  color: var(--dl-blue);
+  border-bottom: 2px solid var(--dl-red);
+  padding-bottom: 2px;
+  font-size: 15px;
+}
