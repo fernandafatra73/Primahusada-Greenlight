@@ -642,3 +642,13 @@ html {
 .login-panel__divider {
   background: linear-gradient(90deg, var(--dl-blue) 0 33.3%, var(--dl-green) 33.3% 66.6%, var(--dl-red) 66.6% 100%) !important;
 }
+
+/* Panah dropdown (hilang karena background input di-override) */
+select,
+.filter-control--select {
+  appearance: none;
+  padding-right: 24px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23000'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 6px center !important;
+}
