@@ -15,7 +15,12 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort, formatRupiah } from '../lib/format.ts';
 import type { PaginatedResponse } from '../lib/pagination.ts';
 import { formatRadiologName } from '../lib/pasienPrint.ts';
-import { pendaftaranToRad2Fill, type PendaftaranForRad2 } from '../lib/pendaftaranToRad2.ts';
+import {
+  pendaftaranToRad2Fill,
+  pendaftaranUmumToRad2Fill,
+  type PendaftaranForRad2,
+  type PendaftaranUmumForRad2,
+} from '../lib/pendaftaranToRad2.ts';
 import { RAD2_PERIOD_OPTIONS, resolveRad2Period, type Rad2PeriodKind } from '../lib/rad2Period.ts';
 import { computeRad2Sharing, type Rad2SharingResult } from '../lib/rad2Sharing.ts';
 import { downloadBlob, generateRad2ReportBlob } from '../pdf/printRad2Report.tsx';
@@ -64,6 +69,11 @@ interface AdminKlinikOption {
 interface PendaftaranOption extends PendaftaranForRad2 {
   readonly id: string;
   readonly regCode: string;
+}
+
+interface PendaftaranUmumOption extends PendaftaranUmumForRad2 {
+  readonly id: string;
+  readonly noRegistrasi: string;
 }
 
 /** Laporan mengambil seluruh data yang cocok dengan filter, bukan hanya halaman yang tampil. */
@@ -188,7 +198,9 @@ export function Rad2Page() {
   const [pendaftaranQuery, setPendaftaranQuery] = useState('');
   const debouncedPendaftaranQuery = useDebouncedValue(pendaftaranQuery);
   const [pendaftaranOptions, setPendaftaranOptions] = useState<readonly PendaftaranOption[]>([]);
+  const [umumOptions, setUmumOptions] = useState<readonly PendaftaranUmumOption[]>([]);
   const [pendaftaranLoading, setPendaftaranLoading] = useState(false);
+  const [pendaftaranError, setPendaftaranError] = useState<string | null>(null);
   const [pendaftaranNotice, setPendaftaranNotice] = useState<string | null>(null);
 
   const loadOptions = useCallback(async () => {
@@ -217,19 +229,25 @@ export function Rad2Page() {
     if (!formOpenForCreate) return;
     let cancelled = false;
     setPendaftaranLoading(true);
-    const params = new URLSearchParams({ modul: 'RADIOLOGI', limit: '8' });
+    setPendaftaranError(null);
+    const params = new URLSearchParams({ limit: '8' });
     if (debouncedPendaftaranQuery.trim()) params.set('q', debouncedPendaftaranQuery.trim());
-    apiGet<{ items: PendaftaranOption[] }>(`/api/pasien?${params.toString()}`)
-      .then((res) => {
-        if (!cancelled) setPendaftaranOptions(res.items);
-      })
-      .catch(() => {
-        // Pengisian otomatis hanya membantu; form tetap bisa diisi manual.
-        if (!cancelled) setPendaftaranOptions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setPendaftaranLoading(false);
-      });
+    const query = params.toString();
+    // Dua sumber: Pendaftaran (radiologi) dan Pendaftaran Umum. Satu gagal tidak menyembunyikan yang lain.
+    void Promise.allSettled([
+      apiGet<{ items: PendaftaranOption[] }>(`/api/pasien?modul=RADIOLOGI&${query}`),
+      apiGet<{ items: PendaftaranUmumOption[] }>(`/api/pendaftaran-umum?${query}`),
+    ]).then(([pasien, umum]) => {
+      if (cancelled) return;
+      setPendaftaranOptions(pasien.status === 'fulfilled' ? pasien.value.items : []);
+      setUmumOptions(umum.status === 'fulfilled' ? umum.value.items : []);
+      if (pasien.status === 'rejected' && umum.status === 'rejected') {
+        // Form tetap bisa diisi manual; pesan ini hanya menjelaskan kenapa daftar kosong.
+        const reason: unknown = pasien.reason;
+        setPendaftaranError(reason instanceof Error ? reason.message : 'Gagal memuat data pendaftaran');
+      }
+      setPendaftaranLoading(false);
+    });
     return () => {
       cancelled = true;
     };
@@ -239,6 +257,14 @@ export function Rad2Page() {
     const fill = pendaftaranToRad2Fill(p, todayIso());
     setForm((f) => withAutoSharing({ ...f, ...fill }));
     setPendaftaranNotice(`Data diisi dari pendaftaran ${p.regCode} — ${p.nama}. Periksa kembali sebelum menyimpan.`);
+  }
+
+  function pickPendaftaranUmum(p: PendaftaranUmumOption) {
+    const fill = pendaftaranUmumToRad2Fill(p, todayIso());
+    setForm((f) => withAutoSharing({ ...f, ...fill }));
+    setPendaftaranNotice(
+      `Data diisi dari pendaftaran umum ${p.noRegistrasi} — ${p.namaPasien}. Pemeriksaan, radiologi, dan harga belum ada di data ini, isi manual.`,
+    );
   }
 
   function updateForm(field: keyof Rad2Form, value: string) {
@@ -670,24 +696,45 @@ export function Rad2Page() {
                 />
                 {pendaftaranNotice && <p className="form-hint">{pendaftaranNotice}</p>}
                 <div style={{ maxHeight: '180px', overflowY: 'auto', marginTop: '0.4rem' }}>
-                  {pendaftaranLoading && pendaftaranOptions.length === 0 ? (
+                  {pendaftaranLoading && pendaftaranOptions.length === 0 && umumOptions.length === 0 ? (
                     <p className="form-hint">Memuat pendaftaran…</p>
-                  ) : pendaftaranOptions.length === 0 ? (
-                    <p className="form-hint">Tidak ada pendaftaran radiologi yang cocok.</p>
+                  ) : pendaftaranError ? (
+                    <p className="alert alert--error">Gagal memuat pendaftaran: {pendaftaranError}</p>
+                  ) : pendaftaranOptions.length === 0 && umumOptions.length === 0 ? (
+                    <p className="form-hint">
+                      {debouncedPendaftaranQuery.trim()
+                        ? 'Tidak ada pendaftaran yang cocok dengan pencarian ini.'
+                        : 'Belum ada data di Pendaftaran maupun Pendaftaran Umum.'}
+                    </p>
                   ) : (
-                    pendaftaranOptions.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className="btn btn--sm btn--secondary"
-                        style={{ display: 'block', width: '100%', textAlign: 'left', marginBottom: '0.25rem' }}
-                        onClick={() => pickPendaftaran(p)}
-                        title="Isi form dari pendaftaran ini"
-                      >
-                        <strong>{p.nama}</strong> ({p.umur} th) · {p.pemeriksaan.map((x) => x.nama).join(', ') || '—'} ·{' '}
-                        {p.pengirim.nama} · {formatDateShort(p.createdAt)} · {p.regCode}
-                      </button>
-                    ))
+                    <>
+                      {pendaftaranOptions.map((p) => (
+                        <button
+                          key={`pasien-${p.id}`}
+                          type="button"
+                          className="btn btn--sm btn--secondary"
+                          style={{ display: 'block', width: '100%', textAlign: 'left', marginBottom: '0.25rem' }}
+                          onClick={() => pickPendaftaran(p)}
+                          title="Isi form dari pendaftaran ini"
+                        >
+                          <strong>{p.nama}</strong> ({p.umur} th) · {p.pemeriksaan.map((x) => x.nama).join(', ') || '—'} ·{' '}
+                          {p.pengirim.nama} · {formatDateShort(p.createdAt)} · {p.regCode}
+                        </button>
+                      ))}
+                      {umumOptions.map((p) => (
+                        <button
+                          key={`umum-${p.id}`}
+                          type="button"
+                          className="btn btn--sm btn--secondary"
+                          style={{ display: 'block', width: '100%', textAlign: 'left', marginBottom: '0.25rem' }}
+                          onClick={() => pickPendaftaranUmum(p)}
+                          title="Isi form dari pendaftaran umum ini"
+                        >
+                          <strong>{p.namaPasien}</strong> ({p.umur || '—'}) · Umum · {p.dokterPengirim || '—'} ·{' '}
+                          {formatDateShort(p.tanggalMasuk)} · {p.noRegistrasi}
+                        </button>
+                      ))}
+                    </>
                   )}
                 </div>
               </div>

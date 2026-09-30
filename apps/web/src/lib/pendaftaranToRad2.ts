@@ -54,3 +54,37 @@ export function pendaftaranToRad2Fill(p: PendaftaranForRad2, fallbackTanggal: st
     harga: String(Math.round(Number(p.totalHarga) || 0)),
   };
 }
+
+/** Bagian data Pendaftaran Umum yang dipakai untuk mengisi form Rad2. */
+export interface PendaftaranUmumForRad2 {
+  readonly namaPasien: string;
+  readonly umur: string | null;
+  readonly alamat: string | null;
+  readonly tanggalMasuk: string;
+  readonly dokterPengirim: string | null;
+  readonly klinis: string | null;
+}
+
+/** Angka pertama pada teks umur (mis. "35", "35 tahun"); kosong bila tidak ada. */
+export function parseUmurText(umur: string | null): string {
+  const match = umur?.match(/\d+/);
+  return match ? match[0] : '';
+}
+
+/**
+ * Isian form Rad2 dari Pendaftaran Umum. Data ini tidak punya pemeriksaan, radiologi,
+ * maupun harga, jadi hanya bagian yang ada yang diisi; sisanya dibiarkan untuk diketik.
+ */
+export function pendaftaranUmumToRad2Fill(
+  p: PendaftaranUmumForRad2,
+  fallbackTanggal: string,
+): Pick<Rad2FormFill, 'nama' | 'umur' | 'alamat' | 'tanggal' | 'pengirim' | 'klinis'> {
+  return {
+    nama: p.namaPasien,
+    umur: parseUmurText(p.umur),
+    alamat: p.alamat ?? '',
+    tanggal: localDateIso(p.tanggalMasuk, fallbackTanggal),
+    pengirim: p.dokterPengirim ?? '',
+    klinis: p.klinis ?? '',
+  };
+}

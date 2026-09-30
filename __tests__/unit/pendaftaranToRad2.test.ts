@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import { pendaftaranToRad2Fill, type PendaftaranForRad2 } from '../../apps/web/src/lib/pendaftaranToRad2.ts';
+import {
+  parseUmurText,
+  pendaftaranToRad2Fill,
+  pendaftaranUmumToRad2Fill,
+  type PendaftaranForRad2,
+  type PendaftaranUmumForRad2,
+} from '../../apps/web/src/lib/pendaftaranToRad2.ts';
 
 const base: PendaftaranForRad2 = {
   nama: 'Budi Santoso',
@@ -50,5 +56,41 @@ describe('pendaftaranToRad2Fill', () => {
 
   test('uses the fallback date when the registration date is invalid', () => {
     expect(pendaftaranToRad2Fill({ ...base, createdAt: 'bukan tanggal' }, '2026-09-30').tanggal).toBe('2026-09-30');
+  });
+});
+
+describe('pendaftaranUmumToRad2Fill', () => {
+  const umum: PendaftaranUmumForRad2 = {
+    namaPasien: 'Siti',
+    umur: '28 tahun',
+    alamat: null,
+    tanggalMasuk: new Date(2026, 8, 20, 9, 0).toISOString(),
+    dokterPengirim: 'dr. Andi',
+    klinis: null,
+  };
+
+  test('fills only the fields Pendaftaran Umum has', () => {
+    expect(pendaftaranUmumToRad2Fill(umum, '2026-01-01')).toEqual({
+      nama: 'Siti',
+      umur: '28',
+      alamat: '',
+      tanggal: '2026-09-20',
+      pengirim: 'dr. Andi',
+      klinis: '',
+    });
+  });
+
+  test('leaves umur and pengirim empty when missing', () => {
+    const result = pendaftaranUmumToRad2Fill({ ...umum, umur: null, dokterPengirim: null }, '2026-01-01');
+    expect(result).toMatchObject({ umur: '', pengirim: '' });
+  });
+});
+
+describe('parseUmurText', () => {
+  test('takes the first number in the text', () => {
+    expect(parseUmurText('35')).toBe('35');
+    expect(parseUmurText('Umur 4 th 2 bln')).toBe('4');
+    expect(parseUmurText('bayi')).toBe('');
+    expect(parseUmurText(null)).toBe('');
   });
 });
