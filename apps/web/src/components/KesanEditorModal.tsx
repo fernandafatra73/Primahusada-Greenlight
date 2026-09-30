@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { apiGet, apiPatch, apiPost } from '../lib/api.ts';
+import { filterKesanTemplates } from '../lib/filterKesanTemplates.ts';
 import { insertTextAt } from '../lib/insertText.ts';
 import { Modal } from './ui/Modal.tsx';
 import './ui/ui.css';
@@ -39,6 +40,8 @@ export function KesanEditorModal({
   const [templates, setTemplates] = useState<readonly KesanTemplateRow[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [templateError, setTemplateError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const visibleTemplates = filterKesanTemplates(templates, search);
 
   const [addOpen, setAddOpen] = useState(false);
   /** Template yang sedang diubah; null berarti form dipakai untuk menambah. */
@@ -152,6 +155,18 @@ export function KesanEditorModal({
           <button type="submit" className="btn btn--primary" disabled={saving}>
             {saving ? 'Menyimpan…' : submitLabel}
           </button>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            // Enter di kolom pencarian tidak boleh menyimpan kesan.
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.preventDefault();
+            }}
+            placeholder="Cari kesan…"
+            aria-label="Pencarian cepat kesan"
+            style={{ minWidth: '200px' }}
+          />
           <button type="button" className="btn btn--ghost" onClick={onClose}>
             Batal
           </button>
@@ -215,14 +230,14 @@ export function KesanEditorModal({
                     Memuat...
                   </td>
                 </tr>
-              ) : templates.length === 0 ? (
+              ) : visibleTemplates.length === 0 ? (
                 <tr>
                   <td colSpan={4} style={{ textAlign: 'center', padding: '1rem' }}>
-                    Belum ada kesan.
+                    {templates.length === 0 ? 'Belum ada kesan.' : 'Tidak ada kesan yang cocok.'}
                   </td>
                 </tr>
               ) : (
-                templates.map((t, idx) => (
+                visibleTemplates.map((t, idx) => (
                   <tr
                     key={t.id}
                     onClick={() => handlePick(t.isi)}
