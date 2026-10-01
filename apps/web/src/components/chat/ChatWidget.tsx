@@ -84,7 +84,7 @@ export function ChatWidget() {
           <form className="chat-widget__form" onSubmit={(event) => void handleSubmit(event)}>
             <input
               type="text"
-              placeholder="Tanya kesan/pemeriksaan..."
+              placeholder="Tanya apa saja..."
               value={input}
               onChange={(event) => setInput(event.target.value)}
               disabled={loading}
