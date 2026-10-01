@@ -487,7 +487,7 @@ export function App() {
               <AppShell activeView={activeView} authUser={authUser} onNavigate={navigate} onLogout={handleLogout}>
                 {renderViewContent(activeView, authUser.role, authUser.departemen, navigate)}
               </AppShell>
-              <ChatWidget />
+              <ChatWidget authUser={authUser} />
             </PdfPreviewHost>
             <KaraokePlayerWidget />
             <HadithReaderWidget />

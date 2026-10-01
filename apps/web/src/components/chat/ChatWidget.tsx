@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { apiPost } from '../../lib/api.ts';
+import type { AuthUser } from '../../lib/auth.ts';
 import './chat.css';
 
 type ChatRole = 'user' | 'model';
@@ -12,7 +13,12 @@ interface ChatResponse {
   readonly reply: string;
 }
 
-export function ChatWidget() {
+interface ChatWidgetProps {
+  readonly authUser: AuthUser;
+}
+
+export function ChatWidget({ authUser }: ChatWidgetProps) {
+  const canReadClinicData = authUser.role === 'ADMIN' || authUser.role === 'CEO';
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<readonly ChatTurn[]>([]);
   const [input, setInput] = useState('');
@@ -36,7 +42,7 @@ export function ChatWidget() {
     setError(null);
     setLoading(true);
     try {
-      const result = await apiPost<ChatResponse>('/api/chat', { history, message: text });
+      const result = await apiPost<ChatResponse>('/api/chat', { history, message: text, staffId: authUser.id });
       setMessages((prev) => [...prev, { role: 'model', text: result.reply }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal mengirim pesan');
@@ -64,8 +70,9 @@ export function ChatWidget() {
           <div className="chat-widget__list" ref={listRef}>
             {messages.length === 0 && (
               <p className="chat-widget__empty">
-                Tanya AI Prima Husada soal Master Kesan radiologi — sebut nama pemeriksaan (mis. "thorak") atau gejala
-                klinis (mis. "batuk, sesak").
+                Tanya AI Prima Husada apa saja — soal Master Kesan radiologi (mis. "thorak", "batuk, sesak") atau topik
+                lain dari internet.
+                {canReadClinicData && ' Sebagai Admin/CEO, Anda juga bisa menanyakan data klinik (nama pasien disamarkan).'}
               </p>
             )}
             {messages.map((turn, index) => (
