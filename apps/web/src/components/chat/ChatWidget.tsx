@@ -25,6 +25,8 @@ export function ChatWidget({ authUser }: ChatWidgetProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // Naik setiap chat ditutup, supaya balasan yang baru tiba setelah chat ditutup tidak muncul lagi saat dibuka.
+  const sessionRef = useRef(0);
 
   useEffect(() => {
     if (!listRef.current) return;
@@ -37,18 +39,31 @@ export function ChatWidget({ authUser }: ChatWidgetProps) {
     if (!text || loading) return;
 
     const history = messages;
+    const session = sessionRef.current;
     setMessages([...history, { role: 'user', text }]);
     setInput('');
     setError(null);
     setLoading(true);
     try {
       const result = await apiPost<ChatResponse>('/api/chat', { history, message: text, staffId: authUser.id });
+      if (session !== sessionRef.current) return;
       setMessages((prev) => [...prev, { role: 'model', text: result.reply }]);
     } catch (err) {
+      if (session !== sessionRef.current) return;
       setError(err instanceof Error ? err.message : 'Gagal mengirim pesan');
     } finally {
-      setLoading(false);
+      if (session === sessionRef.current) setLoading(false);
     }
+  }
+
+  /// Menutup chat menghapus seluruh isinya (pesan, ketikan, error).
+  function closeChat(): void {
+    sessionRef.current += 1;
+    setOpen(false);
+    setMessages([]);
+    setInput('');
+    setError(null);
+    setLoading(false);
   }
 
   return (
@@ -61,7 +76,7 @@ export function ChatWidget({ authUser }: ChatWidgetProps) {
               type="button"
               className="chat-widget__close"
               aria-label="Tutup chat"
-              onClick={() => setOpen(false)}
+              onClick={closeChat}
             >
               ✕
             </button>
@@ -107,7 +122,7 @@ export function ChatWidget({ authUser }: ChatWidgetProps) {
         type="button"
         className="chat-widget__fab"
         aria-label={open ? 'Tutup Fernanda-Fatra73' : 'Buka Fernanda-Fatra73'}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => (open ? closeChat() : setOpen(true))}
       >
         {open ? '✕' : '💬'}
       </button>
