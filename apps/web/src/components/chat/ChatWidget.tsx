@@ -54,9 +54,9 @@ export function ChatWidget({ authUser }: ChatWidgetProps) {
   return (
     <div className="chat-widget">
       {open && (
-        <section className="chat-widget__panel" aria-label="Chat dengan AI Prima Husada">
+        <section className="chat-widget__panel" aria-label="Chat dengan Fernanda-Fatra73">
           <header className="chat-widget__header">
-            <span>AI Prima Husada</span>
+            <span>Fernanda-Fatra73</span>
             <button
               type="button"
               className="chat-widget__close"
@@ -70,7 +70,7 @@ export function ChatWidget({ authUser }: ChatWidgetProps) {
           <div className="chat-widget__list" ref={listRef}>
             {messages.length === 0 && (
               <p className="chat-widget__empty">
-                Tanya AI Prima Husada apa saja — soal Master Kesan radiologi (mis. "thorak", "batuk, sesak") atau topik
+                Tanya Fernanda-Fatra73 apa saja — soal Master Kesan radiologi (mis. "thorak", "batuk, sesak") atau topik
                 lain dari internet.
                 {canReadClinicData && ' Sebagai Admin/CEO, Anda juga bisa menanyakan data klinik (nama pasien disamarkan).'}
               </p>
@@ -106,7 +106,7 @@ export function ChatWidget({ authUser }: ChatWidgetProps) {
       <button
         type="button"
         className="chat-widget__fab"
-        aria-label={open ? 'Tutup AI Prima Husada' : 'Buka AI Prima Husada'}
+        aria-label={open ? 'Tutup Fernanda-Fatra73' : 'Buka Fernanda-Fatra73'}
         onClick={() => setOpen((prev) => !prev)}
       >
         {open ? '✕' : '💬'}

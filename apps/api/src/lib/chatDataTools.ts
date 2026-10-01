@@ -3,7 +3,7 @@ import { Type, type FunctionDeclaration } from '@google/genai';
 import { ModelName } from '../generated/prisma/internal/prismaNamespace.js';
 import { prisma } from './prisma.js';
 
-/// Alat baca-saja (read-only) yang dipakai AI Prima Husada untuk menjawab
+/// Alat baca-saja (read-only) yang dipakai Fernanda-Fatra73 untuk menjawab
 /// pertanyaan Admin/CEO tentang data klinik. Gemini hanya boleh memanggil
 /// alat ini — tidak pernah menulis SQL sendiri — dan setiap hasil disaring
 /// dulu di sini: identitas pasien disamarkan, kredensial tidak pernah keluar.
