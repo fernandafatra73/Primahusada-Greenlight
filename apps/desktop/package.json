@@ -23,6 +23,7 @@
     "buildDependenciesFromSource": false,
     "files": [
       "electron/**/*",
+      "build/icon.png",
       "package.json"
     ],
     "extraResources": [
@@ -37,6 +38,7 @@
         "portable"
       ],
       "artifactName": "aplikasi-ph-2026.exe",
+      "icon": "build/icon.ico",
       "signAndEditExecutable": false
     },
     "directories": {

@@ -134,6 +134,7 @@ async function createWindow() {
     minHeight: 700,
     title: 'Klinik Prima Husada',
     autoHideMenuBar: true,
+    icon: join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
