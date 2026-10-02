@@ -30,6 +30,7 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
       lunasCount,
       totalPasien,
       pasienForDokterPengirim,
+      pasienForAlamat,
     ] = await Promise.all([
       prisma.pasien.count({ where: { createdAt: { gte: startOfDay } } }),
       prisma.pasien.count({ where: { hasilStatus: 'MENUNGGU_HASIL' } }),
@@ -50,6 +51,7 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
       prisma.pasien.count({ where: { paymentStatus: 'LUNAS' } }),
       prisma.pasien.count(),
       prisma.pasien.findMany({ select: { pengirim: { select: { nama: true } } } }),
+      prisma.pasien.findMany({ select: { alamat: true } }),
     ]);
 
     const lunasPercent = totalPasien === 0 ? 0 : Math.round((lunasCount / totalPasien) * 100);
@@ -64,6 +66,15 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
     }
     const dokterPengirimChart = Array.from(dokterPengirimCounts.entries())
       .map(([nama, count]) => ({ nama, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const alamatCounts = new Map<string, number>();
+    for (const p of pasienForAlamat) {
+      const alamat = p.alamat?.trim() || 'Tanpa Alamat';
+      alamatCounts.set(alamat, (alamatCounts.get(alamat) ?? 0) + 1);
+    }
+    const alamatChart = Array.from(alamatCounts.entries())
+      .map(([alamat, count]) => ({ alamat, count }))
       .sort((a, b) => b.count - a.count);
 
     return {
@@ -81,6 +92,7 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
         statusHasil: { menunggu: menungguHasil, selesai: hasilSelesai, percent: hasilPercent },
         statusBayar: { lunas: lunasCount, belum: totalPasien - lunasCount, percent: lunasPercent },
         dokterPengirim: dokterPengirimChart,
+        alamat: alamatChart,
       },
     };
   });

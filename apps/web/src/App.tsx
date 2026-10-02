@@ -357,7 +357,7 @@ function renderViewContent(
 
 
 const LOGIN_GREETING =
-  'Selamat anda memasuki area prima husada. Bekerjalah dengan sungguh-sungguh, semoga hari harimu menyenangkan. Buatlah kebahagian di tempat kerja mu, rejeki akan mengikuti selamanya.';
+  'Selamat pagi rekan-rekan semuanya. Puji syukur kita panjatkan ke Tuhan Yang Maha Esa karena kita masih diberikan kesehatan untuk berkumpul dan memulai tugas mulia hari ini. Mari kita awali shift pagi ini dengan doa bersama, semoga setiap pelayanan dan tindakan medis yang kita berikan kepada pasien hari ini berjalan lancar, membawa kesembuhan, dan bernilai ibadah. Tetap utamakan keselamatan pasien, jaga kekompakan tim, dan semangat pagi.';
 
 /** Bunyi "ding-dong" khas pengumuman kabin pesawat, dimainkan sebelum
  * ucapan sambutan supaya terasa seperti announcement layanan penerbangan. */
