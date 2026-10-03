@@ -15,7 +15,8 @@ import {
   type StaffRole,
 } from './config/navigation.ts';
 import { useAppNavigation } from './hooks/useAppNavigation.ts';
-import { clearStoredAuthUser, loadStoredAuthUser, storeAuthUser, type AuthUser } from './lib/auth.ts';
+import { useIdleLogout } from './hooks/useIdleLogout.ts';
+import { clearStoredAuthUser,loadStoredAuthUser, storeAuthUser, type AuthUser } from './lib/auth.ts';
 import { withIndonesianVoice } from './lib/speechVoice.ts';
 import { ChatWidget } from './components/chat/ChatWidget.tsx';
 import { DashboardPage } from './pages/DashboardPage.tsx';
@@ -472,6 +473,8 @@ export function App() {
     setAuthUser(null);
     setJustLoggedIn(false);
   }
+
+  useIdleLogout(authUser !== null, handleLogout);
 
   if (!authUser) {
     return <LoginPage onLogin={handleLogin} />;
