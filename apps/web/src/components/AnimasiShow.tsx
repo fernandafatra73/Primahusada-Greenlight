@@ -1,20 +1,36 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import foto1 from '@src/image/animasi-1.jpg';
 import foto2 from '@src/image/animasi-2.jpg';
 import foto3 from '@src/image/animasi-3.jpg';
 import foto4 from '@src/image/animasi-4.jpg';
 import foto5 from '@src/image/animasi-5.jpg';
+import { useMusicPlayer, type PlaylistItem } from '../context/MusicPlayerContext.tsx';
 import { createMellowPlayer } from '../lib/mellowMusic.ts';
 import './animasi-show.css';
 
 const SLIDES: ReadonlyArray<string> = [foto3, foto4, foto1, foto2, foto5];
 const SLIDE_MS = 6500;
+const TARGET_SONG = 'disaat aku mencintamu';
+
+function findTargetSong(playlist: ReadonlyArray<PlaylistItem>): PlaylistItem | null {
+  return playlist.find((song) => song.judul.toLowerCase().includes(TARGET_SONG)) ?? null;
+}
+
 const PARTICLES: ReadonlyArray<number> = Array.from({ length: 18 }, (_, i) => i);
 
 export function AnimasiShow() {
   const [index, setIndex] = useState(0);
   const [muted, setMuted] = useState(false);
   const player = useMemo(() => createMellowPlayer(), []);
+  const { playlist, playlistLoading, playItem, stopPlaylist } = useMusicPlayer();
+  const targetSong = useMemo(() => findTargetSong(playlist), [playlist]);
+  const targetId = targetSong?.id ?? null;
+  const targetRef = useRef(targetSong);
+  const playItemRef = useRef(playItem);
+  const stopRef = useRef(stopPlaylist);
+  targetRef.current = targetSong;
+  playItemRef.current = playItem;
+  stopRef.current = stopPlaylist;
 
   useEffect(() => {
     const timer = window.setInterval(() => setIndex((i) => (i + 1) % SLIDES.length), SLIDE_MS);
@@ -22,11 +38,17 @@ export function AnimasiShow() {
   }, []);
 
   // Mounting follows a click on the Animasi button, so audio is allowed to start.
+  // Prefer the real song from Musik-PH; fall back to the synthesized loop when it has not been uploaded.
   useEffect(() => {
-    if (muted) return undefined;
+    if (muted || playlistLoading) return undefined;
+    const song = targetRef.current;
+    if (song) {
+      playItemRef.current(song);
+      return () => stopRef.current();
+    }
     player.start();
     return () => player.stop();
-  }, [muted, player]);
+  }, [muted, playlistLoading, targetId, player]);
 
   return (
     <section className="animasi-show" aria-label="Animasi foto">
@@ -59,6 +81,11 @@ export function AnimasiShow() {
             <span key={src} className={i === index ? 'animasi-show__dot animasi-show__dot--active' : 'animasi-show__dot'} />
           ))}
         </div>
+        {!playlistLoading && !targetSong && (
+          <span className="animasi-show__hint">
+            Lagu “Disaat Aku Mencintamu” (Dadali) belum ada di Musik-PH. Unggah dulu agar diputar di sini.
+          </span>
+        )}
         <button
           type="button"
           className="animasi-show__sound"
