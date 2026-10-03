@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
+import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { baseChartOptions, paletteColors } from '../components/charts/chartTheme.ts';
 import { useListRefresh } from '../context/ListRefreshContext.tsx';
 import { apiGet } from '../lib/api.ts';
@@ -62,7 +63,7 @@ export function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [animasi, setAnimasi] = useState(true);
-  const [grafik, setGrafik] = useState(true);
+  const [grafik, setGrafik] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -107,8 +108,14 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {error && <p className="alert alert--error">{error}</p>}
-      {!data && !error && <p className="loading-text">Memuat data…</p>}
+      {!grafik && (
+        <div className="dashboard-logo">
+          <img src={logoPrimahusada} alt="Klinik Prima Husada" className="dashboard-logo__img" />
+        </div>
+      )}
+
+      {grafik && error && <p className="alert alert--error">{error}</p>}
+      {grafik && !data && !error && <p className="loading-text">Memuat data…</p>}
 
       {data && grafik && (
         <div className="dashboard-row">
