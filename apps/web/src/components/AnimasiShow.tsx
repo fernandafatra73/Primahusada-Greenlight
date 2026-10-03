@@ -4,7 +4,9 @@ import foto2 from '@src/image/animasi-2.jpg';
 import foto3 from '@src/image/animasi-3.jpg';
 import foto4 from '@src/image/animasi-4.jpg';
 import foto5 from '@src/image/animasi-5.jpg';
+import { useKaraokePlayer, type KaraokeLagu } from '../context/KaraokePlayerContext.tsx';
 import { useMusicPlayer, type PlaylistItem } from '../context/MusicPlayerContext.tsx';
+import { apiGet } from '../lib/api.ts';
 import { createMellowPlayer } from '../lib/mellowMusic.ts';
 import './animasi-show.css';
 
@@ -12,8 +14,12 @@ const SLIDES: ReadonlyArray<string> = [foto3, foto4, foto1, foto2, foto5];
 const SLIDE_MS = 6500;
 const TARGET_SONG = 'disaat aku mencintamu';
 
+function matchesTarget(judul: string): boolean {
+  return judul.toLowerCase().includes(TARGET_SONG);
+}
+
 function findTargetSong(playlist: ReadonlyArray<PlaylistItem>): PlaylistItem | null {
-  return playlist.find((song) => song.judul.toLowerCase().includes(TARGET_SONG)) ?? null;
+  return playlist.find((song) => matchesTarget(song.judul)) ?? null;
 }
 
 const PARTICLES: ReadonlyArray<number> = Array.from({ length: 18 }, (_, i) => i);
@@ -23,6 +29,16 @@ export function AnimasiShow() {
   const [muted, setMuted] = useState(false);
   const player = useMemo(() => createMellowPlayer(), []);
   const { playlist, playlistLoading, playItem, stopPlaylist } = useMusicPlayer();
+  const { playNow, stop: stopKaraoke } = useKaraokePlayer();
+  const [karaokeSong, setKaraokeSong] = useState<KaraokeLagu | null>(null);
+  const [karaokeLoading, setKaraokeLoading] = useState(true);
+  const karaokeRef = useRef(karaokeSong);
+  const playNowRef = useRef(playNow);
+  const stopKaraokeRef = useRef(stopKaraoke);
+  karaokeRef.current = karaokeSong;
+  playNowRef.current = playNow;
+  stopKaraokeRef.current = stopKaraoke;
+  const karaokeId = karaokeSong?.id ?? null;
   const targetSong = useMemo(() => findTargetSong(playlist), [playlist]);
   const targetId = targetSong?.id ?? null;
   const targetRef = useRef(targetSong);
@@ -32,15 +48,38 @@ export function AnimasiShow() {
   playItemRef.current = playItem;
   stopRef.current = stopPlaylist;
 
+  // The song is looked up in the Karaoke library first, since that is where the clinic keeps it.
+  useEffect(() => {
+    let cancelled = false;
+    void apiGet<{ items: readonly KaraokeLagu[] }>(`/api/karaoke-lagu?q=${encodeURIComponent(TARGET_SONG)}&limit=20`)
+      .then((res) => {
+        if (!cancelled) setKaraokeSong(res.items.find((lagu) => matchesTarget(lagu.judul)) ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setKaraokeSong(null);
+      })
+      .finally(() => {
+        if (!cancelled) setKaraokeLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     const timer = window.setInterval(() => setIndex((i) => (i + 1) % SLIDES.length), SLIDE_MS);
     return () => window.clearInterval(timer);
   }, []);
 
   // Mounting follows a click on the Animasi button, so audio is allowed to start.
-  // Prefer the real song from Musik-PH; fall back to the synthesized loop when it has not been uploaded.
+  // Order of preference: Karaoke library, then Musik-PH, then the synthesized loop.
   useEffect(() => {
-    if (muted || playlistLoading) return undefined;
+    if (muted || playlistLoading || karaokeLoading) return undefined;
+    const karaoke = karaokeRef.current;
+    if (karaoke) {
+      playNowRef.current(karaoke);
+      return () => stopKaraokeRef.current();
+    }
     const song = targetRef.current;
     if (song) {
       playItemRef.current(song);
@@ -48,7 +87,7 @@ export function AnimasiShow() {
     }
     player.start();
     return () => player.stop();
-  }, [muted, playlistLoading, targetId, player]);
+  }, [muted, playlistLoading, karaokeLoading, karaokeId, targetId, player]);
 
   return (
     <section className="animasi-show" aria-label="Animasi foto">
@@ -81,9 +120,9 @@ export function AnimasiShow() {
             <span key={src} className={i === index ? 'animasi-show__dot animasi-show__dot--active' : 'animasi-show__dot'} />
           ))}
         </div>
-        {!playlistLoading && !targetSong && (
+        {!playlistLoading && !karaokeLoading && !targetSong && !karaokeSong && (
           <span className="animasi-show__hint">
-            Lagu “Disaat Aku Mencintamu” (Dadali) belum ada di Musik-PH. Unggah dulu agar diputar di sini.
+            Lagu “Disaat Aku Mencintamu” (Dadali) belum ada di Karaoke atau Musik-PH. Tambahkan dulu agar diputar di sini.
           </span>
         )}
         <button
