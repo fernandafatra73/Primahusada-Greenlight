@@ -12,7 +12,8 @@ import './animasi-show.css';
 
 const SLIDES: ReadonlyArray<string> = [foto3, foto4, foto1, foto2, foto5];
 const SLIDE_MS = 6500;
-const TARGET_SONG = 'disaat aku mencintamu';
+// Matches both "mencintamu" and "mencintaimu" spellings of the title.
+const TARGET_SONG = 'disaat aku mencinta';
 
 function matchesTarget(judul: string): boolean {
   return judul.toLowerCase().includes(TARGET_SONG);
