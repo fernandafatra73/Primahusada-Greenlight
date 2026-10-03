@@ -53,20 +53,34 @@
 .login-scene__smoke circle {
   transform-box: fill-box;
   transform-origin: center;
-  animation: login-smoke 2.4s ease-out infinite;
+  animation: login-smoke 3s ease-out infinite;
   opacity: 0;
 }
 
 .login-scene__smoke circle:nth-child(2) {
-  animation-delay: 0.8s;
+  animation-delay: 0.6s;
 }
 
 .login-scene__smoke circle:nth-child(3) {
-  animation-delay: 1.6s;
+  animation-delay: 1.2s;
+}
+
+.login-scene__smoke circle:nth-child(4) {
+  animation-delay: 1.8s;
+}
+
+.login-scene__smoke circle:nth-child(5) {
+  animation-delay: 2.4s;
 }
 
 .login-scene__ripple {
   animation: login-flow 3s linear infinite;
+}
+
+/* The fine layer tiles every 34 units and moves faster, so the two layers
+   shimmer against each other instead of sliding as one sheet. */
+.login-scene__ripple--fine {
+  animation: login-flow-fine 1.8s linear infinite;
 }
 
 .login-scene__clouds {
@@ -75,7 +89,7 @@
 
 @keyframes login-train {
   from {
-    transform: translateX(-80px);
+    transform: translateX(-110px);
   }
   to {
     transform: translateX(480px);
@@ -90,18 +104,24 @@
 
 @keyframes login-smoke {
   0% {
-    opacity: 0.9;
-    transform: translate(0, 0) scale(0.6);
+    opacity: 0.95;
+    transform: translate(0, 0) scale(0.5);
   }
   100% {
     opacity: 0;
-    transform: translate(-28px, -46px) scale(2.4);
+    transform: translate(-40px, -60px) scale(3);
   }
 }
 
 @keyframes login-flow {
   to {
     transform: translateX(60px);
+  }
+}
+
+@keyframes login-flow-fine {
+  to {
+    transform: translateX(34px);
   }
 }
 
