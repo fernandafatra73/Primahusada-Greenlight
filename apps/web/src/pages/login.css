@@ -41,16 +41,17 @@
 }
 
 .login-scene__train {
-  animation: login-train 16s linear infinite;
+  /* Long consist: it runs far off-screen and loops around before reappearing. */
+  animation: login-train 44s linear infinite;
   /* Start mid-journey so the train is visible as soon as the page loads. */
-  animation-delay: -7s;
+  animation-delay: -9s;
 }
 
 .login-scene__fish {
   transform-box: fill-box;
   transform-origin: center;
-  animation: login-fish 6s ease-in-out infinite;
-  animation-delay: 0.8s;
+  animation: login-fish var(--ls-dur, 6s) ease-in-out infinite;
+  animation-delay: var(--ls-delay, 0.8s);
   transform: translate(0, 24px) rotate(-55deg);
 }
 
@@ -58,13 +59,13 @@
   transform-box: fill-box;
   transform-origin: center bottom;
   opacity: 0;
-  animation: login-splash 6s ease-out infinite;
-  animation-delay: 0.8s;
+  animation: login-splash var(--ls-dur, 6s) ease-out infinite;
+  animation-delay: var(--ls-delay, 0.8s);
 }
 
 /* Re-entry splash lines up with the fish landing (~40% of the cycle). */
 .login-scene__splash--late {
-  animation-delay: 3.2s;
+  animation-delay: calc(var(--ls-delay, 0.8s) + var(--ls-dur, 6s) * 0.4);
 }
 
 .login-scene__wheel {
@@ -113,7 +114,7 @@
     transform: translateX(-110px);
   }
   to {
-    transform: translateX(700px);
+    transform: translateX(2000px);
   }
 }
 

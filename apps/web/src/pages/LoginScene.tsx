@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 // Decorative, animated landscape shown beside the login form. Purely visual,
 // so it is hidden from assistive tech and pauses under reduced-motion.
 // Depth comes from shading: gradients for volume, haze on distant layers and
@@ -92,11 +94,13 @@ export function LoginScene() {
           <pattern id="ls-ripple-fine" width="34" height="7" patternUnits="userSpaceOnUse">
             <path d="M0 4 Q8.5 2 17 4 T34 4" fill="none" stroke="#a7f0d3" strokeWidth="0.6" opacity="0.45" />
           </pattern>
-          <linearGradient id="ls-fish" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#b5541a" />
-            <stop offset="45%" stopColor="#f39c34" />
-            <stop offset="100%" stopColor="#fde7b8" />
-          </linearGradient>
+          {FISH.map((f) => (
+            <linearGradient key={f.id} id={`ls-fish-${f.id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={f.top} />
+              <stop offset="45%" stopColor={f.mid} />
+              <stop offset="100%" stopColor={f.belly} />
+            </linearGradient>
+          ))}
           <clipPath id="ls-above-water" clipPathUnits="userSpaceOnUse">
             <rect x="0" y="0" width="400" height="238" />
           </clipPath>
@@ -159,15 +163,17 @@ export function LoginScene() {
           <LeafyTree x={378} y={198} scale={0.95} />
         </g>
 
-        {/* Shrubs along the embankment */}
+        {/* Manicured, theme-park style planting: clipped topiary, trimmed hedge and flower beds */}
         <g>
-          {SHRUBS.map((s) => (
-            <g key={s.x} transform={`translate(${s.x} 209)`}>
-              <circle cx="-5" cy="-3" r="5" fill="url(#ls-leaf)" />
-              <circle cx="4" cy="-4" r="6" fill="url(#ls-leaf)" />
-              <circle cx="0" cy="-8" r="5" fill="url(#ls-leaf)" />
-            </g>
+          <rect x="0" y="203" width="400" height="7" rx="3" fill="#2f7d32" />
+          <rect x="0" y="203" width="400" height="2.4" rx="1.2" fill="#6cc24a" opacity="0.8" />
+          {HEDGE_FLOWERS.map((f) => (
+            <circle key={f.x} cx={f.x} cy={f.y} r="1.1" fill={f.color} />
           ))}
+          {TOPIARY.map((p) => (
+            <Topiary key={p.x} x={p.x} kind={p.kind} />
+          ))}
+          <MickeyBed x={204} />
         </g>
 
         {/* Embankment, sleepers and steel rails */}
@@ -231,6 +237,12 @@ export function LoginScene() {
 
         {/* River bank and flowing water */}
         <path d="M0 226 Q100 232 200 228 T400 230 V240 H0 Z" fill="#3f7d36" />
+        {BANK_FLOWERS.map((f) => (
+          <g key={f.x}>
+            <circle cx={f.x} cy={f.y} r="1.6" fill={f.color} />
+            <circle cx={f.x} cy={f.y} r="0.6" fill="#fff6a8" />
+          </g>
+        ))}
         <rect x="0" y="236" width="400" height="64" fill="url(#ls-water)" />
         <g opacity="0.28" filter="url(#ls-blur-soft)">
           <ellipse cx="84" cy="246" rx="22" ry="6" fill="#1d4f25" />
@@ -255,15 +267,21 @@ export function LoginScene() {
 
         {/* Leaping fish, clipped at the waterline so it rises out of the river */}
         <g clipPath="url(#ls-above-water)">
-          <g transform="translate(160 250) scale(1.4)">
-            <g className="login-scene__fish">
-              <Fish />
+          {FISH.map((f) => (
+            <g key={f.id} transform={`translate(${f.x} 250) scale(${f.scale})`}>
+              <g className="login-scene__fish" style={fishTiming(f)}>
+                <Fish spec={f} />
+              </g>
             </g>
-          </g>
+          ))}
         </g>
-        {/* Where the scaled leap arc crosses the waterline on the way up and down */}
-        <Splash x={174} />
-        <Splash x={269} late />
+        {/* Where each scaled leap arc crosses the waterline on the way up and down */}
+        {FISH.map((f) => (
+          <g key={f.id}>
+            <Splash x={f.x + 10 * f.scale} timing={fishTiming(f)} />
+            <Splash x={f.x + 78 * f.scale} timing={fishTiming(f)} late />
+          </g>
+        ))}
       </svg>
     </div>
   );
@@ -301,20 +319,46 @@ const TREELINE: ReadonlyArray<{ readonly x: number; readonly y: number; readonly
   },
 );
 
-const SHRUBS: ReadonlyArray<{ readonly x: number }> = [
-  { x: 20 },
-  { x: 96 },
-  { x: 160 },
-  { x: 214 },
-  { x: 276 },
-  { x: 340 },
-  { x: 392 },
+const FLOWER_COLORS: ReadonlyArray<string> = ['#ff3b5c', '#ffd400', '#ff8fc7', '#ffffff', '#b46bff', '#ff8a1f'];
+
+// Deterministic scatter so the beds look planted but render identically every time.
+const HEDGE_FLOWERS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly color: string }> = Array.from(
+  { length: 90 },
+  (_, i) => ({
+    x: 2 + i * 4.4,
+    y: 204.5 + ((i * 7) % 5) * 1.1,
+    color: FLOWER_COLORS[(i * 5) % FLOWER_COLORS.length] ?? '#ffffff',
+  }),
+);
+
+const BANK_FLOWERS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly color: string }> = Array.from(
+  { length: 56 },
+  (_, i) => ({
+    x: 3 + i * 7.1,
+    y: 229.5 + ((i * 3) % 4) * 1.6,
+    color: FLOWER_COLORS[(i * 3 + 1) % FLOWER_COLORS.length] ?? '#ffffff',
+  }),
+);
+
+type TopiaryKind = 'cone' | 'ball' | 'spiral';
+
+const TOPIARY: ReadonlyArray<{ readonly x: number; readonly kind: TopiaryKind }> = [
+  { x: 18, kind: 'cone' },
+  { x: 44, kind: 'ball' },
+  { x: 98, kind: 'spiral' },
+  { x: 130, kind: 'cone' },
+  { x: 158, kind: 'ball' },
+  { x: 250, kind: 'spiral' },
+  { x: 282, kind: 'ball' },
+  { x: 312, kind: 'cone' },
+  { x: 366, kind: 'spiral' },
+  { x: 392, kind: 'ball' },
 ];
 
 const SLEEPERS: ReadonlyArray<number> = Array.from({ length: 34 }, (_, i) => i * 12);
 
 // Left edge of each passenger carriage, in train-local units behind the tender.
-const CARRIAGES: ReadonlyArray<number> = [-142, -244, -346];
+const CARRIAGES: ReadonlyArray<number> = Array.from({ length: 9 }, (_, i) => -142 - i * 102);
 
 function Carriage({ x }: { readonly x: number }) {
   return (
@@ -350,35 +394,111 @@ function Carriage({ x }: { readonly x: number }) {
   );
 }
 
-function Fish() {
+interface FishSpec {
+  readonly id: string;
+  readonly x: number;
+  readonly scale: number;
+  readonly top: string;
+  readonly mid: string;
+  readonly belly: string;
+  readonly fin: string;
+  readonly outline: string;
+  readonly delay: number;
+  readonly duration: number;
+}
+
+// Seven fish, each its own colour, size and leap timing so they never jump in unison.
+const FISH: ReadonlyArray<FishSpec> = [
+  { id: 'orange', x: 8, scale: 1.0, top: '#b5541a', mid: '#f39c34', belly: '#fde7b8', fin: '#e0782a', outline: '#8a3a10', delay: 0.8, duration: 6 },
+  { id: 'blue', x: 64, scale: 0.9, top: '#1d4f91', mid: '#3fa0e8', belly: '#d6efff', fin: '#2b7fd0', outline: '#10325c', delay: 2.6, duration: 5.4 },
+  { id: 'pink', x: 120, scale: 1.2, top: '#b0306a', mid: '#f06fa8', belly: '#ffe0ee', fin: '#e0508d', outline: '#6e1a41', delay: 4.2, duration: 6.6 },
+  { id: 'purple', x: 178, scale: 0.95, top: '#4b2a8a', mid: '#8e63d6', belly: '#e8dcff', fin: '#7048c0', outline: '#2c1659', delay: 1.4, duration: 5.8 },
+  { id: 'yellow', x: 232, scale: 1.3, top: '#c9930a', mid: '#ffd23f', belly: '#fff6c9', fin: '#f0b400', outline: '#7d5a00', delay: 3.4, duration: 7 },
+  { id: 'red', x: 288, scale: 0.85, top: '#8f1d1d', mid: '#e5393b', belly: '#ffd9d4', fin: '#c92a2a', outline: '#561010', delay: 5.2, duration: 5.2 },
+  { id: 'teal', x: 338, scale: 1.1, top: '#0b6b5e', mid: '#25c2a0', belly: '#d4fff1', fin: '#14a085', outline: '#064038', delay: 0.2, duration: 6.2 },
+];
+
+// CSS custom properties let one stylesheet rule drive every fish with its own timing.
+function fishTiming(f: FishSpec): CSSProperties {
+  return { '--ls-delay': `${f.delay}s`, '--ls-dur': `${f.duration}s` } as CSSProperties;
+}
+
+function Fish({ spec }: { readonly spec: FishSpec }) {
   return (
     <g>
-      <path d="M-20 0 L-32 -11 Q-29 0 -32 11 Z" fill="#e0782a" stroke="#8a3a10" strokeWidth="0.6" />
-      <path d="M-6 -9 Q2 -20 10 -9 Z" fill="#e0782a" />
+      <path d="M-20 0 L-32 -11 Q-29 0 -32 11 Z" fill={spec.fin} stroke={spec.outline} strokeWidth="0.6" />
+      <path d="M-6 -9 Q2 -20 10 -9 Z" fill={spec.fin} />
       <path
         d="M22 0 Q16 -11 0 -11 Q-14 -11 -21 0 Q-14 11 0 11 Q16 11 22 0 Z"
-        fill="url(#ls-fish)"
-        stroke="#8a3a10"
+        fill={`url(#ls-fish-${spec.id})`}
+        stroke={spec.outline}
         strokeWidth="0.6"
       />
       <path d="M-12 -4 Q0 -7 12 -3" fill="none" stroke="#fff3d6" strokeWidth="0.8" opacity="0.7" />
-      <path d="M-2 4 L-8 11 L2 7 Z" fill="#e0782a" />
-      <path d="M10 -9 Q8 0 10 9" fill="none" stroke="#8a3a10" strokeWidth="0.7" opacity="0.6" />
+      <path d="M-2 4 L-8 11 L2 7 Z" fill={spec.fin} />
+      <path d="M10 -9 Q8 0 10 9" fill="none" stroke={spec.outline} strokeWidth="0.7" opacity="0.6" />
       <circle cx="15" cy="-3" r="2.2" fill="#ffffff" />
       <circle cx="15.5" cy="-3" r="1.2" fill="#111" />
     </g>
   );
 }
 
-function Splash({ x, late = false }: { readonly x: number; readonly late?: boolean }) {
+function Splash({ x, timing, late = false }: { readonly x: number; readonly timing: CSSProperties; readonly late?: boolean }) {
   return (
     <g transform={`translate(${x} 239)`}>
-      <g className={late ? 'login-scene__splash login-scene__splash--late' : 'login-scene__splash'}>
+      <g className={late ? 'login-scene__splash login-scene__splash--late' : 'login-scene__splash'} style={timing}>
         <ellipse rx="12" ry="3" fill="none" stroke="#f2fffa" strokeWidth="1.2" />
         <circle cx="-7" cy="-7" r="1.4" fill="#f2fffa" />
         <circle cx="0" cy="-10" r="1.6" fill="#f2fffa" />
         <circle cx="7" cy="-6" r="1.3" fill="#f2fffa" />
       </g>
+    </g>
+  );
+}
+
+function Topiary({ x, kind }: { readonly x: number; readonly kind: TopiaryKind }) {
+  return (
+    <g transform={`translate(${x} 205)`}>
+      <ellipse cx="0" cy="0.5" rx="7" ry="1.6" fill="#0b1d12" opacity="0.35" />
+      <path d="M-5 0 L-4 -4 H4 L5 0 Z" fill="#c4572a" />
+      <rect x="-5.6" y="-5" width="11.2" height="1.8" rx="0.6" fill="#e0703a" />
+      {kind === 'cone' && <path d="M0 -26 L-8 -5 H8 Z" fill="url(#ls-leaf)" />}
+      {kind === 'ball' && (
+        <>
+          <rect x="-0.7" y="-12" width="1.4" height="8" fill="#5a3a22" />
+          <circle cx="0" cy="-17" r="8" fill="url(#ls-leaf)" />
+        </>
+      )}
+      {kind === 'spiral' && (
+        <>
+          <ellipse cx="0" cy="-9" rx="7.5" ry="4.5" fill="url(#ls-leaf)" />
+          <ellipse cx="0" cy="-16" rx="5.5" ry="4" fill="url(#ls-leaf)" />
+          <ellipse cx="0" cy="-22" rx="3.6" ry="3.4" fill="url(#ls-leaf)" />
+          <circle cx="0" cy="-27" r="1.8" fill="url(#ls-leaf)" />
+        </>
+      )}
+    </g>
+  );
+}
+
+const MICKEY_PARTS: ReadonlyArray<readonly [number, number, number]> = [
+  [-9, -14, 5],
+  [9, -14, 5],
+  [0, -6, 9],
+];
+
+// Mickey-head floral bed: one round bed with two ears, planted in colour.
+function MickeyBed({ x }: { readonly x: number }) {
+  return (
+    <g transform={`translate(${x} 205)`}>
+      {MICKEY_PARTS.map(([cx, cy, r]) => (
+        <g key={cx + ',' + cy}>
+          <circle cx={cx} cy={cy} r={r} fill="#2f7d32" />
+          <circle cx={cx - r * 0.4} cy={cy - r * 0.2} r="1.3" fill="#ff3b5c" />
+          <circle cx={cx + r * 0.4} cy={cy + r * 0.2} r="1.3" fill="#ffd400" />
+          <circle cx={cx} cy={cy + r * 0.5} r="1.2" fill="#ffffff" />
+        </g>
+      ))}
     </g>
   );
 }
