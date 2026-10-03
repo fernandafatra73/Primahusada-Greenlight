@@ -22,10 +22,10 @@ interface DashboardResponse {
   };
 }
 
-function horizontalBarOptions(categories: string[], colors: string[], total: number): ApexOptions {
+function horizontalBarOptions(categories: string[], colors: string[], total: number, animate: boolean): ApexOptions {
   return {
     ...baseChartOptions(),
-    chart: { ...baseChartOptions().chart, type: 'bar' },
+    chart: { ...baseChartOptions().chart, type: 'bar', animations: { enabled: animate } },
     colors,
     plotOptions: {
       bar: {
@@ -61,6 +61,7 @@ export function DashboardPage() {
   const { version: listRefreshVersion } = useListRefresh();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [animasi, setAnimasi] = useState(true);
 
   const load = useCallback(async () => {
     setError(null);
@@ -84,7 +85,17 @@ export function DashboardPage() {
   return (
     <>
       <div className="page-heading">
-        <h2 className="page-heading__title">Dashboard</h2>
+        <div className="page-heading__title-row">
+          <h2 className="page-heading__title">Dashboard</h2>
+          <button
+            type="button"
+            className={`btn btn--sm ${animasi ? 'btn--primary' : 'btn--secondary'}`}
+            aria-pressed={animasi}
+            onClick={() => setAnimasi((on) => !on)}
+          >
+            Animasi
+          </button>
+        </div>
       </div>
 
       {error && <p className="alert alert--error">{error}</p>}
@@ -102,6 +113,7 @@ export function DashboardPage() {
                   dokterPengirim.map((d) => d.nama),
                   paletteColors(dokterPengirim.length),
                   totalPengirim,
+                  animasi,
                 )}
                 series={[{ name: 'Pasien', data: dokterPengirim.map((d) => d.count) }]}
               />
@@ -123,6 +135,7 @@ export function DashboardPage() {
                 alamat.map((a) => a.alamat),
                 paletteColors(alamat.length),
                 totalAlamat,
+                animasi,
               )}
               series={[{ name: 'Pasien', data: alamat.map((a) => a.count) }]}
             />

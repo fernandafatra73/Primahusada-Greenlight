@@ -279,6 +279,12 @@
   margin-bottom: 1.5rem;
 }
 
+.page-heading__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .page-heading__title {
   margin: 0;
   font-size: 1.75rem;
