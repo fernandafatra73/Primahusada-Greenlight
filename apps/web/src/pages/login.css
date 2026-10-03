@@ -4,18 +4,141 @@
   justify-content: center;
   min-height: 100vh;
   padding: 1.5rem;
-  background:
-    linear-gradient(135deg, rgba(20, 101, 132, 0.08), transparent 42%),
-    var(--color-bg-page);
+  background: linear-gradient(135deg, #0b3d78 0%, #1d6fc4 45%, #6fb3ee 100%);
+}
+
+/* Boxed frame: illustration on the left, login form on the right. */
+.login-frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  width: min(100%, 920px);
+  overflow: hidden;
+  border: 6px solid rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  background: var(--color-bg-surface);
+  box-shadow: 0 24px 60px rgba(8, 37, 77, 0.45);
 }
 
 .login-panel {
-  width: min(100%, 420px);
-  padding: 2rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-bg-surface);
-  box-shadow: var(--shadow-card);
+  align-self: center;
+  width: 100%;
+  padding: 2.5rem 2rem;
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fd 100%);
+}
+
+.login-scene {
+  position: relative;
+  min-height: 420px;
+  border-right: 4px solid rgba(29, 111, 196, 0.25);
+}
+
+.login-scene__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.login-scene__train {
+  animation: login-train 12s linear infinite;
+  /* Start mid-journey so the train is visible as soon as the page loads. */
+  animation-delay: -5s;
+}
+
+.login-scene__wheel {
+  animation: login-spin 0.6s linear infinite;
+}
+
+.login-scene__smoke circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: login-smoke 2.4s ease-out infinite;
+  opacity: 0;
+}
+
+.login-scene__smoke circle:nth-child(2) {
+  animation-delay: 0.8s;
+}
+
+.login-scene__smoke circle:nth-child(3) {
+  animation-delay: 1.6s;
+}
+
+.login-scene__ripple {
+  animation: login-flow 3s linear infinite;
+}
+
+.login-scene__clouds {
+  animation: login-drift 30s ease-in-out infinite alternate;
+}
+
+@keyframes login-train {
+  from {
+    transform: translateX(-80px);
+  }
+  to {
+    transform: translateX(480px);
+  }
+}
+
+@keyframes login-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes login-smoke {
+  0% {
+    opacity: 0.9;
+    transform: translate(0, 0) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-28px, -46px) scale(2.4);
+  }
+}
+
+@keyframes login-flow {
+  to {
+    transform: translateX(60px);
+  }
+}
+
+@keyframes login-drift {
+  to {
+    transform: translateX(40px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-scene__train,
+  .login-scene__wheel,
+  .login-scene__smoke circle,
+  .login-scene__ripple,
+  .login-scene__clouds {
+    animation: none;
+  }
+
+  .login-scene__train {
+    transform: translateX(170px);
+  }
+
+  .login-scene__smoke circle {
+    opacity: 0.7;
+  }
+}
+
+@media (max-width: 760px) {
+  .login-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .login-scene {
+    min-height: 200px;
+    border-right: 0;
+    border-bottom: 4px solid rgba(29, 111, 196, 0.25);
+  }
 }
 
 .login-panel__brand {

@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { apiPost } from '../lib/api.ts';
 import type { AuthUser } from '../lib/auth.ts';
+import { LoginScene } from './LoginScene.tsx';
 import './login.css';
 
 interface LoginPageProps {
@@ -43,50 +44,53 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   return (
     <main className="login-page">
-      <section className="login-panel" aria-labelledby="login-title">
-        <div className="login-panel__brand">
-          <img src={logoPrimahusada} alt="Klinik Prima Husada" className="login-panel__logo" />
-          <p className="login-panel__eyebrow">Klinik Prima Husada</p>
-        </div>
-
-        <div className="login-panel__divider" aria-hidden />
-
-        <h1 id="login-title" className="login-panel__title">Masuk ke sistem</h1>
-
-        <form className="login-form" onSubmit={(event) => void onSubmit(event)}>
-          <div className="form-field">
-            <label htmlFor="login-email">Email</label>
-            <input
-              id="login-email"
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              onKeyDown={onEmailKeyDown}
-            />
+      <div className="login-frame">
+        <LoginScene />
+        <section className="login-panel" aria-labelledby="login-title">
+          <div className="login-panel__brand">
+            <img src={logoPrimahusada} alt="Klinik Prima Husada" className="login-panel__logo" />
+            <p className="login-panel__eyebrow">Klinik Prima Husada</p>
           </div>
 
-          <div className="form-field">
-            <label htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              ref={passwordRef}
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </div>
+          <div className="login-panel__divider" aria-hidden />
 
-          {error ? <p className="login-form__error">{error}</p> : null}
+          <h1 id="login-title" className="login-panel__title">Masuk ke sistem</h1>
 
-          <button type="submit" className="btn btn--primary login-form__submit" disabled={loading}>
-            {loading ? 'Masuk...' : 'Masuk'}
-          </button>
-        </form>
-      </section>
+          <form className="login-form" onSubmit={(event) => void onSubmit(event)}>
+            <div className="form-field">
+              <label htmlFor="login-email">Email</label>
+              <input
+                id="login-email"
+                type="email"
+                autoComplete="username"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                onKeyDown={onEmailKeyDown}
+              />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="login-password">Password</label>
+              <input
+                id="login-password"
+                ref={passwordRef}
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </div>
+
+            {error ? <p className="login-form__error">{error}</p> : null}
+
+            <button type="submit" className="btn btn--primary login-form__submit" disabled={loading}>
+              {loading ? 'Masuk...' : 'Masuk'}
+            </button>
+          </form>
+        </section>
+      </div>
     </main>
   );
 }
