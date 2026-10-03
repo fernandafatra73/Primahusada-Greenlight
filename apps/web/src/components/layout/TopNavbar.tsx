@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type JSX } from 'react';
 import logoPrimahusada from '@src/image/logo-primahusada.png';
 import {
+  DASHBOARD_NAV_ID,
   isViewAllowed,
   MAIN_NAV_CATEGORIES,
   type AppViewId,
@@ -11,6 +12,7 @@ import { useMusicPlayer } from '../../context/MusicPlayerContext.tsx';
 import {
   IconClipboard,
   IconCurrency,
+  IconDashboard,
   IconDocument,
   IconLogout,
   IconSettings,
@@ -44,6 +46,7 @@ type NavbarSpec =
 const DROPDOWN_TINT_CLASS: Readonly<Record<string, string>> = {};
 
 const NAVBAR_SPECS: readonly NavbarSpec[] = [
+  { type: 'link', id: DASHBOARD_NAV_ID, label: 'Dashboard', icon: IconDashboard },
   { type: 'link', id: 'pendaftaran', label: 'Pendaftaran', icon: IconClipboard },
   { type: 'link', id: 'radiologi', label: 'Radiologi', icon: IconStethoscope },
   { type: 'link', id: 'usg', label: 'USG', icon: IconStethoscope },

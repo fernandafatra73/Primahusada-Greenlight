@@ -13,9 +13,15 @@ interface DokterPengirimSlice {
   readonly count: number;
 }
 
+interface AlamatSlice {
+  readonly alamat: string;
+  readonly count: number;
+}
+
 interface DashboardResponse {
   readonly charts: {
     readonly dokterPengirim: readonly DokterPengirimSlice[];
+    readonly alamat: readonly AlamatSlice[];
   };
 }
 
@@ -211,6 +217,9 @@ export function DashboardPage() {
   const dokterPengirim = data?.charts.dokterPengirim ?? [];
   const totalPengirim = dokterPengirim.reduce((sum, d) => sum + d.count, 0);
 
+  const alamat = data?.charts.alamat ?? [];
+  const totalAlamat = alamat.reduce((sum, a) => sum + a.count, 0);
+
   return (
     <>
       <div className="page-heading">
@@ -247,6 +256,26 @@ export function DashboardPage() {
             <DashboardMusicPlayer />
           </div>
         </div>
+      )}
+
+      {data && (
+        <section className="chart-card">
+          <h3 className="chart-card__title">Grafik Pasien berdasarkan Alamat</h3>
+          {alamat.length > 0 ? (
+            <Chart
+              type="bar"
+              height={Math.max(300, alamat.length * 48)}
+              options={horizontalBarOptions(
+                alamat.map((a) => a.alamat),
+                paletteColors(alamat.length),
+                totalAlamat,
+              )}
+              series={[{ name: 'Pasien', data: alamat.map((a) => a.count) }]}
+            />
+          ) : (
+            <p className="loading-text">Belum ada data alamat pasien.</p>
+          )}
+        </section>
       )}
     </>
   );

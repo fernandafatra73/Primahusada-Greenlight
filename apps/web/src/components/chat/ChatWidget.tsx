@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { apiPost } from '../../lib/api.ts';
+import type { AuthUser } from '../../lib/auth.ts';
 import './chat.css';
 
 type ChatRole = 'user' | 'model';
@@ -12,13 +13,20 @@ interface ChatResponse {
   readonly reply: string;
 }
 
-export function ChatWidget() {
+interface ChatWidgetProps {
+  readonly authUser: AuthUser;
+}
+
+export function ChatWidget({ authUser }: ChatWidgetProps) {
+  const canReadClinicData = authUser.role === 'ADMIN' || authUser.role === 'CEO';
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<readonly ChatTurn[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // Naik setiap chat ditutup, supaya balasan yang baru tiba setelah chat ditutup tidak muncul lagi saat dibuka.
+  const sessionRef = useRef(0);
 
   useEffect(() => {
     if (!listRef.current) return;
@@ -31,31 +39,44 @@ export function ChatWidget() {
     if (!text || loading) return;
 
     const history = messages;
+    const session = sessionRef.current;
     setMessages([...history, { role: 'user', text }]);
     setInput('');
     setError(null);
     setLoading(true);
     try {
-      const result = await apiPost<ChatResponse>('/api/chat', { history, message: text });
+      const result = await apiPost<ChatResponse>('/api/chat', { history, message: text, staffId: authUser.id });
+      if (session !== sessionRef.current) return;
       setMessages((prev) => [...prev, { role: 'model', text: result.reply }]);
     } catch (err) {
+      if (session !== sessionRef.current) return;
       setError(err instanceof Error ? err.message : 'Gagal mengirim pesan');
     } finally {
-      setLoading(false);
+      if (session === sessionRef.current) setLoading(false);
     }
+  }
+
+  /// Menutup chat menghapus seluruh isinya (pesan, ketikan, error).
+  function closeChat(): void {
+    sessionRef.current += 1;
+    setOpen(false);
+    setMessages([]);
+    setInput('');
+    setError(null);
+    setLoading(false);
   }
 
   return (
     <div className="chat-widget">
       {open && (
-        <section className="chat-widget__panel" aria-label="Chat dengan AI Prima Husada">
+        <section className="chat-widget__panel" aria-label="Chat dengan Fernanda-Fatra73">
           <header className="chat-widget__header">
-            <span>AI Prima Husada</span>
+            <span>Fernanda-Fatra73</span>
             <button
               type="button"
               className="chat-widget__close"
               aria-label="Tutup chat"
-              onClick={() => setOpen(false)}
+              onClick={closeChat}
             >
               ✕
             </button>
@@ -64,8 +85,9 @@ export function ChatWidget() {
           <div className="chat-widget__list" ref={listRef}>
             {messages.length === 0 && (
               <p className="chat-widget__empty">
-                Tanya AI Prima Husada soal Master Kesan radiologi — sebut nama pemeriksaan (mis. "thorak") atau gejala
-                klinis (mis. "batuk, sesak").
+                Tanya Fernanda-Fatra73 apa saja — soal Master Kesan radiologi (mis. "thorak", "batuk, sesak") atau topik
+                lain dari internet.
+                {canReadClinicData && ' Sebagai Admin/CEO, Anda juga bisa menanyakan data klinik (nama pasien disamarkan).'}
               </p>
             )}
             {messages.map((turn, index) => (
@@ -84,7 +106,7 @@ export function ChatWidget() {
           <form className="chat-widget__form" onSubmit={(event) => void handleSubmit(event)}>
             <input
               type="text"
-              placeholder="Tanya kesan/pemeriksaan..."
+              placeholder="Tanya apa saja..."
               value={input}
               onChange={(event) => setInput(event.target.value)}
               disabled={loading}
@@ -99,8 +121,8 @@ export function ChatWidget() {
       <button
         type="button"
         className="chat-widget__fab"
-        aria-label={open ? 'Tutup AI Prima Husada' : 'Buka AI Prima Husada'}
-        onClick={() => setOpen((prev) => !prev)}
+        aria-label={open ? 'Tutup Fernanda-Fatra73' : 'Buka Fernanda-Fatra73'}
+        onClick={() => (open ? closeChat() : setOpen(true))}
       >
         {open ? '✕' : '💬'}
       </button>

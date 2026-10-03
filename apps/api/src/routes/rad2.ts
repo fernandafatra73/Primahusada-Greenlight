@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { Decimal } from '../generated/prisma/internal/prismaNamespace.js';
 import { buildPaginationMeta, parsePagination } from '../lib/pagination.js';
 import { prisma } from '../lib/prisma.js';
-import { parseRad2Input } from '../lib/rad2.js';
+import { buildRad2Filter, parseRad2Input, type Rad2ListQuery } from '../lib/rad2.js';
 import { serializeDecimal } from '../lib/serialize.js';
 
 function badRequest(reply: FastifyReply, message: string): FastifyReply {
@@ -40,19 +40,11 @@ function serializeRad2(r: {
 }
 
 export async function registerRad2Routes(app: FastifyInstance): Promise<void> {
-  app.get<{ Querystring: { page?: string; limit?: string; q?: string } }>('/api/rad2', async (req) => {
+  app.get<{ Querystring: Rad2ListQuery & { page?: string; limit?: string } }>('/api/rad2', async (req, reply) => {
     const { page, limit, skip } = parsePagination(req.query);
-    const q = req.query.q?.trim();
-    const where = q
-      ? {
-          OR: [
-            { nama: { contains: q } },
-            { pemeriksaan: { contains: q } },
-            { pengirim: { contains: q } },
-            { radiologi: { contains: q } },
-          ],
-        }
-      : {};
+    const filter = buildRad2Filter(req.query);
+    if (!filter.ok) return badRequest(reply, filter.error);
+    const where = filter.where;
     const [total, items, agg] = await Promise.all([
       prisma.rad2.count({ where }),
       prisma.rad2.findMany({
@@ -66,7 +58,7 @@ export async function registerRad2Routes(app: FastifyInstance): Promise<void> {
     return {
       items: items.map(serializeRad2),
       pagination: buildPaginationMeta(total, page, limit),
-      // Total dihitung dari seluruh data yang cocok dengan pencarian, bukan hanya halaman ini.
+      // Total dihitung dari seluruh data yang cocok dengan pencarian/filter, bukan hanya halaman ini.
       totalHarga: (agg._sum.harga ?? new Decimal(0)).toString(),
       totalSharing: (agg._sum.sharing ?? new Decimal(0)).toString(),
     };

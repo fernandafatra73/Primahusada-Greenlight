@@ -1,19 +1,29 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { CetakALModal, type CetakALPasien } from '../components/CetakALModal.tsx';
 import { KesanEditorModal } from '../components/KesanEditorModal.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ModalFormFooter } from '../components/ui/ModalFormFooter.tsx';
+import { SharingPdfPreviewModal } from '../components/ui/SharingPdfPreviewModal.tsx';
 import { TableRowActions } from '../components/ui/TableRowActions.tsx';
 import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.ts';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.ts';
 import { useMutationReload } from '../hooks/useMutationReload.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort, formatRupiah } from '../lib/format.ts';
 import type { PaginatedResponse } from '../lib/pagination.ts';
 import { formatRadiologName } from '../lib/pasienPrint.ts';
+import {
+  pendaftaranToRad2Fill,
+  pendaftaranUmumToRad2Fill,
+  type PendaftaranForRad2,
+  type PendaftaranUmumForRad2,
+} from '../lib/pendaftaranToRad2.ts';
+import { RAD2_PERIOD_OPTIONS, resolveRad2Period, type Rad2PeriodKind } from '../lib/rad2Period.ts';
 import { computeRad2Sharing, type Rad2SharingResult } from '../lib/rad2Sharing.ts';
+import { downloadBlob, generateRad2ReportBlob } from '../pdf/printRad2Report.tsx';
 import { printRadiologyReport } from '../pdf/printRadiologyReport.tsx';
 import '../components/ui/ui.css';
 
@@ -50,6 +60,24 @@ interface PilihanSharingOption {
   readonly id: string;
   readonly nominal: number;
 }
+
+interface AdminKlinikOption {
+  readonly id: string;
+  readonly nama: string;
+}
+
+interface PendaftaranOption extends PendaftaranForRad2 {
+  readonly id: string;
+  readonly regCode: string;
+}
+
+interface PendaftaranUmumOption extends PendaftaranUmumForRad2 {
+  readonly id: string;
+  readonly noRegistrasi: string;
+}
+
+/** Laporan mengambil seluruh data yang cocok dengan filter, bukan hanya halaman yang tampil. */
+const REPORT_PAGE_LIMIT = 100;
 
 interface Rad2Form {
   readonly nama: string;
@@ -123,7 +151,18 @@ function toCetakALPasien(item: Rad2Item, rowNo: number): CetakALPasien {
 
 export function Rad2Page() {
   const { search, setSearch } = useListSearch();
-  const queryParams = useListQueryParams({}, search);
+  const [dokterFilter, setDokterFilter] = useState('');
+  const [periodKind, setPeriodKind] = useState<Rad2PeriodKind>('semua');
+  const [customDari, setCustomDari] = useState('');
+  const [customSampai, setCustomSampai] = useState('');
+  const period = useMemo(
+    () => resolveRad2Period(periodKind, new Date(), { dari: customDari, sampai: customSampai }),
+    [periodKind, customDari, customSampai],
+  );
+  const queryParams = useListQueryParams(
+    { pengirim: dokterFilter, dari: period.dari, sampai: period.sampai },
+    search,
+  );
   const [totals, setTotals] = useState({ harga: '0', sharing: '0' });
   const onLoaded = useCallback((res: Rad2ListResponse) => {
     setTotals({ harga: res.totalHarga, sharing: res.totalSharing });
@@ -150,23 +189,83 @@ export function Rad2Page() {
   const [jenisOptions, setJenisOptions] = useState<readonly JenisPemeriksaanOption[]>([]);
   const [sharingOptions, setSharingOptions] = useState<readonly PilihanSharingOption[]>([]);
 
+  const [adminOptions, setAdminOptions] = useState<readonly AdminKlinikOption[]>([]);
+  const [adminKlinikId, setAdminKlinikId] = useState('');
+  const [reporting, setReporting] = useState(false);
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const [pendaftaranQuery, setPendaftaranQuery] = useState('');
+  const debouncedPendaftaranQuery = useDebouncedValue(pendaftaranQuery);
+  const [pendaftaranOptions, setPendaftaranOptions] = useState<readonly PendaftaranOption[]>([]);
+  const [umumOptions, setUmumOptions] = useState<readonly PendaftaranUmumOption[]>([]);
+  const [pendaftaranLoading, setPendaftaranLoading] = useState(false);
+  const [pendaftaranError, setPendaftaranError] = useState<string | null>(null);
+  const [pendaftaranNotice, setPendaftaranNotice] = useState<string | null>(null);
+
   const loadOptions = useCallback(async () => {
     // Pilihan hanya membantu pengisian; kalau gagal dimuat, form tetap bisa diketik manual.
-    const [dokter, radiolog, jenis, sharing] = await Promise.allSettled([
+    const [dokter, radiolog, jenis, sharing, admin] = await Promise.allSettled([
       apiGet<{ items: NamaOption[] }>('/api/dokter?limit=100'),
       apiGet<{ items: NamaOption[] }>('/api/radiolog?limit=100'),
       apiGet<{ items: JenisPemeriksaanOption[] }>('/api/jenis-pemeriksaan?limit=100'),
       apiGet<{ items: PilihanSharingOption[] }>('/api/pilihan-sharing'),
+      apiGet<{ items: AdminKlinikOption[] }>('/api/admin-klinik?limit=100'),
     ]);
     setDokterOptions(dokter.status === 'fulfilled' ? dokter.value.items : []);
     setRadiologOptions(radiolog.status === 'fulfilled' ? radiolog.value.items : []);
     setJenisOptions(jenis.status === 'fulfilled' ? jenis.value.items : []);
     setSharingOptions(sharing.status === 'fulfilled' ? sharing.value.items : []);
+    setAdminOptions(admin.status === 'fulfilled' ? admin.value.items : []);
   }, []);
 
   useEffect(() => {
     void loadOptions();
   }, [loadOptions]);
+
+  // Pendaftaran radiologi terbaru (atau hasil pencarian) untuk pengisian otomatis di form Tambah.
+  const formOpenForCreate = createOpen;
+  useEffect(() => {
+    if (!formOpenForCreate) return;
+    let cancelled = false;
+    setPendaftaranLoading(true);
+    setPendaftaranError(null);
+    const params = new URLSearchParams({ limit: '8' });
+    if (debouncedPendaftaranQuery.trim()) params.set('q', debouncedPendaftaranQuery.trim());
+    const query = params.toString();
+    // Dua sumber: Pendaftaran (radiologi) dan Pendaftaran Umum. Satu gagal tidak menyembunyikan yang lain.
+    void Promise.allSettled([
+      apiGet<{ items: PendaftaranOption[] }>(`/api/pasien?modul=RADIOLOGI&${query}`),
+      apiGet<{ items: PendaftaranUmumOption[] }>(`/api/pendaftaran-umum?${query}`),
+    ]).then(([pasien, umum]) => {
+      if (cancelled) return;
+      setPendaftaranOptions(pasien.status === 'fulfilled' ? pasien.value.items : []);
+      setUmumOptions(umum.status === 'fulfilled' ? umum.value.items : []);
+      if (pasien.status === 'rejected' && umum.status === 'rejected') {
+        // Form tetap bisa diisi manual; pesan ini hanya menjelaskan kenapa daftar kosong.
+        const reason: unknown = pasien.reason;
+        setPendaftaranError(reason instanceof Error ? reason.message : 'Gagal memuat data pendaftaran');
+      }
+      setPendaftaranLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [formOpenForCreate, debouncedPendaftaranQuery]);
+
+  function pickPendaftaran(p: PendaftaranOption) {
+    const fill = pendaftaranToRad2Fill(p, todayIso());
+    setForm((f) => withAutoSharing({ ...f, ...fill }));
+    setPendaftaranNotice(`Data diisi dari pendaftaran ${p.regCode} — ${p.nama}. Periksa kembali sebelum menyimpan.`);
+  }
+
+  function pickPendaftaranUmum(p: PendaftaranUmumOption) {
+    const fill = pendaftaranUmumToRad2Fill(p, todayIso());
+    setForm((f) => withAutoSharing({ ...f, ...fill }));
+    setPendaftaranNotice(
+      `Data diisi dari pendaftaran umum ${p.noRegistrasi} — ${p.namaPasien}. Pemeriksaan, radiologi, dan harga belum ada di data ini, isi manual.`,
+    );
+  }
 
   function updateForm(field: keyof Rad2Form, value: string) {
     setForm((f) => {
@@ -189,6 +288,8 @@ export function Rad2Page() {
   const sharingRule = autoSharingFor(form);
 
   function openCreate() {
+    setPendaftaranQuery('');
+    setPendaftaranNotice(null);
     setForm(emptyForm());
     setError(null);
     setCreateOpen(true);
@@ -305,6 +406,71 @@ export function Rad2Page() {
     }
   }
 
+  /** Bangun PDF laporan dari semua baris yang cocok dengan pencarian + filter aktif. */
+  async function buildReportBlob(): Promise<Blob> {
+    const rows: Rad2Item[] = [];
+    let totalHarga = '0';
+    let totalSharing = '0';
+    let pageNo = 1;
+    let totalPages = 1;
+    while (pageNo <= totalPages) {
+      const params = new URLSearchParams({ page: String(pageNo), limit: String(REPORT_PAGE_LIMIT) });
+      for (const [key, value] of Object.entries(queryParams)) {
+        if (value) params.set(key, value);
+      }
+      const res = await apiGet<Rad2ListResponse>(`/api/rad2?${params.toString()}`);
+      rows.push(...res.items);
+      totalHarga = res.totalHarga;
+      totalSharing = res.totalSharing;
+      totalPages = res.pagination.totalPages;
+      pageNo += 1;
+    }
+    return generateRad2ReportBlob({
+      dokterLabel: dokterFilter || 'Semua dokter',
+      periodeLabel: period.label,
+      tanggalCetak: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
+      items: rows.map((r, idx) => ({
+        no: idx + 1,
+        nama: r.nama,
+        umur: `${r.umur} th`,
+        tanggal: formatDateShort(r.tanggal),
+        pemeriksaan: r.pemeriksaan,
+        pengirim: r.pengirim,
+        radiologi: r.radiologi ?? '',
+        hargaFormatted: formatRupiah(r.harga),
+        sharingFormatted: formatRupiah(r.sharing),
+      })),
+      totalData: rows.length,
+      totalHargaFormatted: formatRupiah(totalHarga),
+      totalSharingFormatted: formatRupiah(totalSharing),
+      adminNama: adminOptions.find((a) => a.id === adminKlinikId)?.nama ?? '',
+    });
+  }
+
+  function reportFilename(): string {
+    const parts = [dokterFilter, period.dari ? `${period.dari}_${period.sampai || 'akhir'}` : ''].filter(Boolean);
+    const suffix = parts.join('_').replace(/[^A-Za-z0-9._-]+/g, '_');
+    return suffix ? `Laporan_Rad2_${suffix}.pdf` : 'Laporan_Rad2.pdf';
+  }
+
+  async function handleLaporan(mode: 'cetak' | 'pdf') {
+    setReporting(true);
+    setError(null);
+    try {
+      const blob = await buildReportBlob();
+      if (mode === 'cetak') {
+        setPreviewBlob(blob);
+        setPreviewOpen(true);
+      } else {
+        downloadBlob(blob, reportFilename());
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal membuat laporan');
+    } finally {
+      setReporting(false);
+    }
+  }
+
   function openCetak(item: Rad2Item, rowNo: number, mode: 'amplop' | 'label') {
     setCetakMode(mode);
     setCetakPasien(toCetakALPasien(item, rowNo));
@@ -324,6 +490,75 @@ export function Rad2Page() {
         searchValue={search}
         onSearchChange={setSearch}
         onRefresh={() => void reload()}
+        filterExtra={
+          <>
+            <select
+              className="filter-control filter-control--select"
+              value={dokterFilter}
+              onChange={(e) => setDokterFilter(e.target.value)}
+              aria-label="Filter dokter pengirim"
+            >
+              <option value="">Semua dokter pengirim</option>
+              {dokterOptions.map((d) => (
+                <option key={d.id} value={d.nama}>
+                  {d.nama}
+                </option>
+              ))}
+            </select>
+            <select
+              className="filter-control filter-control--select"
+              value={periodKind}
+              onChange={(e) => setPeriodKind(e.target.value as Rad2PeriodKind)}
+              aria-label="Filter periode"
+            >
+              {RAD2_PERIOD_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {periodKind === 'custom' && (
+              <>
+                <input
+                  type="date"
+                  className="filter-control"
+                  value={customDari}
+                  max={customSampai || undefined}
+                  onChange={(e) => setCustomDari(e.target.value)}
+                  aria-label="Tanggal awal"
+                />
+                <span aria-hidden>s/d</span>
+                <input
+                  type="date"
+                  className="filter-control"
+                  value={customSampai}
+                  min={customDari || undefined}
+                  onChange={(e) => setCustomSampai(e.target.value)}
+                  aria-label="Tanggal akhir"
+                />
+              </>
+            )}
+            <select
+              className="filter-control filter-control--select"
+              value={adminKlinikId}
+              onChange={(e) => setAdminKlinikId(e.target.value)}
+              aria-label="Nama admin pada laporan"
+            >
+              <option value="">Nama admin…</option>
+              {adminOptions.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nama}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="btn btn--secondary" disabled={reporting} onClick={() => void handleLaporan('cetak')}>
+              🖨️ {reporting ? 'Menyiapkan…' : 'Cetak'}
+            </button>
+            <button type="button" className="btn btn--secondary" disabled={reporting} onClick={() => void handleLaporan('pdf')}>
+              📄 PDF
+            </button>
+          </>
+        }
         error={error}
         loading={loading}
         pagination={pagination}
@@ -445,6 +680,65 @@ export function Rad2Page() {
       {(createOpen || editing) && (
         <Modal open={true} title={editing ? 'Ubah Data Rad2' : 'Tambah Data Rad2'} onClose={closeModal}>
           <form onSubmit={(e) => void handleSubmit(e)} className="form-grid">
+            {!editing && (
+              <div className="form-field form-field--full">
+                <label htmlFor="rad2-pendaftaran">Ambil otomatis dari Pendaftaran</label>
+                <input
+                  id="rad2-pendaftaran"
+                  type="search"
+                  value={pendaftaranQuery}
+                  onChange={(e) => setPendaftaranQuery(e.target.value)}
+                  // Enter di kolom pencarian tidak boleh menyimpan form.
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.preventDefault();
+                  }}
+                  placeholder="Cari nama / no. registrasi, lalu klik pasien untuk mengisi form"
+                />
+                {pendaftaranNotice && <p className="form-hint">{pendaftaranNotice}</p>}
+                <div style={{ maxHeight: '180px', overflowY: 'auto', marginTop: '0.4rem' }}>
+                  {pendaftaranLoading && pendaftaranOptions.length === 0 && umumOptions.length === 0 ? (
+                    <p className="form-hint">Memuat pendaftaran…</p>
+                  ) : pendaftaranError ? (
+                    <p className="alert alert--error">Gagal memuat pendaftaran: {pendaftaranError}</p>
+                  ) : pendaftaranOptions.length === 0 && umumOptions.length === 0 ? (
+                    <p className="form-hint">
+                      {debouncedPendaftaranQuery.trim()
+                        ? 'Tidak ada pendaftaran yang cocok dengan pencarian ini.'
+                        : 'Belum ada data di Pendaftaran maupun Pendaftaran Umum.'}
+                    </p>
+                  ) : (
+                    <>
+                      {pendaftaranOptions.map((p) => (
+                        <button
+                          key={`pasien-${p.id}`}
+                          type="button"
+                          className="btn btn--sm btn--secondary"
+                          style={{ display: 'block', width: '100%', textAlign: 'left', marginBottom: '0.25rem' }}
+                          onClick={() => pickPendaftaran(p)}
+                          title="Isi form dari pendaftaran ini"
+                        >
+                          <strong>{p.nama}</strong> ({p.umur} th) · {p.pemeriksaan.map((x) => x.nama).join(', ') || '—'} ·{' '}
+                          {p.pengirim.nama} · {formatDateShort(p.createdAt)} · {p.regCode}
+                        </button>
+                      ))}
+                      {umumOptions.map((p) => (
+                        <button
+                          key={`umum-${p.id}`}
+                          type="button"
+                          className="btn btn--sm btn--secondary"
+                          style={{ display: 'block', width: '100%', textAlign: 'left', marginBottom: '0.25rem' }}
+                          onClick={() => pickPendaftaranUmum(p)}
+                          title="Isi form dari pendaftaran umum ini"
+                        >
+                          <strong>{p.namaPasien}</strong> ({p.umur || '—'}) · Umum · {p.dokterPengirim || '—'} ·{' '}
+                          {formatDateShort(p.tanggalMasuk)} · {p.noRegistrasi}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="form-field form-field--full">
               <label htmlFor="rad2-nama">Nama *</label>
               <input id="rad2-nama" required value={form.nama} onChange={(e) => updateForm('nama', e.target.value)} />
@@ -583,6 +877,14 @@ export function Rad2Page() {
         loading={submitting}
         onClose={() => setDeleting(null)}
         onConfirm={() => void handleDeleteConfirm()}
+      />
+
+      <SharingPdfPreviewModal
+        open={previewOpen}
+        blob={previewBlob}
+        filename={reportFilename()}
+        onClose={() => setPreviewOpen(false)}
+        title="Pratinjau Laporan Rad2"
       />
 
       {kesanTarget && (
