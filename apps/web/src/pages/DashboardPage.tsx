@@ -62,6 +62,7 @@ export function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [animasi, setAnimasi] = useState(true);
+  const [grafik, setGrafik] = useState(true);
 
   const load = useCallback(async () => {
     setError(null);
@@ -95,13 +96,21 @@ export function DashboardPage() {
           >
             Animasi
           </button>
+          <button
+            type="button"
+            className={`btn btn--sm ${grafik ? 'btn--primary' : 'btn--secondary'}`}
+            aria-pressed={grafik}
+            onClick={() => setGrafik((on) => !on)}
+          >
+            Grafik
+          </button>
         </div>
       </div>
 
       {error && <p className="alert alert--error">{error}</p>}
       {!data && !error && <p className="loading-text">Memuat data…</p>}
 
-      {data && (
+      {data && grafik && (
         <div className="dashboard-row">
           <section className="chart-card dashboard-row__chart">
             <h3 className="chart-card__title">Grafik Dokter Pengirim</h3>
@@ -124,7 +133,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {data && (
+      {data && grafik && (
         <section className="chart-card">
           <h3 className="chart-card__title">Grafik Pasien berdasarkan Alamat</h3>
           {alamat.length > 0 ? (
