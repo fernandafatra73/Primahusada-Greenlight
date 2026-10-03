@@ -41,9 +41,30 @@
 }
 
 .login-scene__train {
-  animation: login-train 12s linear infinite;
+  animation: login-train 16s linear infinite;
   /* Start mid-journey so the train is visible as soon as the page loads. */
-  animation-delay: -5s;
+  animation-delay: -7s;
+}
+
+.login-scene__fish {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: login-fish 6s ease-in-out infinite;
+  animation-delay: 0.8s;
+  transform: translate(0, 24px) rotate(-55deg);
+}
+
+.login-scene__splash {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  opacity: 0;
+  animation: login-splash 6s ease-out infinite;
+  animation-delay: 0.8s;
+}
+
+/* Re-entry splash lines up with the fish landing (~40% of the cycle). */
+.login-scene__splash--late {
+  animation-delay: 3.2s;
 }
 
 .login-scene__wheel {
@@ -92,7 +113,50 @@
     transform: translateX(-110px);
   }
   to {
-    transform: translateX(480px);
+    transform: translateX(700px);
+  }
+}
+
+@keyframes login-fish {
+  0% {
+    transform: translate(0, 24px) rotate(-55deg);
+  }
+  8% {
+    transform: translate(14px, -22px) rotate(-40deg);
+  }
+  16% {
+    transform: translate(30px, -48px) rotate(-15deg);
+  }
+  22% {
+    transform: translate(44px, -54px) rotate(0deg);
+  }
+  28% {
+    transform: translate(58px, -48px) rotate(15deg);
+  }
+  36% {
+    transform: translate(74px, -22px) rotate(40deg);
+  }
+  44%,
+  100% {
+    transform: translate(88px, 24px) rotate(55deg);
+  }
+}
+
+@keyframes login-splash {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  4% {
+    opacity: 0.95;
+  }
+  20% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
   }
 }
 
@@ -136,12 +200,19 @@
   .login-scene__wheel,
   .login-scene__smoke circle,
   .login-scene__ripple,
-  .login-scene__clouds {
+  .login-scene__clouds,
+  .login-scene__fish,
+  .login-scene__splash {
     animation: none;
   }
 
   .login-scene__train {
-    transform: translateX(170px);
+    transform: translateX(250px);
+  }
+
+  /* Freeze the fish at the top of its leap so it is still visible. */
+  .login-scene__fish {
+    transform: translate(44px, -54px);
   }
 
   .login-scene__smoke circle {

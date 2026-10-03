@@ -92,6 +92,14 @@ export function LoginScene() {
           <pattern id="ls-ripple-fine" width="34" height="7" patternUnits="userSpaceOnUse">
             <path d="M0 4 Q8.5 2 17 4 T34 4" fill="none" stroke="#a7f0d3" strokeWidth="0.6" opacity="0.45" />
           </pattern>
+          <linearGradient id="ls-fish" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#b5541a" />
+            <stop offset="45%" stopColor="#f39c34" />
+            <stop offset="100%" stopColor="#fde7b8" />
+          </linearGradient>
+          <clipPath id="ls-above-water" clipPathUnits="userSpaceOnUse">
+            <rect x="0" y="0" width="400" height="238" />
+          </clipPath>
           <filter id="ls-blur-soft" x="-20%" y="-50%" width="140%" height="200%">
             <feGaussianBlur stdDeviation="2.2" />
           </filter>
@@ -139,11 +147,27 @@ export function LoginScene() {
         <path d="M0 192 Q100 178 200 188 T400 186 V240 H0 Z" fill="url(#ls-meadow)" />
 
         <g filter="url(#ls-shadow)">
-          <Pine x={52} y={196} scale={1.15} />
-          <LeafyTree x={84} y={198} scale={1} />
-          <LeafyTree x={292} y={194} scale={1.2} />
-          <Pine x={330} y={198} scale={1.3} />
-          <LeafyTree x={360} y={200} scale={0.9} />
+          <LeafyTree x={30} y={198} scale={1.05} />
+          <Pine x={52} y={196} scale={1.25} />
+          <LeafyTree x={78} y={199} scale={1.15} />
+          <LeafyTree x={112} y={197} scale={0.85} />
+          <Pine x={136} y={195} scale={0.95} />
+          <LeafyTree x={258} y={196} scale={0.9} />
+          <LeafyTree x={292} y={197} scale={1.25} />
+          <Pine x={322} y={198} scale={1.35} />
+          <LeafyTree x={350} y={200} scale={1.1} />
+          <LeafyTree x={378} y={198} scale={0.95} />
+        </g>
+
+        {/* Shrubs along the embankment */}
+        <g>
+          {SHRUBS.map((s) => (
+            <g key={s.x} transform={`translate(${s.x} 209)`}>
+              <circle cx="-5" cy="-3" r="5" fill="url(#ls-leaf)" />
+              <circle cx="4" cy="-4" r="6" fill="url(#ls-leaf)" />
+              <circle cx="0" cy="-8" r="5" fill="url(#ls-leaf)" />
+            </g>
+          ))}
         </g>
 
         {/* Embankment, sleepers and steel rails */}
@@ -166,16 +190,11 @@ export function LoginScene() {
               <circle cx="71" cy="144" r="7" fill="url(#ls-smoke)" />
             </g>
 
-            <g filter="url(#ls-shadow)">
-              {/* Passenger carriage */}
-              <rect x="-112" y="170" width="64" height="34" rx="3" fill="url(#ls-body)" />
-              <path d="M-115 172 Q-80 160 -45 172 Z" fill="#26313b" />
-              {[-104, -88, -72].map((x) => (
-                <rect key={x} x={x} y="178" width="11" height="11" rx="1.5" fill="url(#ls-window)" />
-              ))}
-              <rect x="-112" y="194" width="64" height="2" fill="#f1c40f" opacity="0.8" />
-              <rect x="-48" y="196" width="8" height="3" fill="#30363c" />
+            {CARRIAGES.map((x) => (
+              <Carriage key={x} x={x} />
+            ))}
 
+            <g filter="url(#ls-shadow)">
               {/* Tender */}
               <rect x="-40" y="178" width="38" height="26" rx="2" fill="#1b232b" />
               <rect x="-40" y="176" width="38" height="4" fill="#2c3a46" />
@@ -200,8 +219,6 @@ export function LoginScene() {
               <path d="M88 202 L100 214 H86 Z" fill="#7a2017" />
             </g>
 
-            <Wheel cx={-102} cy={208} r={6} />
-            <Wheel cx={-58} cy={208} r={6} />
             <Wheel cx={-32} cy={208} r={6} />
             <Wheel cx={-12} cy={208} r={6} />
             <Wheel cx={14} cy={208} r={6} />
@@ -235,26 +252,136 @@ export function LoginScene() {
           stroke="#2f6b32"
           strokeWidth="1.2"
         />
+
+        {/* Leaping fish, clipped at the waterline so it rises out of the river */}
+        <g clipPath="url(#ls-above-water)">
+          <g transform="translate(160 250) scale(1.4)">
+            <g className="login-scene__fish">
+              <Fish />
+            </g>
+          </g>
+        </g>
+        {/* Where the scaled leap arc crosses the waterline on the way up and down */}
+        <Splash x={174} />
+        <Splash x={269} late />
       </svg>
     </div>
   );
 }
 
-const TREELINE: ReadonlyArray<{ readonly x: number; readonly y: number; readonly r: number }> = [
-  { x: 8, y: 172, r: 6 },
-  { x: 20, y: 168, r: 7 },
-  { x: 34, y: 165, r: 6 },
-  { x: 120, y: 166, r: 5 },
-  { x: 132, y: 167, r: 6 },
-  { x: 146, y: 168, r: 5 },
-  { x: 214, y: 166, r: 6 },
-  { x: 228, y: 164, r: 7 },
-  { x: 242, y: 165, r: 5 },
-  { x: 372, y: 167, r: 6 },
-  { x: 386, y: 168, r: 7 },
+// Rough ridge of the hill path, used to seat the treeline on its crest.
+const HILL_RIDGE: ReadonlyArray<readonly [number, number]> = [
+  [0, 176],
+  [60, 163],
+  [130, 168],
+  [200, 170],
+  [260, 162],
+  [330, 160],
+  [400, 170],
+];
+
+function hillY(x: number): number {
+  for (let i = 1; i < HILL_RIDGE.length; i += 1) {
+    const [x1, y1] = HILL_RIDGE[i] ?? [400, 170];
+    const [x0, y0] = HILL_RIDGE[i - 1] ?? [0, 176];
+    if (x <= x1) {
+      return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+    }
+  }
+  return 170;
+}
+
+// Deterministic jitter so the forest looks natural but renders identically every time.
+const TREELINE: ReadonlyArray<{ readonly x: number; readonly y: number; readonly r: number }> = Array.from(
+  { length: 58 },
+  (_, i) => {
+    const x = i * 7;
+    const r = 4.5 + ((i * 37) % 5) * 0.6;
+    return { x, y: hillY(x) - 1 - ((i * 13) % 4), r };
+  },
+);
+
+const SHRUBS: ReadonlyArray<{ readonly x: number }> = [
+  { x: 20 },
+  { x: 96 },
+  { x: 160 },
+  { x: 214 },
+  { x: 276 },
+  { x: 340 },
+  { x: 392 },
 ];
 
 const SLEEPERS: ReadonlyArray<number> = Array.from({ length: 34 }, (_, i) => i * 12);
+
+// Left edge of each passenger carriage, in train-local units behind the tender.
+const CARRIAGES: ReadonlyArray<number> = [-142, -244, -346];
+
+function Carriage({ x }: { readonly x: number }) {
+  return (
+    <g>
+      <g filter="url(#ls-shadow)">
+        <rect x={x} y="166" width="96" height="38" rx="3" fill="url(#ls-body)" />
+        <path d={`M${x - 3} 168 Q${x + 48} 154 ${x + 99} 168 Z`} fill="#26313b" />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <rect key={i} x={x + 6 + i * 15} y="172" width="10" height="9" rx="1.5" fill="url(#ls-window)" />
+        ))}
+        <rect x={x} y="184" width="96" height="1.6" fill="#f1c40f" opacity="0.9" />
+        <text
+          x={x + 48}
+          y="196"
+          textAnchor="middle"
+          fontFamily="Arial, Helvetica, sans-serif"
+          fontSize="8.4"
+          fontWeight="700"
+          fill="#ffffff"
+          stroke="#0b2a55"
+          strokeWidth="0.3"
+        >
+          Klinik Prima Husada
+        </text>
+        <rect x={x} y="200" width="96" height="1.4" fill="#f1c40f" opacity="0.9" />
+        <rect x={x + 96} y="196" width="6" height="3" fill="#30363c" />
+      </g>
+      <Wheel cx={x + 12} cy={208} r={6} />
+      <Wheel cx={x + 26} cy={208} r={6} />
+      <Wheel cx={x + 70} cy={208} r={6} />
+      <Wheel cx={x + 84} cy={208} r={6} />
+    </g>
+  );
+}
+
+function Fish() {
+  return (
+    <g>
+      <path d="M-20 0 L-32 -11 Q-29 0 -32 11 Z" fill="#e0782a" stroke="#8a3a10" strokeWidth="0.6" />
+      <path d="M-6 -9 Q2 -20 10 -9 Z" fill="#e0782a" />
+      <path
+        d="M22 0 Q16 -11 0 -11 Q-14 -11 -21 0 Q-14 11 0 11 Q16 11 22 0 Z"
+        fill="url(#ls-fish)"
+        stroke="#8a3a10"
+        strokeWidth="0.6"
+      />
+      <path d="M-12 -4 Q0 -7 12 -3" fill="none" stroke="#fff3d6" strokeWidth="0.8" opacity="0.7" />
+      <path d="M-2 4 L-8 11 L2 7 Z" fill="#e0782a" />
+      <path d="M10 -9 Q8 0 10 9" fill="none" stroke="#8a3a10" strokeWidth="0.7" opacity="0.6" />
+      <circle cx="15" cy="-3" r="2.2" fill="#ffffff" />
+      <circle cx="15.5" cy="-3" r="1.2" fill="#111" />
+    </g>
+  );
+}
+
+function Splash({ x, late = false }: { readonly x: number; readonly late?: boolean }) {
+  return (
+    <g transform={`translate(${x} 239)`}>
+      <g className={late ? 'login-scene__splash login-scene__splash--late' : 'login-scene__splash'}>
+        <ellipse rx="12" ry="3" fill="none" stroke="#f2fffa" strokeWidth="1.2" />
+        <circle cx="-7" cy="-7" r="1.4" fill="#f2fffa" />
+        <circle cx="0" cy="-10" r="1.6" fill="#f2fffa" />
+        <circle cx="7" cy="-6" r="1.3" fill="#f2fffa" />
+      </g>
+    </g>
+  );
+}
 
 interface TreeProps {
   readonly x: number;
@@ -265,11 +392,22 @@ interface TreeProps {
 function LeafyTree({ x, y, scale }: TreeProps) {
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
-      <path d="M-2.5 0 L-2 -20 Q0 -22 2 -20 L2.5 0 Z" fill="url(#ls-trunk)" />
-      <circle cx="-9" cy="-20" r="10" fill="url(#ls-leaf)" />
-      <circle cx="9" cy="-21" r="10" fill="url(#ls-leaf)" />
-      <circle cx="0" cy="-32" r="13" fill="url(#ls-leaf)" />
-      <circle cx="-5" cy="-26" r="8" fill="url(#ls-leaf)" opacity="0.8" />
+      <path d="M-3 0 L-2.2 -22 Q0 -24 2.2 -22 L3 0 Z" fill="url(#ls-trunk)" />
+      <path d="M0 -14 L-9 -22 M0 -17 L8 -25" stroke="#4a3220" strokeWidth="1.6" />
+      {/* Back canopy is darker so the front clusters read as nearer foliage */}
+      <g fill="#1d4f25">
+        <circle cx="-15" cy="-26" r="10" />
+        <circle cx="15" cy="-27" r="10" />
+        <circle cx="0" cy="-46" r="12" />
+      </g>
+      <circle cx="-13" cy="-20" r="9" fill="url(#ls-leaf)" />
+      <circle cx="12" cy="-21" r="9.5" fill="url(#ls-leaf)" />
+      <circle cx="0" cy="-22" r="9" fill="url(#ls-leaf)" />
+      <circle cx="-10" cy="-33" r="11" fill="url(#ls-leaf)" />
+      <circle cx="10" cy="-34" r="11" fill="url(#ls-leaf)" />
+      <circle cx="0" cy="-40" r="12" fill="url(#ls-leaf)" />
+      <circle cx="-4" cy="-48" r="8" fill="url(#ls-leaf)" />
+      <circle cx="6" cy="-28" r="7" fill="url(#ls-leaf)" opacity="0.85" />
     </g>
   );
 }
@@ -278,7 +416,11 @@ function Pine({ x, y, scale }: TreeProps) {
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <rect x="-1.8" y="-6" width="3.6" height="6" fill="url(#ls-trunk)" />
-      <path d="M0 -46 L-9 -26 H-4 L-13 -12 H-6 L-15 -4 H15 L6 -12 H13 L4 -26 H9 Z" fill="url(#ls-pine)" />
+      <path
+        d="M0 -50 L-8 -36 H-4 L-12 -24 H-6 L-15 -13 H-8 L-18 -4 H18 L8 -13 H15 L6 -24 H12 L4 -36 H8 Z"
+        fill="url(#ls-pine)"
+      />
+      <path d="M0 -50 L-4 -36 L-8 -24 L-11 -13 L-14 -4 H0 Z" fill="#3b7d46" opacity="0.45" />
     </g>
   );
 }
