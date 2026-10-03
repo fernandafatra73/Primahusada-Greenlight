@@ -354,12 +354,12 @@ legend {
   --dl-blue-pale: #e3edfb;
   --dl-red: #c0121f;
   --dl-red-dark: #7a0a12;
-  --color-bg-page: #b9c9e0;
+  --color-bg-page: #edf4ec;
 }
 
 body,
 .app-shell {
-  background: #b9c9e0 !important;
+  background: #edf4ec !important;
 }
 
 /* Strip bendera biru-merah di atas navbar */
@@ -371,19 +371,19 @@ body,
 .app-shell__accent-bar span:nth-child(2) { background: #ffffff !important; }
 .app-shell__accent-bar span:nth-child(3) { background: var(--dl-red) !important; }
 
-/* Navbar = title bar biru */
+/* Navbar = hijau muda, teks hijau tua agar tetap terbaca */
 .app-navbar {
-  background: linear-gradient(180deg, #2f6fd0 0%, var(--dl-blue) 60%, #06285f 100%) !important;
-  border-top: 1px solid #7fb0f5;
-  border-bottom: 3px solid var(--dl-red);
+  background: linear-gradient(180deg, #e6f6df 0%, #cfeec5 60%, #b9e3ad 100%) !important;
+  border-top: 1px solid #f3fcef;
+  border-bottom: 3px solid #7cc576;
   padding: 4px 8px;
 }
 .app-navbar__title,
 .app-navbar__credit,
 .app-navbar__user,
 .app-navbar__user-credit {
-  color: #fff !important;
-  text-shadow: 1px 1px 0 #041a44 !important;
+  color: #1f4d2b !important;
+  text-shadow: 1px 1px 0 #f3fcef !important;
 }
 .app-navbar__logo {
   width: 30px;
@@ -392,30 +392,31 @@ body,
   border: 1px solid #fff;
 }
 .app-navbar__link {
-  background: linear-gradient(180deg, #4d8be0, #1a55b5) !important;
-  color: #fff !important;
-  border-color: #9cc3f7 #06285f #06285f #9cc3f7 !important;
-  text-shadow: 1px 1px 0 #041a44 !important;
+  background: linear-gradient(180deg, #ddf3d3, #bfe6b3) !important;
+  color: #1f4d2b !important;
+  border-color: #f3fcef #7fb873 #7fb873 #f3fcef !important;
+  text-shadow: 1px 1px 0 #f3fcef !important;
 }
 .app-navbar__link:hover {
-  background: linear-gradient(180deg, #6ba2ee, #2a67cc) !important;
-  color: #fff !important;
-  border-color: #c4dcfb #06285f #06285f #c4dcfb !important;
+  background: linear-gradient(180deg, #eefbe8, #cdeec3) !important;
+  color: #123d1c !important;
+  border-color: #ffffff #7fb873 #7fb873 #ffffff !important;
 }
 .app-navbar__link--active,
 .app-navbar__link--open {
-  background: linear-gradient(180deg, var(--dl-red), var(--dl-red-dark)) !important;
-  color: #fff !important;
-  border-color: #5a070d #ff8a92 #ff8a92 #5a070d !important;
+  background: linear-gradient(180deg, #8fd08a, #5fb35a) !important;
+  color: #0f3318 !important;
+  border-color: #3f8a3a #c4f0bf #c4f0bf #3f8a3a !important;
+  text-shadow: 1px 1px 0 #b7e7b1 !important;
 }
-.app-navbar__caret { color: #fff; }
+.app-navbar__caret { color: #1f4d2b; }
 .app-navbar__icon-btn {
-  background: linear-gradient(180deg, #4d8be0, #1a55b5) !important;
-  color: #fff !important;
-  border-color: #9cc3f7 #06285f #06285f #9cc3f7 !important;
+  background: linear-gradient(180deg, #ddf3d3, #bfe6b3) !important;
+  color: #1f4d2b !important;
+  border-color: #f3fcef #7fb873 #7fb873 #f3fcef !important;
 }
 .app-navbar__avatar {
-  background: var(--dl-red) !important;
+  background: #4caf50 !important;
   color: #fff !important;
   border: 2px solid #fff;
 }
@@ -425,14 +426,14 @@ body,
 .app-navbar__dropdown--radiologi,
 .app-navbar__dropdown--laboratorium,
 .app-navbar__dropdown--keuangan {
-  background: #f4f7fd !important;
-  border-color: #fff var(--dl-blue) var(--dl-blue) #fff;
+  background: #f5fbf2 !important;
+  border-color: #fff #7cc576 #7cc576 #fff;
 }
-.app-navbar__dropdown-link { color: var(--dl-blue); font-weight: 700; }
+.app-navbar__dropdown-link { color: #1f4d2b; font-weight: 700; }
 .app-navbar__dropdown-link:hover,
 .app-navbar__dropdown-link--active {
-  background: linear-gradient(90deg, var(--dl-blue), var(--dl-blue-light)) !important;
-  color: #fff !important;
+  background: linear-gradient(90deg, #8fd08a, #bfe6b3) !important;
+  color: #123d1c !important;
 }
 
 /* Tombol */
