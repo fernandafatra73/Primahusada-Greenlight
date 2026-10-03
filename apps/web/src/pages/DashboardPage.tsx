@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import logoPrimahusada from '@src/image/logo-primahusada.png';
+import { AnimasiShow } from '../components/AnimasiShow.tsx';
 import { baseChartOptions, paletteColors } from '../components/charts/chartTheme.ts';
 import { useListRefresh } from '../context/ListRefreshContext.tsx';
 import { apiGet } from '../lib/api.ts';
@@ -23,10 +24,10 @@ interface DashboardResponse {
   };
 }
 
-function horizontalBarOptions(categories: string[], colors: string[], total: number, animate: boolean): ApexOptions {
+function horizontalBarOptions(categories: string[], colors: string[], total: number): ApexOptions {
   return {
     ...baseChartOptions(),
-    chart: { ...baseChartOptions().chart, type: 'bar', animations: { enabled: animate } },
+    chart: { ...baseChartOptions().chart, type: 'bar' },
     colors,
     plotOptions: {
       bar: {
@@ -62,7 +63,7 @@ export function DashboardPage() {
   const { version: listRefreshVersion } = useListRefresh();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [animasi, setAnimasi] = useState(true);
+  const [animasi, setAnimasi] = useState(false);
   const [grafik, setGrafik] = useState(false);
 
   const load = useCallback(async () => {
@@ -108,7 +109,9 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {!grafik && (
+      {animasi && <AnimasiShow />}
+
+      {!grafik && !animasi && (
         <div className="dashboard-logo">
           <img src={logoPrimahusada} alt="Klinik Prima Husada" className="dashboard-logo__img" />
         </div>
@@ -129,7 +132,6 @@ export function DashboardPage() {
                   dokterPengirim.map((d) => d.nama),
                   paletteColors(dokterPengirim.length),
                   totalPengirim,
-                  animasi,
                 )}
                 series={[{ name: 'Pasien', data: dokterPengirim.map((d) => d.count) }]}
               />
@@ -151,7 +153,6 @@ export function DashboardPage() {
                 alamat.map((a) => a.alamat),
                 paletteColors(alamat.length),
                 totalAlamat,
-                animasi,
               )}
               series={[{ name: 'Pasien', data: alamat.map((a) => a.count) }]}
             />
