@@ -539,3 +539,27 @@
     transform: translateX(-100%);
   }
 }
+
+.app-navbar__dropdown-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.app-navbar__activation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 220px;
+  color: var(--color-text);
+  font-size: 0.8rem;
+}
+
+.app-navbar__activation-error {
+  margin: 0;
+  color: #c0392b;
+}
+
+.app-navbar__activation-buttons {
+  display: flex;
+  gap: 0.4rem;
+}

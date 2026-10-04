@@ -20,10 +20,20 @@ interface AppShellProps {
   readonly authUser: AuthUser;
   readonly onNavigate: (id: AppViewId) => void;
   readonly onLogout: () => void;
+  readonly extrasActive: boolean;
+  readonly onExtrasChange: (active: boolean) => void;
   readonly children: ReactNode;
 }
 
-export function AppShell({ activeView, authUser, onNavigate, onLogout, children }: AppShellProps) {
+export function AppShell({
+  activeView,
+  authUser,
+  onNavigate,
+  onLogout,
+  extrasActive,
+  onExtrasChange,
+  children,
+}: AppShellProps) {
   const { version: listRefreshVersion } = useListRefresh();
   const [marqueeText, setMarqueeText] = useState(CLINIC_MARQUEE_TEXT);
   const { playlist, playingId } = useMusicPlayer();
@@ -51,6 +61,8 @@ export function AppShell({ activeView, authUser, onNavigate, onLogout, children 
         role={authUser.role}
         departemen={authUser.departemen}
         onLogout={onLogout}
+        extrasActive={extrasActive}
+        onExtrasChange={onExtrasChange}
       />
       <div className="app-shell__accent-bar" aria-hidden="true">
         <span />

@@ -108,6 +108,7 @@ import { ComingSoonPage } from './pages/ComingSoonPage.tsx';
 import { DataTerbesarPage } from './pages/DataTerbesarPage.tsx';
 import { HakAksesPage } from './pages/HakAksesPage.tsx';
 import { useEffect, useRef, useState } from 'react';
+import { isActivationLocked } from './config/activation.ts';
 
 function AccessDenied({ viewId }: { readonly viewId: AppViewId }) {
   return (
@@ -132,14 +133,29 @@ function AccessDenied({ viewId }: { readonly viewId: AppViewId }) {
   );
 }
 
+function ActivationLocked({ viewId }: { readonly viewId: AppViewId }) {
+  return (
+    <div style={{ padding: '4rem 2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+      <h2 style={{ margin: '0 0 0.5rem', color: 'var(--color-text)' }}>Belum diaktifkan</h2>
+      <p style={{ margin: 0 }}>
+        Halaman &quot;{getNavLabel(viewId)}&quot; tidak aktif. Aktifkan lewat menu Aktivasi &gt; Aktif.
+      </p>
+    </div>
+  );
+}
+
 function renderViewContent(
   viewId: AppViewId,
   role: StaffRole,
   departemen: Departemen | null,
   navigate: (view: AppViewId) => void,
+  extrasActive: boolean,
 ) {
   if (!isViewAllowed(viewId, role, departemen)) {
     return <AccessDenied viewId={viewId} />;
+  }
+  if (isActivationLocked(viewId, extrasActive)) {
+    return <ActivationLocked viewId={viewId} />;
   }
 
   switch (viewId) {
@@ -461,9 +477,12 @@ export function App() {
   const { activeView, navigate } = useAppNavigation();
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => loadStoredAuthUser());
   const [justLoggedIn, setJustLoggedIn] = useState(false);
+  // Selalu mati setiap sesi baru: tidak disimpan, jadi login/refresh mengembalikannya ke mati.
+  const [extrasActive, setExtrasActive] = useState(false);
 
   function handleLogin(user: AuthUser): void {
     storeAuthUser(user);
+    setExtrasActive(false);
     setAuthUser(user);
     setJustLoggedIn(true);
   }
@@ -472,6 +491,7 @@ export function App() {
     clearStoredAuthUser();
     setAuthUser(null);
     setJustLoggedIn(false);
+    setExtrasActive(false);
   }
 
   useIdleLogout(authUser !== null, handleLogout);
@@ -487,8 +507,11 @@ export function App() {
           <HadithReaderProvider>
             {justLoggedIn && <LoginWelcomeEffect />}
             <PdfPreviewHost>
-              <AppShell activeView={activeView} authUser={authUser} onNavigate={navigate} onLogout={handleLogout}>
-                {renderViewContent(activeView, authUser.role, authUser.departemen, navigate)}
+              <AppShell activeView={activeView} authUser={authUser} onNavigate={navigate} onLogout={handleLogout}
+                extrasActive={extrasActive}
+                onExtrasChange={setExtrasActive}
+              >
+                {renderViewContent(activeView, authUser.role, authUser.departemen, navigate, extrasActive)}
               </AppShell>
               <ChatWidget authUser={authUser} />
             </PdfPreviewHost>

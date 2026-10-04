@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type JSX } from 'react';
+import { isActivationLocked, isActivationPasswordValid } from '../../config/activation.ts';
 import logoPrimahusada from '@src/image/logo-primahusada.png';
 import {
   DASHBOARD_NAV_ID,
@@ -29,7 +30,11 @@ interface TopNavbarProps {
   readonly role: StaffRole;
   readonly departemen: Departemen | null;
   readonly onLogout: () => void;
+  readonly extrasActive: boolean;
+  readonly onExtrasChange: (active: boolean) => void;
 }
+
+type ActivationAction = 'aktif' | 'matikan';
 
 type IconComponent = (props: { className?: string }) => JSX.Element;
 
@@ -61,8 +66,40 @@ const NAVBAR_SPECS: readonly NavbarSpec[] = [
   { type: 'link', id: 'koneksi', label: 'Koneksi', icon: IconShare },
 ];
 
-export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: TopNavbarProps) {
+const ACTIVATION_MENU_KEY = 'aktivasi';
+
+export function TopNavbar({
+  activeId,
+  onNavigate,
+  role,
+  departemen,
+  onLogout,
+  extrasActive,
+  onExtrasChange,
+}: TopNavbarProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<ActivationAction | null>(null);
+  const [activationPassword, setActivationPassword] = useState('');
+  const [activationError, setActivationError] = useState<string | null>(null);
+
+  function closeActivation(): void {
+    setPendingAction(null);
+    setActivationPassword('');
+    setActivationError(null);
+  }
+
+  function submitActivation(event: FormEvent): void {
+    event.preventDefault();
+    if (!pendingAction) return;
+    if (!isActivationPasswordValid(activationPassword)) {
+      setActivationError('Password salah');
+      return;
+    }
+    onExtrasChange(pendingAction === 'aktif');
+    closeActivation();
+    setOpenMenuId(null);
+  }
+
   const navRef = useRef<HTMLElement>(null);
   const { playingId, playLoadingId, toggleQuickPlay } = useMusicPlayer();
   const isMusicPlaying = playingId !== null;
@@ -95,6 +132,7 @@ export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: 
         {NAVBAR_SPECS.map((spec) => {
           if (spec.type === 'link') {
             if (!isViewAllowed(spec.id, role, departemen)) return null;
+            if (isActivationLocked(spec.id, extrasActive)) return null;
             const isActive = activeId === spec.id;
             return (
               <button
@@ -168,6 +206,77 @@ export function TopNavbar({ activeId, onNavigate, role, departemen, onLogout }: 
             </div>
           );
         })}
+
+        <div className="app-navbar__category">
+          <button
+            type="button"
+            className={`app-navbar__link ${openMenuId === ACTIVATION_MENU_KEY ? 'app-navbar__link--open' : ''}`}
+            onClick={() => {
+              closeActivation();
+              setOpenMenuId(openMenuId === ACTIVATION_MENU_KEY ? null : ACTIVATION_MENU_KEY);
+            }}
+            aria-expanded={openMenuId === ACTIVATION_MENU_KEY}
+            aria-haspopup="menu"
+          >
+            <span>Aktivasi</span>
+            <span className="app-navbar__caret" aria-hidden>
+              ▾
+            </span>
+          </button>
+
+          {openMenuId === ACTIVATION_MENU_KEY && (
+            <div className="app-navbar__dropdown" role="menu">
+              {pendingAction === null ? (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="app-navbar__dropdown-link"
+                    disabled={extrasActive}
+                    onClick={() => setPendingAction('aktif')}
+                  >
+                    Aktif
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="app-navbar__dropdown-link"
+                    disabled={!extrasActive}
+                    onClick={() => setPendingAction('matikan')}
+                  >
+                    Matikan
+                  </button>
+                </>
+              ) : (
+                <form className="app-navbar__activation-form" onSubmit={submitActivation}>
+                  <label htmlFor="activation-password">
+                    Password untuk {pendingAction === 'aktif' ? 'mengaktifkan' : 'mematikan'}
+                  </label>
+                  <input
+                    id="activation-password"
+                    type="password"
+                    autoComplete="off"
+                    autoFocus
+                    value={activationPassword}
+                    onChange={(event) => {
+                      setActivationPassword(event.target.value);
+                      setActivationError(null);
+                    }}
+                  />
+                  {activationError ? <p className="app-navbar__activation-error">{activationError}</p> : null}
+                  <div className="app-navbar__activation-buttons">
+                    <button type="submit" className="btn btn--primary">
+                      OK
+                    </button>
+                    <button type="button" className="btn" onClick={closeActivation}>
+                      Batal
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+        </div>
       </nav>
 
       <div className="app-navbar__actions">

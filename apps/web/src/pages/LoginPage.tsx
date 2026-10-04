@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { apiPost } from '../lib/api.ts';
 import type { AuthUser } from '../lib/auth.ts';
+import { LoginProfile } from './LoginProfile.tsx';
 import { LoginScene } from './LoginScene.tsx';
 import './login.css';
 
@@ -91,6 +92,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </form>
         </section>
       </div>
+      <LoginProfile />
     </main>
   );
 }
