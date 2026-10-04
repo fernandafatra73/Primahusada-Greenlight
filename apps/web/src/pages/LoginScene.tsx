@@ -372,9 +372,6 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
           {CENTER_DASHES.map((points) => (
             <polygon key={points} points={points} fill="#ffffff" />
           ))}
-          <g transform={`translate(${RUNWAY_CX} 243) scale(1 0.36)`} opacity="0.95">
-            <GarudaEmblem />
-          </g>
           {EDGE_LIGHTS.map((l) => (
             <g key={`${l.x}-${l.y}`}>
               <circle cx={l.x} cy={l.y} r={l.r * 3} fill="url(#ls-glow)" opacity="0.7" />
@@ -424,6 +421,9 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
             <g className="login-scene__flag">
               <rect x="120" y="81.5" width="15" height="4.5" fill="#e5222b" />
               <rect x="120" y="86" width="15" height="4.5" fill="#ffffff" stroke="#c9d1d8" strokeWidth="0.25" />
+            </g>
+            <g transform="translate(120 109) scale(0.2)">
+              <GarudaEmblem />
             </g>
             <rect x="62" y="122" width="116" height="14" rx="2.5" fill="#0e2f63" stroke="#f1c40f" strokeWidth="1" />
             <text
@@ -817,10 +817,6 @@ const PEOPLE: ReadonlyArray<PersonSpec> = [
   { id: 'p21', x: 396, shirt: '#ff7675', pants: '#2d3436', skin: '#f1c27d', walk: false, duration: 0 },
   { id: 'p22', x: 440, shirt: '#74b9ff', pants: '#2c3e50', skin: '#8d5524', walk: true, duration: 13 },
   { id: 'p23', x: 492, shirt: '#a29bfe', pants: '#34495e', skin: '#e0ac69', walk: false, duration: 0 },
-  { id: 'p24', x: 70, y: 158, scale: 0.55, shirt: '#e74c3c', pants: '#2d3436', skin: '#f1c27d', walk: true, duration: 9 },
-  { id: 'p25', x: 96, y: 158, scale: 0.55, shirt: '#2980b9', pants: '#2c3e50', skin: '#c68642', walk: false, duration: 0 },
-  { id: 'p26', x: 138, y: 159, scale: 0.55, shirt: '#27ae60', pants: '#34495e', skin: '#e0ac69', walk: true, duration: 11 },
-  { id: 'p27', x: 156, y: 159, scale: 0.55, shirt: '#f39c12', pants: '#2d3436', skin: '#f1c27d', walk: false, duration: 0 },
 ];
 
 // Kerb-side walkers cross the whole scene, alternating direction; the apron ones (with a y) stay put.
