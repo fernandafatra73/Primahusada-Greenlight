@@ -861,6 +861,8 @@ interface PersonProps {
   readonly pants: string;
   readonly skin: string;
   readonly hair?: string;
+  /** 'f' draws long hair and a dress, 'm' short hair and trousers; derived from the clothes when omitted. */
+  readonly gender?: 'm' | 'f';
   readonly hat?: HatKind;
   readonly hatColor?: string;
   readonly pack?: PackKind;
@@ -922,7 +924,7 @@ export function Suitcase({ color, arm, skin }: SuitcaseProps) {
 // Person seen from the side, with eyes, a nose, optional cap or hat, five-finger hands and
 // optionally a backpack or rolling suitcase. Variety (hair, hat, bag) is derived from the clothes
 // unless set explicitly. Feet at the origin, about 20 units tall; faces right unless `facing` is -1.
-export function Person({ shirt, pants, skin, hair, hat, hatColor, pack, packColor, walking = false, facing = 1 }: PersonProps) {
+export function Person({ shirt, pants, skin, hair, gender, hat, hatColor, pack, packColor, walking = false, facing = 1 }: PersonProps) {
   const h = colourHash(`${shirt}${pants}`);
   const hairColor = hair ?? HAIR_COLORS[h % HAIR_COLORS.length] ?? '#1b1b1b';
   const hatKind: HatKind = hat ?? (h % 4 === 0 ? 'cap' : h % 7 === 0 ? 'hat' : 'none');
@@ -930,6 +932,8 @@ export function Person({ shirt, pants, skin, hair, hat, hatColor, pack, packColo
   const packKind: PackKind = pack ?? (h % 5 === 1 ? 'ransel' : h % 5 === 2 ? 'koper' : 'none');
   const packTint = packColor ?? PACK_COLORS[(h >> 1) % PACK_COLORS.length] ?? '#1d4f91';
   const pullsSuitcase = packKind === 'koper';
+  const female = (gender ?? (h % 2 === 0 ? 'm' : 'f')) === 'f';
+  const legColor = female ? skin : pants;
 
   return (
     <g className={walking ? 'person person--walking' : 'person'} transform={facing === -1 ? 'scale(-1 1)' : undefined}>
@@ -942,16 +946,27 @@ export function Person({ shirt, pants, skin, hair, hat, hatColor, pack, packColo
         <Hand x={0} y={-5.7} skin={skin} />
       </g>
       <g className="person__leg-b">
-        <rect x="-1.1" y="-6.6" width="2.2" height="5.6" fill={pants} opacity="0.85" />
+        <rect x="-1.1" y="-6.6" width="2.2" height="5.6" fill={legColor} opacity="0.85" />
         <rect x="-1.1" y="-1" width="3.6" height="1" rx="0.4" fill="#2b2f34" />
       </g>
 
       {/* Near leg, torso and near arm */}
       <g className="person__leg-a">
-        <rect x="-1.1" y="-6.6" width="2.2" height="5.6" fill={pants} />
+        <rect x="-1.1" y="-6.6" width="2.2" height="5.6" fill={legColor} />
         <rect x="-1.1" y="-1" width="3.6" height="1" rx="0.4" fill="#2b2f34" />
       </g>
       <rect x="-2.6" y="-12.4" width="5.2" height="6.4" rx="1.8" fill={shirt} />
+      {female ? (
+        <g>
+          <path d="M-2.4 -8.4 L-3.9 -3.4 L3.9 -3.4 L2.4 -8.4 Z" fill={pants} />
+          <rect x="-2.5" y="-8.7" width="5" height="0.7" fill="#ffffff" opacity="0.55" />
+        </g>
+      ) : (
+        <g>
+          <path d="M-1 -12.4 L0 -10.8 L1 -12.4 Z" fill="#ffffff" opacity="0.85" />
+          <rect x="-2.6" y="-6.7" width="5.2" height="0.7" fill="#2b2f34" />
+        </g>
+      )}
       {packKind === 'ransel' ? <rect x="-2.4" y="-12.2" width="0.9" height="5.6" fill={packTint} /> : null}
       {pullsSuitcase ? null : (
         <g className="person__arm-a">
@@ -965,6 +980,9 @@ export function Person({ shirt, pants, skin, hair, hat, hatColor, pack, packColo
       <circle cx="0.5" cy="-16.4" r="3" fill={skin} />
       <path d="M3.3 -16.6 L4.6 -15.4 L3.3 -15 Z" fill={skin} stroke="#00000022" strokeWidth="0.2" />
       <path d="M-2.6 -15.4 Q-3 -19.6 0.6 -19.6 Q3.5 -19.4 3.4 -17.2 Q1.2 -18.5 -0.6 -17.6 Q-1.6 -16.8 -1.8 -15 Z" fill={hairColor} />
+      {female ? (
+        <path d="M-2.7 -17.6 Q-4.3 -12.5 -2.2 -10.4 L0.2 -10.8 Q-0.9 -13.5 -1.6 -15.4 Z" fill={hairColor} />
+      ) : null}
       <circle cx="-0.7" cy="-16" r="0.75" fill={skin} stroke="#00000033" strokeWidth="0.2" />
       <ellipse cx="1.9" cy="-16.5" rx="0.8" ry="0.85" fill="#ffffff" />
       <circle cx="2.2" cy="-16.5" r="0.43" fill="#1b1b1b" />
