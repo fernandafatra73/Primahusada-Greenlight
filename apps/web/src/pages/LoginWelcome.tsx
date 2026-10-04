@@ -3,10 +3,11 @@ import { playCabinChime, playJetSound, setCabinAudioPaused, unlockCabinAudio } f
 import { withIndonesianVoice } from '../lib/speechVoice.ts';
 
 // Seberapa jauh siklus animasi pesawat mendarat (login.css, login-landing) saat roda
-// menyentuh landasan (74%), dan seberapa sering kita memeriksanya.
-const TOUCHDOWN_PROGRESS = 0.74;
+// menyentuh landasan (54% dari siklus 30 detik), dan seberapa sering kita memeriksanya.
+const TOUCHDOWN_PROGRESS = 0.54;
 const POLL_MS = 150;
-const JET_SOUND_MS = 10000;
+const LANDING_SOUND_MS = 6000;
+const TAKEOFF_SOUND_MS = 9000;
 
 function greetingWord(date: Date): string {
   const hour = date.getHours();
@@ -30,8 +31,8 @@ function welcomeSpeech(date: Date): string {
   );
 }
 
-function landingProgress(): number | null {
-  const el = document.querySelector('.login-scene__landing');
+function animationProgress(selector: string): number | null {
+  const el = document.querySelector(selector);
   const anim = el?.getAnimations()[0];
   const progress = anim?.effect?.getComputedTiming().progress;
   return typeof progress === 'number' ? progress : null;
@@ -45,7 +46,8 @@ interface LoginWelcomeProps {
 
 // Saat pesawat di adegan login mendarat:
 // pendaratan pertama membacakan ucapan selamat datang sekali saja, lalu bel
-// kabin. Pendaratan berikutnya hanya memutar deru mesin pesawat ~10 detik.
+// kabin. Pendaratan berikutnya memutar deru mesin, dan setiap pesawat mulai
+// lepas landas (naik) juga berbunyi, kecuali saat ucapan atau adegan samping.
 // Browser dapat menolak suara sebelum pengguna berinteraksi, jadi ucapan yang
 // tertahan diputar pada interaksi pertama.
 export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
@@ -104,11 +106,13 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
         speak();
         return;
       }
-      busyRef.current = true;
-      playJetSound(JET_SOUND_MS);
-      window.setTimeout(() => {
-        busyRef.current = false;
-      }, JET_SOUND_MS);
+      playJetSound(LANDING_SOUND_MS);
+    }
+
+    function onTakeoff(): void {
+      // Tidak menimpa ucapan sambutan, dan adegan samping punya suasananya sendiri.
+      if (busyRef.current || document.querySelector('.login-scene--away')) return;
+      playJetSound(TAKEOFF_SOUND_MS);
     }
 
     function onFirstInteraction(): void {
@@ -118,17 +122,27 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
       speak();
     }
 
-    let previous: number | null = null;
+    let previousLanding: number | null = null;
+    let previousTakeoff: number | null = null;
     const poll = window.setInterval(() => {
-      const current = landingProgress();
-      if (current === null) return;
-      if (previous !== null && previous < TOUCHDOWN_PROGRESS && current >= TOUCHDOWN_PROGRESS) onLanded();
-      previous = current;
+      const landing = animationProgress('.login-scene__landing');
+      if (landing !== null) {
+        if (previousLanding !== null && previousLanding < TOUCHDOWN_PROGRESS && landing >= TOUCHDOWN_PROGRESS) {
+          onLanded();
+        }
+        previousLanding = landing;
+      }
+      const takeoff = animationProgress('.login-scene__takeoff');
+      if (takeoff !== null) {
+        // Progres kembali ke awal = siklus baru = pesawat mulai bergerak di landasan.
+        if (previousTakeoff !== null && takeoff < previousTakeoff) onTakeoff();
+        previousTakeoff = takeoff;
+      }
     }, POLL_MS);
 
     // Tanpa animasi (reduced-motion) pesawat tidak mendarat; sambut sekali saja.
     const noAnimationTimer = window.setTimeout(() => {
-      if (landingProgress() === null) onLanded();
+      if (animationProgress('.login-scene__landing') === null) onLanded();
     }, 2000);
 
     window.addEventListener('pointerdown', onFirstInteraction);

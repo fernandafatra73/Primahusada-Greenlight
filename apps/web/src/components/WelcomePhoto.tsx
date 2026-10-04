@@ -1,7 +1,7 @@
 // Foto sambutan klinik ("Selamat Datang di Klinik Prima Husada").
 // Simpan fotonya sebagai src/image/selamat-datang.(jpg|jpeg|png|webp). Dicari lewat
 // glob supaya aplikasi tetap berjalan bila file belum ada.
-const PHOTO_MODULES = import.meta.glob<string>('@src/image/selamat-datang.*', {
+const PHOTO_MODULES = import.meta.glob<string>('../../../../src/image/selamat-datang.*', {
   eager: true,
   query: '?url',
   import: 'default',

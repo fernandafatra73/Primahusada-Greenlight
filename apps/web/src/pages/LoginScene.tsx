@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { LoginArrival } from './LoginArrival.tsx';
 
 // Decorative, animated international-airport scene that fills the login screen.
@@ -66,6 +66,28 @@ const TERMINAL_WINDOWS: ReadonlyArray<number> = Array.from({ length: 13 }, (_, i
 
 const PLANE_WINDOWS: ReadonlyArray<number> = Array.from({ length: 9 }, (_, i) => -22 + i * 4.3);
 
+interface FlyerSpec {
+  readonly id: string;
+  readonly y: number;
+  readonly scale: number;
+  readonly reverse: boolean;
+  readonly tail: string;
+  readonly duration: number;
+  readonly delay: number;
+}
+
+// Two lanes of sky traffic: even ones fly left to right, the others right to left.
+const FLYERS: ReadonlyArray<FlyerSpec> = [
+  { id: 'f1', y: 24, scale: 0.5, reverse: false, tail: '#d62828', duration: 34, delay: -8 },
+  { id: 'f2', y: 50, scale: 0.6, reverse: true, tail: '#1f5fbf', duration: 40, delay: -22 },
+  { id: 'f3', y: 80, scale: 0.4, reverse: false, tail: '#1e9e5a', duration: 46, delay: -30 },
+  { id: 'f4', y: 104, scale: 0.35, reverse: true, tail: '#c9961a', duration: 52, delay: -12 },
+];
+
+function flyTiming(f: FlyerSpec): CSSProperties {
+  return { '--ls-dur': `${f.duration}s`, '--ls-delay': `${f.delay}s` } as CSSProperties;
+}
+
 const LAMP_XS: ReadonlyArray<number> = [10, 100, 190, 280, 370, 460];
 
 const SUN_RAYS: ReadonlyArray<{ readonly deg: number; readonly x: number; readonly y: number }> = Array.from(
@@ -82,7 +104,77 @@ interface LoginSceneProps {
   readonly onArrivalEnd: () => void;
 }
 
+interface Airline {
+  readonly name: string;
+  readonly tail: string;
+}
+
+// Airlines take it in turns to depart: the one waiting on the left taxiway rolls out and then
+// takes off from the runway; the next one moves up when the cycle restarts. (Fictional liveries.)
+const DEPARTING_AIRLINES: ReadonlyArray<Airline> = [
+  { name: 'NORDIC SKY', tail: '#1f5fbf' },
+  { name: 'SAKURA AIR', tail: '#d62828' },
+  { name: 'PRIMA HUSADA', tail: '#1d6fc4' },
+];
+
+function departingAirline(index: number): Airline {
+  const count = DEPARTING_AIRLINES.length;
+  return DEPARTING_AIRLINES[((index % count) + count) % count] ?? { name: 'PRIMA HUSADA', tail: '#1d6fc4' };
+}
+
+interface Bay {
+  readonly x: number;
+  readonly y: number;
+  readonly scale: number;
+}
+
+// Eight bays on the right apron: the front row fills first (far end first), then the back row,
+// so a new arrival never taxis through a parked plane. Keep in step with the keyframes in login.css.
+const BAYS: ReadonlyArray<Bay> = [
+  { x: 460, y: 216, scale: 0.66 },
+  { x: 408, y: 216, scale: 0.66 },
+  { x: 356, y: 216, scale: 0.66 },
+  { x: 304, y: 216, scale: 0.66 },
+  { x: 460, y: 194, scale: 0.6 },
+  { x: 408, y: 194, scale: 0.6 },
+  { x: 356, y: 194, scale: 0.6 },
+  { x: 304, y: 194, scale: 0.6 },
+];
+
+// Which landing (cycle number) currently occupies a bay, or null when the bay has never been used.
+function bayOccupant(bay: number, cycle: number): number | null {
+  for (let back = 1; back <= BAYS.length; back += 1) {
+    const landing = cycle - back;
+    if (landing >= 0 && landing % BAYS.length === bay) return landing;
+  }
+  return null;
+}
+
+interface ParkedPlane {
+  readonly x: number;
+  readonly y: number;
+  readonly scale: number;
+  readonly tail: string;
+  readonly name: string;
+}
+
+// Six planes parked on the left apron; with the Prima Husada one at the jet bridge and the one
+// waiting on the taxiway to depart, that makes eight there. (Fictional liveries.)
+const LEFT_PLANES: ReadonlyArray<ParkedPlane> = [
+  { x: 28, y: 166, scale: 0.8, tail: '#8e44ad', name: 'ORIENT STAR' },
+  { x: 96, y: 192, scale: 0.7, tail: '#e67e22', name: 'LION WINGS' },
+  { x: 46, y: 192, scale: 0.7, tail: '#16a085', name: 'ALPINE AIR' },
+  { x: -2, y: 192, scale: 0.7, tail: '#0984e3', name: 'BLUE ORCA' },
+  { x: 72, y: 214, scale: 0.62, tail: '#e84393', name: 'ROSE JET' },
+  { x: 26, y: 214, scale: 0.62, tail: '#f39c12', name: 'SUNRISE' },
+];
+
 export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
+  // Bumped each time the 30s take-off cycle restarts, i.e. right after one airline has departed.
+  const [departures, setDepartures] = useState(0);
+  const waiting = departingAirline(departures);
+  const leaving = departingAirline(departures - 1);
+
   return (
     <div className="login-stage" aria-hidden>
     <div
@@ -154,6 +246,10 @@ export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
             <stop offset="0%" stopColor="#ffd27a" stopOpacity="0.9" />
             <stop offset="100%" stopColor="#ff7a2a" stopOpacity="0" />
           </radialGradient>
+          <linearGradient id="ls-contrail" x1="1" y1="0" x2="0" y2="0">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+          </linearGradient>
           <filter id="ls-blur-soft" x="-20%" y="-50%" width="140%" height="200%">
             <feGaussianBlur stdDeviation="2.2" />
           </filter>
@@ -183,6 +279,18 @@ export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
             <ellipse cx="440" cy="40" rx="34" ry="7" fill="#ffffff" opacity="0.85" />
             <ellipse cx="500" cy="82" rx="26" ry="5" fill="#f2f7fc" opacity="0.7" />
           </g>
+
+          {/* Aircraft crossing the sky, left to right and right to left */}
+          {FLYERS.map((f) => (
+            <g key={f.id} transform={`translate(0 ${f.y})`}>
+              <g className={f.reverse ? 'login-scene__flyer-l' : 'login-scene__flyer-r'} style={flyTiming(f)}>
+                <g transform={`scale(${f.reverse ? -f.scale : f.scale} ${f.scale})`}>
+                  <rect x="-130" y="-1.2" width="96" height="2.4" fill="url(#ls-contrail)" />
+                  <SidePlane tail={f.tail} />
+                </g>
+              </g>
+            </g>
+          ))}
 
           {/* Distant hills fade into haze */}
           <path d="M-60 146 L-10 124 L40 140 L100 118 L160 138 L230 120 L300 140 L370 116 L440 138 L540 122 V160 H-60 Z" fill="url(#ls-hills-far)" />
@@ -264,7 +372,7 @@ export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
             <circle className="login-scene__beacon" cx="240.5" cy="73.5" r="1.8" fill="#ff4d4d" />
           </g>
 
-          {/* Passenger terminal with the Prima Husada 2030 sign */}
+          {/* Passenger terminal with the Prima Husada 2050 sign */}
           <g filter="url(#ls-shadow)">
             <rect x="-40" y="124" width="86" height="28" fill="url(#ls-wall)" />
             <rect x="-40" y="120" width="86" height="5" rx="2" fill="#1d4f91" />
@@ -288,7 +396,7 @@ export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
               textLength="102"
               lengthAdjust="spacingAndGlyphs"
             >
-              PRIMA HUSADA 2030
+              PRIMA HUSADA 2050
             </text>
             <rect x="46" y="138" width="148" height="14" fill="url(#ls-glass)" />
             {TERMINAL_WINDOWS.map((x) => (
@@ -316,36 +424,71 @@ export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
             </g>
           </g>
 
+          {/* Left taxiway: the aircraft waiting here is next to take off */}
+          <path d="M-30 242 L96 242" fill="none" stroke="#3a3f45" strokeWidth="11" strokeLinecap="round" />
+          <path d="M-30 242 L92 242" fill="none" stroke="#f3c614" strokeWidth="0.9" strokeDasharray="5 4" />
+          <rect x="62" y="236" width="1" height="12" fill="#ffffff" opacity="0.65" />
+
           {/* Jet bridge and the stand-by aircraft */}
           <path d="M118 150 L112 163" stroke="#9aa5ae" strokeWidth="4.2" strokeLinecap="round" />
           <circle cx="118" cy="150" r="3" fill="#7a8794" />
           <g transform="translate(100 170)" filter="url(#ls-shadow)">
             <SidePlane tail="#1d6fc4" label="PRIMA HUSADA" />
           </g>
-          {/* Foreign airlines (fictional liveries) still parked at their stands */}
-          <g transform="translate(300 170) scale(0.78)" filter="url(#ls-shadow)">
-            <SidePlane tail="#c9961a" label="GULF STAR" />
+          {/* Foreign airlines (fictional liveries) parked on the left */}
+          {LEFT_PLANES.map((plane) => (
+            <g key={plane.name} transform={`translate(${plane.x} ${plane.y}) scale(${plane.scale})`} filter="url(#ls-shadow)">
+              <SidePlane tail={plane.tail} label={plane.name} />
+            </g>
+          ))}
+          <g transform="translate(46 236) scale(0.6)">
+            <g className="login-scene__departing">
+              <SidePlane tail={waiting.tail} label={waiting.name} />
+            </g>
           </g>
-          <g transform="translate(440 172) scale(0.9)" filter="url(#ls-shadow)">
-            <SidePlane tail="#1e9e5a" label="PACIFIC WINGS" />
-          </g>
-          <g transform="translate(38 207) scale(1.05)" filter="url(#ls-shadow)">
-            <SidePlane tail="#d62828" label="SAKURA AIR" />
-          </g>
-          <g transform="translate(52 240) scale(0.88)" filter="url(#ls-shadow)">
-            <SidePlane tail="#1f5fbf" label="NORDIC SKY" />
-          </g>
-          <ServiceVan x={142} y={182} />
+          <ServiceVan x={112} y={184} />
+
+          {/* Taxiway branching right off the runway to the parking stand of the landed aircraft */}
+          <path d="M272 188 C292 180 320 175 360 175 L494 175" fill="none" stroke="#3a3f45" strokeWidth="11" strokeLinecap="round" />
+          <path d="M276 188 C296 180 322 175 360 175 L490 175" fill="none" stroke="#f3c614" strokeWidth="0.8" strokeDasharray="5 4" />
+          <rect x="278" y="184" width="214" height="46" rx="3" fill="#3a3f45" />
+          {[278, 330, 382, 434, 486].map((x) => (
+            <rect key={x} x={x} y="184" width="1" height="46" fill="#f3c614" opacity="0.85" />
+          ))}
+          <rect x="278" y="205" width="214" height="1" fill="#f3c614" opacity="0.85" />
 
           {/* Take-off (seen from behind) and landing (seen head-on) follow the centre line */}
-          <g className="login-scene__takeoff">
-            <PlaneRear tail="#1d6fc4" />
+          <g
+            className="login-scene__takeoff"
+            onAnimationIteration={(event) => {
+              if (event.target === event.currentTarget) setDepartures((count) => count + 1);
+            }}
+          >
+            <PlaneRear tail={leaving.tail} />
           </g>
           <g className="login-scene__landing">
             <PlaneFront tail="#1d6fc4" />
           </g>
+          {/* Planes parked in the bays by earlier landings (the bay being filled now is empty until it arrives) */}
+          {BAYS.map((bay, index) => {
+            const landing = bayOccupant(index, departures);
+            if (landing === null || landing === departures) return null;
+            const airline = departingAirline(landing);
+            return (
+              <g key={`${bay.x}-${bay.y}`} transform={`translate(${bay.x} ${bay.y}) scale(${bay.scale})`}>
+                <SidePlane tail={airline.tail} label={airline.name} />
+              </g>
+            );
+          })}
+          {/* The aircraft that has just landed turns right, taxis along the back lane and parks in its bay */}
+          <g
+            key={departures}
+            className={`login-scene__landing-side login-scene__landing-side--${departures % BAYS.length}`}
+            style={{ animationDelay: departures === 0 ? '-3s' : '0s' }}
+          >
+            <SidePlane tail={departingAirline(departures).tail} label={departingAirline(departures).name} />
+          </g>
 
-          <Cafe />
 
           {/* Forecourt: planting, lamps, road with moving cars and the pavement with people */}
           <rect x={WIDE_L} y={RUNWAY_BOTTOM} width={WIDE_W} height="6" fill="url(#ls-grass)" />
@@ -383,11 +526,48 @@ export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
               <circle cx={x} cy="271.5" r="1.6" fill="#fff3a0" />
             </g>
           ))}
-          {PEOPLE.map((p) => (
-            <g key={p.id} transform={`translate(${p.x} 298.5)`}>
-              <g className={p.walk ? 'login-scene__walker' : undefined} style={walkTiming(p)}>
-                <Person shirt={p.shirt} pants={p.pants} skin={p.skin} />
+          {/* DAMRI halte on the pavement, where the pick-up car stops */}
+          <g>
+            <rect x="238" y="283" width="82" height="2.4" fill="#1d4f91" />
+            <rect x="239" y="285" width="1.2" height="15" fill="#8a95a0" />
+            <rect x="318" y="285" width="1.2" height="15" fill="#8a95a0" />
+            <rect x="240" y="285" width="78" height="13" fill="url(#ls-glass)" opacity="0.22" />
+            <rect x="258" y="276.5" width="42" height="6" rx="1.4" fill="#0e2f63" stroke="#f1c40f" strokeWidth="0.5" />
+            <text x="279" y="281" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontSize="3.8" fontWeight="700" fill="#ffffff">
+              HALTE DAMRI
+            </text>
+          </g>
+
+          {PEOPLE.map((p, i) => {
+            const direction = STROLL_DIRECTION.get(p.id);
+            const facing = direction === 'l' ? -1 : direction === 'r' ? 1 : i % 2 === 0 ? 1 : -1;
+            return (
+              <g key={p.id} transform={`translate(${p.x} ${p.y ?? 298.5}) scale(${p.scale ?? 1})`}>
+                <g className={direction ? 'login-scene__stroll' : undefined} style={direction ? strollTiming(p, direction) : undefined}>
+                  <Person shirt={p.shirt} pants={p.pants} skin={p.skin} walking={direction !== undefined} facing={facing} />
+                </g>
               </g>
+            );
+          })}
+
+          {/* A car stops at the kerb, six passengers get in, then it drives on */}
+          <g transform="translate(0 287)">
+            <g className="login-scene__pickup-car">
+              <g transform="scale(-1 1) translate(-30 0)">
+                <Suv color="#e8ecef" label="XL7" mirrored />
+              </g>
+            </g>
+          </g>
+          {PICKUP_START.map((x, i) => (
+            <g key={x} className={`login-scene__pickup-p${i}`}>
+              <Person
+                shirt={PICKUP_LOOK[i]?.shirt ?? '#e74c3c'}
+                pants="#2c3e50"
+                skin={PICKUP_LOOK[i]?.skin ?? '#f1c27d'}
+                pack={i % 2 === 0 ? 'koper' : 'ransel'}
+                walking
+                facing={i < 3 ? 1 : -1}
+              />
             </g>
           ))}
         </g>
@@ -443,7 +623,7 @@ interface TailProps {
 // Jet seen from behind (take-off). Origin sits at the wheels.
 function PlaneRear({ tail }: TailProps) {
   return (
-    <g filter="url(#ls-shadow)">
+    <g>
       <Gear />
       <Wings />
       <path d="M-20 -19.5 L0 -21.5 L20 -19.5 L0 -16.5 Z" fill="#d3dce5" stroke="#9fb0c0" strokeWidth="0.3" />
@@ -462,7 +642,7 @@ function PlaneRear({ tail }: TailProps) {
 // Jet seen head-on (landing). Origin sits at the wheels.
 function PlaneFront({ tail }: TailProps) {
   return (
-    <g filter="url(#ls-shadow)">
+    <g>
       <path d="M-2.4 -19 L-1.5 -36 L1.5 -36 L2.4 -19 Z" fill={tail} />
       <Gear />
       <Wings dark />
@@ -522,6 +702,8 @@ interface PersonSpec {
   readonly skin: string;
   readonly walk: boolean;
   readonly duration: number;
+  readonly y?: number;
+  readonly scale?: number;
 }
 
 const PEOPLE: ReadonlyArray<PersonSpec> = [
@@ -538,11 +720,55 @@ const PEOPLE: ReadonlyArray<PersonSpec> = [
   { id: 'p11', x: 372, shirt: '#00b894', pants: '#34495e', skin: '#8d5524', walk: false, duration: 0 },
   { id: 'p12', x: 420, shirt: '#fdcb6e', pants: '#2c3e50', skin: '#f1c27d', walk: true, duration: 11 },
   { id: 'p13', x: 470, shirt: '#6c5ce7', pants: '#2d3436', skin: '#c68642', walk: false, duration: 0 },
+  { id: 'p14', x: 5, shirt: '#00b894', pants: '#34495e', skin: '#f1c27d', walk: true, duration: 14 },
+  { id: 'p15', x: 58, shirt: '#fd79a8', pants: '#2d3436', skin: '#e0ac69', walk: false, duration: 0 },
+  { id: 'p16', x: 108, shirt: '#0984e3', pants: '#2c3e50', skin: '#8d5524', walk: true, duration: 12 },
+  { id: 'p17', x: 190, shirt: '#e17055', pants: '#34495e', skin: '#c68642', walk: false, duration: 0 },
+  { id: 'p18', x: 236, shirt: '#fdcb6e', pants: '#2d3436', skin: '#f1c27d', walk: true, duration: 15 },
+  { id: 'p19', x: 262, shirt: '#6c5ce7', pants: '#2c3e50', skin: '#e0ac69', walk: false, duration: 0 },
+  { id: 'p20', x: 330, shirt: '#55efc4', pants: '#34495e', skin: '#c68642', walk: true, duration: 10 },
+  { id: 'p21', x: 396, shirt: '#ff7675', pants: '#2d3436', skin: '#f1c27d', walk: false, duration: 0 },
+  { id: 'p22', x: 440, shirt: '#74b9ff', pants: '#2c3e50', skin: '#8d5524', walk: true, duration: 13 },
+  { id: 'p23', x: 492, shirt: '#a29bfe', pants: '#34495e', skin: '#e0ac69', walk: false, duration: 0 },
+  { id: 'p24', x: 70, y: 158, scale: 0.55, shirt: '#e74c3c', pants: '#2d3436', skin: '#f1c27d', walk: true, duration: 9 },
+  { id: 'p25', x: 96, y: 158, scale: 0.55, shirt: '#2980b9', pants: '#2c3e50', skin: '#c68642', walk: false, duration: 0 },
+  { id: 'p26', x: 138, y: 159, scale: 0.55, shirt: '#27ae60', pants: '#34495e', skin: '#e0ac69', walk: true, duration: 11 },
+  { id: 'p27', x: 156, y: 159, scale: 0.55, shirt: '#f39c12', pants: '#2d3436', skin: '#f1c27d', walk: false, duration: 0 },
 ];
 
-function walkTiming(p: PersonSpec): CSSProperties {
-  return { '--ls-dur': `${p.duration}s` } as CSSProperties;
+// Kerb-side walkers cross the whole scene, alternating direction; the apron ones (with a y) stay put.
+const STROLL_DIRECTION: ReadonlyMap<string, 'r' | 'l'> = new Map(
+  PEOPLE.filter((p) => p.walk && p.y === undefined).map((p, i) => [p.id, i % 2 === 0 ? 'r' : 'l'] as const),
+);
+
+const STROLL_FROM = -70;
+const STROLL_TO = 560;
+
+// Each walker keeps a steady pace and starts from the x it is listed at, so the crowd is spread out.
+function strollTiming(p: PersonSpec, direction: 'r' | 'l'): CSSProperties {
+  const pace = 11 + (p.id.length * 7 + p.x) % 8;
+  const duration = (STROLL_TO - STROLL_FROM) / pace;
+  const progress = direction === 'r' ? (p.x - STROLL_FROM) / (STROLL_TO - STROLL_FROM) : (STROLL_TO - p.x) / (STROLL_TO - STROLL_FROM);
+  const from = direction === 'r' ? STROLL_FROM - p.x : STROLL_TO - p.x;
+  const to = direction === 'r' ? STROLL_TO - p.x : STROLL_FROM - p.x;
+  return {
+    '--ls-dur': `${duration.toFixed(1)}s`,
+    '--ls-delay': `${(-duration * progress).toFixed(1)}s`,
+    '--ls-from': `${from}px`,
+    '--ls-to': `${to}px`,
+  } as CSSProperties;
 }
+
+// Passengers waiting on the pavement for the stopping car, and what they look like.
+const PICKUP_START: ReadonlyArray<number> = [246, 256, 266, 276, 286, 296];
+const PICKUP_LOOK: ReadonlyArray<{ readonly shirt: string; readonly skin: string }> = [
+  { shirt: '#e84393', skin: '#f1c27d' },
+  { shirt: '#0984e3', skin: '#c68642' },
+  { shirt: '#00b894', skin: '#e0ac69' },
+  { shirt: '#fdcb6e', skin: '#8d5524' },
+  { shirt: '#6c5ce7', skin: '#f1c27d' },
+  { shirt: '#d63031', skin: '#e0ac69' },
+];
 
 interface SidePlaneProps {
   readonly tail: string;
@@ -612,21 +838,135 @@ function Car({ color }: { readonly color: string }) {
   );
 }
 
+type HatKind = 'cap' | 'hat' | 'none';
+type PackKind = 'ransel' | 'koper' | 'none';
+
 interface PersonProps {
   readonly shirt: string;
   readonly pants: string;
   readonly skin: string;
+  readonly hair?: string;
+  readonly hat?: HatKind;
+  readonly hatColor?: string;
+  readonly pack?: PackKind;
+  readonly packColor?: string;
+  /** Swing legs and arms (login.css); the swing angle comes from the --swing CSS variable. */
+  readonly walking?: boolean;
+  /** 1 faces right (default), -1 faces left. */
+  readonly facing?: 1 | -1;
 }
 
-// Feet at the origin.
-export function Person({ shirt, pants, skin }: PersonProps) {
+const HAIR_COLORS: ReadonlyArray<string> = ['#1b1b1b', '#3b2a1c', '#6b4a2b', '#c9a25a', '#8a8a8a'];
+const HAT_COLORS: ReadonlyArray<string> = ['#d63031', '#0984e3', '#2d3436', '#f1c40f', '#00b894'];
+const PACK_COLORS: ReadonlyArray<string> = ['#c0392b', '#1d4f91', '#2d3436', '#6c5ce7', '#d35400'];
+
+function colourHash(text: string): number {
+  let h = 0;
+  for (let i = 0; i < text.length; i += 1) h = (h * 31 + text.charCodeAt(i)) % 9973;
+  return h;
+}
+
+// A human hand, five fingers fanned downward from the palm.
+function Hand({ x, y, skin }: { readonly x: number; readonly y: number; readonly skin: string }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <g stroke={skin} strokeWidth="0.32" strokeLinecap="round" fill="none">
+        <path d="M-0.7 0.4 L-1.5 1.5" />
+        <path d="M-0.4 0.7 L-0.7 2" />
+        <path d="M0 0.8 L0 2.2" />
+        <path d="M0.4 0.7 L0.7 2" />
+        <path d="M0.7 0.4 L1.4 1.4" />
+      </g>
+      <ellipse cx="0" cy="0" rx="0.95" ry="0.8" fill={skin} />
+    </g>
+  );
+}
+
+interface SuitcaseProps {
+  readonly color: string;
+  /** Sleeve colour and skin: draws the arm that pulls the suitcase by its handle. */
+  readonly arm?: string;
+  readonly skin?: string;
+}
+
+// Rolling suitcase pulled along behind a person who faces right.
+export function Suitcase({ color, arm, skin }: SuitcaseProps) {
   return (
     <g>
-      <rect x="-2" y="-5" width="1.8" height="5" fill={pants} />
-      <rect x="0.2" y="-5" width="1.8" height="5" fill={pants} />
-      <rect x="-2.4" y="-11" width="4.8" height="6.4" rx="1.6" fill={shirt} />
-      <circle cx="0" cy="-13.2" r="2.2" fill={skin} />
-      <rect x="2.4" y="-8" width="2.6" height="3.6" rx="0.6" fill="#3b3b3b" />
+      {arm ? <path d="M-0.3 -11.4 L-4.8 -9.6" stroke={arm} strokeWidth="1.5" strokeLinecap="round" /> : null}
+      <path d="M-5.6 -8 V-9.6" stroke="#1d2023" strokeWidth="0.5" />
+      <rect x="-9.6" y="-8" width="5.2" height="7.2" rx="0.9" fill={color} stroke="#1d2023" strokeWidth="0.25" />
+      <rect x="-9.6" y="-5.6" width="5.2" height="0.6" fill="#ffffff" opacity="0.5" />
+      <circle cx="-8.6" cy="-0.5" r="0.6" fill="#1d2023" />
+      <circle cx="-5.4" cy="-0.5" r="0.6" fill="#1d2023" />
+      {arm && skin ? <ellipse cx="-5.2" cy="-9.4" rx="0.9" ry="0.8" fill={skin} /> : null}
+    </g>
+  );
+}
+
+// Person seen from the side, with eyes, a nose, optional cap or hat, five-finger hands and
+// optionally a backpack or rolling suitcase. Variety (hair, hat, bag) is derived from the clothes
+// unless set explicitly. Feet at the origin, about 20 units tall; faces right unless `facing` is -1.
+export function Person({ shirt, pants, skin, hair, hat, hatColor, pack, packColor, walking = false, facing = 1 }: PersonProps) {
+  const h = colourHash(`${shirt}${pants}`);
+  const hairColor = hair ?? HAIR_COLORS[h % HAIR_COLORS.length] ?? '#1b1b1b';
+  const hatKind: HatKind = hat ?? (h % 4 === 0 ? 'cap' : h % 7 === 0 ? 'hat' : 'none');
+  const hatTint = hatColor ?? HAT_COLORS[(h >> 2) % HAT_COLORS.length] ?? '#2d3436';
+  const packKind: PackKind = pack ?? (h % 5 === 1 ? 'ransel' : h % 5 === 2 ? 'koper' : 'none');
+  const packTint = packColor ?? PACK_COLORS[(h >> 1) % PACK_COLORS.length] ?? '#1d4f91';
+  const pullsSuitcase = packKind === 'koper';
+
+  return (
+    <g className={walking ? 'person person--walking' : 'person'} transform={facing === -1 ? 'scale(-1 1)' : undefined}>
+      {packKind === 'ransel' ? <rect x="-5.6" y="-12.6" width="4.4" height="7.4" rx="1.7" fill={packTint} /> : null}
+      {pullsSuitcase ? <Suitcase color={packTint} arm={shirt} skin={skin} /> : null}
+
+      {/* Far arm and leg */}
+      <g className="person__arm-b">
+        <rect x="-0.8" y="-12" width="1.5" height="5.6" rx="0.7" fill={shirt} opacity="0.8" />
+        <Hand x={0} y={-5.7} skin={skin} />
+      </g>
+      <g className="person__leg-b">
+        <rect x="-1.1" y="-6.6" width="2.2" height="5.6" fill={pants} opacity="0.85" />
+        <rect x="-1.1" y="-1" width="3.6" height="1" rx="0.4" fill="#2b2f34" />
+      </g>
+
+      {/* Near leg, torso and near arm */}
+      <g className="person__leg-a">
+        <rect x="-1.1" y="-6.6" width="2.2" height="5.6" fill={pants} />
+        <rect x="-1.1" y="-1" width="3.6" height="1" rx="0.4" fill="#2b2f34" />
+      </g>
+      <rect x="-2.6" y="-12.4" width="5.2" height="6.4" rx="1.8" fill={shirt} />
+      {packKind === 'ransel' ? <rect x="-2.4" y="-12.2" width="0.9" height="5.6" fill={packTint} /> : null}
+      {pullsSuitcase ? null : (
+        <g className="person__arm-a">
+          <rect x="-0.8" y="-12" width="1.6" height="5.8" rx="0.7" fill={shirt} />
+          <Hand x={0} y={-5.7} skin={skin} />
+        </g>
+      )}
+
+      {/* Head in profile: ear, nose, one eye, mouth, hair and any hat */}
+      <rect x="-0.6" y="-13.4" width="1.6" height="1.4" fill={skin} />
+      <circle cx="0.5" cy="-16.4" r="3" fill={skin} />
+      <path d="M3.3 -16.6 L4.6 -15.4 L3.3 -15 Z" fill={skin} stroke="#00000022" strokeWidth="0.2" />
+      <path d="M-2.6 -15.4 Q-3 -19.6 0.6 -19.6 Q3.5 -19.4 3.4 -17.2 Q1.2 -18.5 -0.6 -17.6 Q-1.6 -16.8 -1.8 -15 Z" fill={hairColor} />
+      <circle cx="-0.7" cy="-16" r="0.75" fill={skin} stroke="#00000033" strokeWidth="0.2" />
+      <ellipse cx="1.9" cy="-16.5" rx="0.8" ry="0.85" fill="#ffffff" />
+      <circle cx="2.2" cy="-16.5" r="0.43" fill="#1b1b1b" />
+      <path d="M1.2 -17.5 L2.7 -17.7" stroke={hairColor} strokeWidth="0.3" strokeLinecap="round" />
+      <path d="M2.2 -14.6 L3.3 -14.7" stroke="#7a3b2e" strokeWidth="0.3" strokeLinecap="round" />
+      {hatKind === 'cap' ? (
+        <g>
+          <path d="M-2.9 -18.2 Q0.7 -22.8 3.7 -18.4 Z" fill={hatTint} />
+          <rect x="2.6" y="-18.7" width="3.6" height="0.9" rx="0.4" fill={hatTint} stroke="#00000033" strokeWidth="0.2" />
+        </g>
+      ) : null}
+      {hatKind === 'hat' ? (
+        <g>
+          <rect x="-2.2" y="-21.5" width="5.4" height="3" rx="1.2" fill={hatTint} />
+          <ellipse cx="0.5" cy="-18.6" rx="5" ry="1" fill={hatTint} stroke="#00000033" strokeWidth="0.2" />
+        </g>
+      ) : null}
     </g>
   );
 }
@@ -638,118 +978,6 @@ function TreeBlob({ x, y, small = false }: { readonly x: number; readonly y: num
       <rect x="-1.2" y="-6" width="2.4" height="6" fill="#5a3a22" />
       <circle cx="0" cy="-11" r="7" fill="#2f7d32" />
       <circle cx="-3" cy="-13" r="4.5" fill="#4aa44a" />
-    </g>
-  );
-}
-
-const AWNING_STRIPES: ReadonlyArray<number> = Array.from({ length: 12 }, (_, i) => 398 + i * 6.8);
-
-const BULB_COLORS: ReadonlyArray<string> = ['#ffd24a', '#ff6b6b', '#6bd6ff', '#9be36b'];
-
-const CAFE_BULBS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly color: string }> = Array.from(
-  { length: 14 },
-  (_, i) => {
-    const x = 394 + i * 6.3;
-    // Strung lights sag between the roof ends.
-    const sag = 4 * Math.sin((Math.PI * (x - 394)) / 82);
-    return { x, y: 244 + sag, color: BULB_COLORS[i % BULB_COLORS.length] ?? '#ffd24a' };
-  },
-);
-
-// Open-air restaurant and cafe beside the runway apron, with umbrella tables.
-function Cafe() {
-  return (
-    <g>
-      <g filter="url(#ls-shadow)">
-        <rect x="392" y="244" width="90" height="22" fill="#fff1d6" />
-        <rect x="392" y="244" width="90" height="22" fill="url(#ls-wall)" opacity="0.5" />
-        <path d="M388 244 L394 235 H480 L486 244 Z" fill="#b5482a" />
-        <path d="M388 244 L394 235 H480 L486 244" fill="none" stroke="#7d2e18" strokeWidth="0.8" />
-        <rect x="388" y="243.4" width="98" height="2" rx="1" fill="#8a361d" />
-        <rect x="404" y="237" width="66" height="9" rx="2" fill="#2b1a12" stroke="#f1c40f" strokeWidth="0.8" />
-        <text
-          x="437"
-          y="243.6"
-          textAnchor="middle"
-          fontFamily="Arial, Helvetica, sans-serif"
-          fontSize="5.4"
-          fontWeight="700"
-          fill="#ffe9a8"
-          textLength="58"
-          lengthAdjust="spacingAndGlyphs"
-        >
-          KAFE &amp; RESTO PRIMA
-        </text>
-        <rect x="396" y="256" width="82" height="10" fill="url(#ls-glass)" />
-        <rect x="428" y="256" width="12" height="10" fill="#7a4a2a" />
-        <rect x="430" y="257.5" width="8" height="8.5" fill="url(#ls-glass)" opacity="0.8" />
-        <circle cx="437" cy="261.5" r="0.7" fill="#f1c40f" />
-        {[410, 418, 452, 460, 468].map((x) => (
-          <rect key={x} x={x} y="256" width="0.8" height="10" fill="#e8f4ff" opacity="0.8" />
-        ))}
-      </g>
-
-      {/* Striped awning with a scalloped edge */}
-      <g>
-        {AWNING_STRIPES.map((x, i) => (
-          <path
-            key={x}
-            d={`M${x} 249 H${x + 6.8} V253.4 Q${x + 3.4} 256.2 ${x} 253.4 Z`}
-            fill={i % 2 === 0 ? '#d63031' : '#ffffff'}
-          />
-        ))}
-      </g>
-
-      {/* String lights */}
-      <g>
-        {CAFE_BULBS.map((b) => (
-          <g key={b.x}>
-            <circle cx={b.x} cy={b.y} r="2.6" fill={b.color} opacity="0.25" />
-            <circle cx={b.x} cy={b.y} r="0.9" fill={b.color} />
-          </g>
-        ))}
-      </g>
-
-      {/* Potted plants and a chalkboard menu */}
-      <g>
-        {[390, 484].map((x) => (
-          <g key={x}>
-            <path d={`M${x - 2.6} 266 L${x - 2} 261.5 H${x + 2} L${x + 2.6} 266 Z`} fill="#c4572a" />
-            <circle cx={x} cy="258.5" r="3.6" fill="#2f7d32" />
-            <circle cx={x - 1.4} cy="257.6" r="0.9" fill="#ff3b5c" />
-            <circle cx={x + 1.6} cy="259" r="0.9" fill="#ffd400" />
-          </g>
-        ))}
-        <path d="M376 266 L378 254 H386 L388 266 Z" fill="#3b2a1c" />
-        <rect x="378.6" y="255.4" width="6.8" height="7.2" fill="#2f3b34" />
-        <path d="M380 257.4 H384 M380 259.2 H383.4 M380 261 H384" stroke="#e8eef4" strokeWidth="0.5" />
-      </g>
-
-      {/* Umbrella tables */}
-      {[368, 500].map((x) => {
-        const canopy = x === 368 ? '#e17055' : '#00a8a8';
-        return (
-          <g key={x}>
-            <ellipse cx={x} cy="266.4" rx="9" ry="1.4" fill="#000000" opacity="0.2" />
-            <line x1={x} y1="266" x2={x} y2="250" stroke="#6b5a4a" strokeWidth="0.9" />
-            <path d={`M${x - 11} 251 Q${x} 241 ${x + 11} 251 Z`} fill={canopy} />
-            <path d={`M${x - 11} 251 Q${x - 5.5} 253 ${x} 251 Q${x + 5.5} 253 ${x + 11} 251`} fill={canopy} />
-            <ellipse cx={x} cy="262" rx="6.5" ry="1.8" fill="#f5e6c8" stroke="#8a6a44" strokeWidth="0.5" />
-            <rect x={x - 5} y="263.6" width="1" height="2.4" fill="#8a6a44" />
-            <rect x={x + 4} y="263.6" width="1" height="2.4" fill="#8a6a44" />
-            <rect x={x - 11} y="260" width="3.2" height="6" rx="0.8" fill="#8a6a44" />
-            <rect x={x + 7.8} y="260" width="3.2" height="6" rx="0.8" fill="#8a6a44" />
-            <circle cx={x - 2} cy="260.6" r="1.1" fill="#ffffff" />
-            <circle cx={x + 2} cy="260.6" r="1.1" fill="#ffd36b" />
-          </g>
-        );
-      })}
-      <g transform="translate(386 266)">
-        <Person shirt="#e84393" pants="#2d3436" skin="#f1c27d" />
-      </g>
-      <g transform="translate(476 266)">
-        <Person shirt="#0984e3" pants="#2d3436" skin="#c68642" />
-      </g>
     </g>
   );
 }
@@ -832,7 +1060,7 @@ export function Bus({ color, accent, operator, name, mirrored }: BusProps) {
 }
 
 // Compact SUV / MPV; 30 units long, baseline at y 0.
-function Suv({ color, label, mirrored }: { readonly color: string; readonly label: string; readonly mirrored: boolean }) {
+export function Suv({ color, label, mirrored }: { readonly color: string; readonly label: string; readonly mirrored: boolean }) {
   const dark = color === '#2d3436';
   return (
     <g>

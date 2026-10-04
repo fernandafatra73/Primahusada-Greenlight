@@ -2,7 +2,6 @@ import { WelcomePhoto } from '../components/WelcomePhoto.tsx';
 import { useCallback, useEffect, useState } from 'react';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { AnimasiShow } from '../components/AnimasiShow.tsx';
 import { baseChartOptions, paletteColors } from '../components/charts/chartTheme.ts';
 import { useListRefresh } from '../context/ListRefreshContext.tsx';
@@ -113,12 +112,6 @@ export function DashboardPage() {
       <WelcomePhoto className="dashboard-photo" />
 
       {animasi && <AnimasiShow />}
-
-      {!grafik && !animasi && (
-        <div className="dashboard-logo">
-          <img src={logoPrimahusada} alt="Klinik Prima Husada" className="dashboard-logo__img" />
-        </div>
-      )}
 
       {grafik && error && <p className="alert alert--error">{error}</p>}
       {grafik && !data && !error && <p className="loading-text">Memuat data…</p>}

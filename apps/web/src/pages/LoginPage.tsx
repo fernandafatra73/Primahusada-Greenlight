@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { apiPost } from '../lib/api.ts';
 import type { AuthUser } from '../lib/auth.ts';
+import { LoginParkedPlane } from './LoginParkedPlane.tsx';
 import { LoginProfile } from './LoginProfile.tsx';
 import { LoginScene } from './LoginScene.tsx';
 import { LoginWelcome } from './LoginWelcome.tsx';
@@ -24,22 +25,54 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const frameRef = useRef<HTMLDivElement>(null);
+  // Timer foto dan gambar mengikuti bar kecepatan, jadi dibaca dari ref saat dijadwalkan.
+  const speedRef = useRef(1);
+  speedRef.current = speed;
   const [arrival, setArrival] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const [photoVisible, setPhotoVisible] = useState(false);
+  const [parkedVisible, setParkedVisible] = useState(false);
   const photoTimerRef = useRef<number | null>(null);
+  const parkedTimerRef = useRef<number | null>(null);
+
+  // Bar kecepatan: semua animasi di bingkai (adegan utama, kedatangan, mobil, orang) dipercepat
+  // lewat playbackRate. Animasi baru (adegan kedatangan) dipasangi lagi tiap 0,4 detik.
+  useEffect(() => {
+    function apply(): void {
+      frameRef.current?.getAnimations({ subtree: true }).forEach((animation) => {
+        if (animation.playbackRate !== speed) animation.updatePlaybackRate(speed);
+      });
+    }
+    apply();
+    const id = window.setInterval(apply, 400);
+    return () => window.clearInterval(id);
+  }, [speed]);
 
   useEffect(
     () => () => {
       if (photoTimerRef.current !== null) window.clearTimeout(photoTimerRef.current);
+      if (parkedTimerRef.current !== null) window.clearTimeout(parkedTimerRef.current);
     },
     [],
   );
+
+  // Setelah foto hilang, gambar pesawat Prima Husada yang parkir tampil 20 detik.
+  function showParked(): void {
+    setParkedVisible(true);
+    if (parkedTimerRef.current !== null) window.clearTimeout(parkedTimerRef.current);
+    parkedTimerRef.current = window.setTimeout(() => setParkedVisible(false), PHOTO_VISIBLE_MS / speedRef.current);
+  }
 
   // Foto sambutan muncul di atas setelah semua adegan pesawat selesai, lalu hilang setelah 20 detik.
   function showPhoto(): void {
     setPhotoVisible(true);
     if (photoTimerRef.current !== null) window.clearTimeout(photoTimerRef.current);
-    photoTimerRef.current = window.setTimeout(() => setPhotoVisible(false), PHOTO_VISIBLE_MS);
+    photoTimerRef.current = window.setTimeout(() => {
+      setPhotoVisible(false);
+      showParked();
+    }, PHOTO_VISIBLE_MS / speedRef.current);
   }
 
   // Setelah ucapan sambutan selesai: tampilan beralih ke samping (penumpang turun, ambil bagasi,
@@ -82,9 +115,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   return (
     <main className="login-page">
-      <div className={paused ? 'login-frame login-frame--paused' : 'login-frame'}>
+      <div ref={frameRef} className={paused ? 'login-frame login-frame--paused' : 'login-frame'}>
         <LoginScene arrival={arrival} onArrivalEnd={endArrival} />
         <LoginWelcome paused={paused} onVoiceDone={startArrival} />
+        {parkedVisible ? <LoginParkedPlane /> : null}
         {photoVisible ? (
           <figure className="login-photo">
             {WELCOME_PHOTO_URL ? (
@@ -104,8 +138,24 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           <button type="button" onClick={() => setPaused(false)} disabled={!paused}>
             Lanjut
           </button>
+          <button type="button" className="login-controls__login" aria-pressed={showLogin} onClick={() => setShowLogin((on) => !on)}>
+            {showLogin ? 'Sembunyikan Login' : 'Login'}
+          </button>
+          <label className="login-controls__speed">
+            <span>Kecepatan</span>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              step="0.5"
+              value={speed}
+              aria-label="Kecepatan animasi"
+              onChange={(event) => setSpeed(Number(event.target.value))}
+            />
+            <output>{speed}x</output>
+          </label>
         </div>
-        <section className="login-panel" aria-labelledby="login-title">
+        <section className={showLogin ? 'login-panel' : 'login-panel login-panel--hidden'} aria-labelledby="login-title">
           <div className="login-panel__brand">
             <img src={logoPrimahusada} alt="Klinik Prima Husada" className="login-panel__logo" />
             <p className="login-panel__eyebrow">Klinik Prima Husada</p>
