@@ -158,22 +158,37 @@ interface ParkedPlane {
   readonly name: string;
 }
 
-// Six planes parked on the left apron; with the Prima Husada one at the jet bridge and the one
-// waiting on the taxiway to depart, that makes eight there. (Fictional liveries.)
-const LEFT_PLANES: ReadonlyArray<ParkedPlane> = [
-  { x: 28, y: 166, scale: 0.8, tail: '#8e44ad', name: 'ORIENT STAR' },
+// The left apron starts with eight aircraft: seven parked ones, listed in the order they move up and
+// leave, plus the one already waiting on the taxiway. Every take-off removes one, so the apron is
+// empty once the right-hand bays are full. (Fictional liveries.)
+const LEFT_FLEET: ReadonlyArray<ParkedPlane> = [
+  { x: 72, y: 214, scale: 0.62, tail: '#d62828', name: 'SAKURA AIR' },
+  { x: 26, y: 214, scale: 0.62, tail: '#f39c12', name: 'SUNRISE' },
   { x: 96, y: 192, scale: 0.7, tail: '#e67e22', name: 'LION WINGS' },
   { x: 46, y: 192, scale: 0.7, tail: '#16a085', name: 'ALPINE AIR' },
   { x: -2, y: 192, scale: 0.7, tail: '#0984e3', name: 'BLUE ORCA' },
-  { x: 72, y: 214, scale: 0.62, tail: '#e84393', name: 'ROSE JET' },
-  { x: 26, y: 214, scale: 0.62, tail: '#f39c12', name: 'SUNRISE' },
+  { x: 28, y: 166, scale: 0.8, tail: '#8e44ad', name: 'ORIENT STAR' },
+  { x: 100, y: 170, scale: 1, tail: '#1d6fc4', name: 'PRIMA HUSADA' },
 ];
+
+const WAITING_AT_START: Airline = { name: 'NORDIC SKY', tail: '#1f5fbf' };
+
+// Aircraft waiting on the left taxiway during take-off cycle `cycle` (the first is Nordic Sky;
+// after that each cycle the next parked aircraft moves up). Null once the apron is empty.
+function waitingAirline(cycle: number): Airline | null {
+  if (cycle < 0 || cycle > LEFT_FLEET.length) return null;
+  if (cycle === 0) return WAITING_AT_START;
+  const plane = LEFT_FLEET[cycle - 1];
+  return plane ? { name: plane.name, tail: plane.tail } : null;
+}
 
 export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
   // Bumped each time the 30s take-off cycle restarts, i.e. right after one airline has departed.
   const [departures, setDepartures] = useState(0);
-  const waiting = departingAirline(departures);
-  const leaving = departingAirline(departures - 1);
+  const waiting = waitingAirline(departures);
+  const leaving = waitingAirline(departures - 1);
+  // The aircraft that waited in the previous cycle takes off now; none before the first or after the last.
+  const takeoffVisible = leaving !== null && departures >= 1;
 
   return (
     <div className="login-stage" aria-hidden>
@@ -432,20 +447,19 @@ export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
           {/* Jet bridge and the stand-by aircraft */}
           <path d="M118 150 L112 163" stroke="#9aa5ae" strokeWidth="4.2" strokeLinecap="round" />
           <circle cx="118" cy="150" r="3" fill="#7a8794" />
-          <g transform="translate(100 170)" filter="url(#ls-shadow)">
-            <SidePlane tail="#1d6fc4" label="PRIMA HUSADA" />
-          </g>
-          {/* Foreign airlines (fictional liveries) parked on the left */}
-          {LEFT_PLANES.map((plane) => (
+          {/* Aircraft parked on the left; one leaves each cycle until none are left */}
+          {LEFT_FLEET.slice(Math.min(departures, LEFT_FLEET.length)).map((plane) => (
             <g key={plane.name} transform={`translate(${plane.x} ${plane.y}) scale(${plane.scale})`} filter="url(#ls-shadow)">
               <SidePlane tail={plane.tail} label={plane.name} />
             </g>
           ))}
-          <g transform="translate(46 236) scale(0.6)">
-            <g className="login-scene__departing">
-              <SidePlane tail={waiting.tail} label={waiting.name} />
+          {waiting ? (
+            <g transform="translate(46 236) scale(0.6)">
+              <g className="login-scene__departing">
+                <SidePlane tail={waiting.tail} label={waiting.name} />
+              </g>
             </g>
-          </g>
+          ) : null}
           <ServiceVan x={112} y={184} />
 
           {/* Taxiway branching right off the runway to the parking stand of the landed aircraft */}
@@ -460,11 +474,12 @@ export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
           {/* Take-off (seen from behind) and landing (seen head-on) follow the centre line */}
           <g
             className="login-scene__takeoff"
+            style={{ visibility: takeoffVisible ? 'visible' : 'hidden' }}
             onAnimationIteration={(event) => {
               if (event.target === event.currentTarget) setDepartures((count) => count + 1);
             }}
           >
-            <PlaneRear tail={leaving.tail} />
+            <PlaneRear tail={leaving?.tail ?? '#1d6fc4'} />
           </g>
           <g className="login-scene__landing">
             <PlaneFront tail="#1d6fc4" />

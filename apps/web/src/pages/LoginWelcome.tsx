@@ -112,6 +112,8 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
     function onTakeoff(): void {
       // Tidak menimpa ucapan sambutan, dan adegan samping punya suasananya sendiri.
       if (busyRef.current || document.querySelector('.login-scene--away')) return;
+      const takeoff = document.querySelector('.login-scene__takeoff');
+      if (!takeoff || getComputedStyle(takeoff).visibility === 'hidden') return;
       playJetSound(TAKEOFF_SOUND_MS);
     }
 
