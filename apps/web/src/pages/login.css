@@ -106,22 +106,12 @@
   animation: login-lamp 1s ease-in-out infinite;
 }
 
-.login-scene__frond {
-  transform-box: fill-box;
-  transform-origin: 0 0;
-  animation: login-sway 4s ease-in-out infinite alternate;
-}
-
 /* Lamps stay lit; they only shimmer a little. */
 @keyframes login-lamp {
   0%, 100% { opacity: 0.8; }
   50% { opacity: 1; }
 }
 
-@keyframes login-sway {
-  from { transform: rotate(-3deg); }
-  to { transform: rotate(3deg); }
-}
 
 .login-scene__flag {
   transform-box: fill-box;
@@ -339,7 +329,6 @@
   .login-scene__strobe,
   .login-scene__landing-light,
   .login-scene__nav,
-  .login-scene__frond,
   .login-scene__flag,
   .login-scene__windsock {
     animation: none;
