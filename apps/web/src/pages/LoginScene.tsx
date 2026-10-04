@@ -145,12 +145,13 @@ const BAYS: ReadonlyArray<Bay> = [
 
 // Which landing (cycle number) currently occupies a bay, or null when the bay has never been used.
 function bayOccupant(bay: number, cycle: number): number | null {
-  for (let back = 1; back <= BAYS.length; back += 1) {
-    const landing = cycle - back;
-    if (landing >= 0 && landing % BAYS.length === bay) return landing;
-  }
-  return null;
+  return bay < Math.min(cycle, BAYS.length) ? bay : null;
 }
+
+// Landing number 8 (the Prima Husada aircraft, the last to land) does not take a bay: it parks on
+// the taxi lane above the eight bays and stays there. Keep in step with login-landing-side-8.
+const LAST_LANDING = BAYS.length;
+const LAST_PARKING = { x: 382, y: 169, scale: 0.62 };
 
 interface ParkedPlane {
   readonly x: number;
@@ -490,7 +491,7 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
           >
             <PlaneRear tail={leaving?.tail ?? '#1d6fc4'} />
           </g>
-          <g className="login-scene__landing">
+          <g className="login-scene__landing" style={{ visibility: departures > LAST_LANDING ? 'hidden' : 'visible' }}>
             <PlaneFront tail="#1d6fc4" />
           </g>
           {/* Planes parked in the bays by earlier landings (the bay being filled now is empty until it arrives) */}
@@ -505,14 +506,19 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
             );
           })}
           {/* The aircraft that has just landed turns right, taxis along the back lane and parks in its bay */}
-          <g
-            key={departures}
-            className={`login-scene__landing-side login-scene__landing-side--${departures % BAYS.length}`}
-            style={{ animationDelay: departures === 0 ? '-3s' : '0s' }}
-          >
-            <SidePlane tail={departingAirline(departures).tail} label={departingAirline(departures).name} />
-          </g>
-
+          {departures <= LAST_LANDING ? (
+            <g
+              key={departures}
+              className={`login-scene__landing-side login-scene__landing-side--${departures}`}
+              style={{ animationDelay: departures === 0 ? '-3s' : '0s' }}
+            >
+              <SidePlane tail={departingAirline(departures).tail} label={departingAirline(departures).name} />
+            </g>
+          ) : (
+            <g transform={`translate(${LAST_PARKING.x} ${LAST_PARKING.y}) scale(${LAST_PARKING.scale})`}>
+              <SidePlane tail={departingAirline(LAST_LANDING).tail} label={departingAirline(LAST_LANDING).name} />
+            </g>
+          )}
 
           {/* Forecourt: planting, lamps, road with moving cars and the pavement with people */}
           <rect x={WIDE_L} y={RUNWAY_BOTTOM} width={WIDE_W} height="6" fill="url(#ls-grass)" />
@@ -655,8 +661,25 @@ function PlaneRear({ tail }: TailProps) {
       <path d="M-2.6 -18 L-1.6 -45 L1.6 -45 L2.6 -18 Z" fill={tail} />
       <rect x="-1.9" y="-45.8" width="3.8" height="1.6" rx="0.6" fill="#f1c40f" />
       <circle cx="0" cy="-9" r="1.6" fill="#59636d" />
-      {[-17, 17].map((x) => (
-        <circle key={x} className="login-scene__thrust" cx={x} cy="-6" r="6" fill="url(#ls-thrust)" />
+      {/* Engine fire seen from behind: a flickering orange cone, a white-hot core and flying sparks */}
+      {[-17, 17].map((x, i) => (
+        <g key={x}>
+          <circle className="login-scene__thrust" cx={x} cy="-6" r="9" fill="url(#ls-thrust)" />
+          <ellipse className="login-scene__flame" cx={x} cy="-6" rx="4.4" ry="5.2" fill="#ff7a1a" />
+          <ellipse className="login-scene__flame login-scene__flame--core" cx={x} cy="-6" rx="2.6" ry="3.2" fill="#ffd34d" />
+          <circle className="login-scene__flame login-scene__flame--hot" cx={x} cy="-6" r="1.3" fill="#fffbe6" />
+          {[0, 1, 2].map((k) => (
+            <circle
+              key={k}
+              className="login-scene__spark"
+              cx={x + (k - 1) * 3.2}
+              cy={-6 + (k % 2 === 0 ? -3.6 : 3.4)}
+              r="0.7"
+              fill="#ffe08a"
+              style={{ animationDelay: `${(i * 3 + k) * 0.13}s` }}
+            />
+          ))}
+        </g>
       ))}
       <circle className="login-scene__strobe" cx="0" cy="-46" r="1.4" fill="#ffffff" />
     </g>
