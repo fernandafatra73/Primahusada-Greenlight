@@ -3,7 +3,7 @@ import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { apiPost } from '../lib/api.ts';
 import type { AuthUser } from '../lib/auth.ts';
 import { isCabinSilent, unlockCabinAudio } from '../lib/cabinSounds.ts';
-import { startLoginMusic, stopLoginMusic } from '../lib/loginMusic.ts';
+import { setLoginMusicPaused, startLoginMusic, stopLoginMusic } from '../lib/loginMusic.ts';
 import { LoginParkedPlane } from './LoginParkedPlane.tsx';
 import { LoginProfile } from './LoginProfile.tsx';
 import { LoginScene } from './LoginScene.tsx';
@@ -27,6 +27,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+  pausedRef.current = paused;
   const [speed, setSpeed] = useState(1);
   const frameRef = useRef<HTMLDivElement>(null);
   // Timer foto dan gambar mengikuti bar kecepatan, jadi dibaca dari ref saat dijadwalkan.
@@ -66,7 +68,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       return undefined;
     }
     startLoginMusic();
-    const unlock = (): void => void unlockCabinAudio();
+    // Bila browser menolak pemutaran otomatis, lagu dicoba lagi pada interaksi pertama.
+    const unlock = (): void => {
+      void unlockCabinAudio();
+      if (!pausedRef.current) startLoginMusic();
+    };
     window.addEventListener('pointerdown', unlock);
     window.addEventListener('keydown', unlock);
     return () => {
@@ -75,6 +81,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       stopLoginMusic();
     };
   }, [musicOn, voiceFinished]);
+
+  // Tombol Stop / Lanjut juga menjeda lagu.
+  useEffect(() => {
+    setLoginMusicPaused(paused);
+  }, [paused]);
 
   useEffect(
     () => () => {
