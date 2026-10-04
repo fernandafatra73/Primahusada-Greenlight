@@ -1,285 +1,280 @@
 import type { CSSProperties } from 'react';
 
-// Decorative, animated landscape shown beside the login form. Purely visual,
-// so it is hidden from assistive tech and pauses under reduced-motion.
-// Depth comes from shading: gradients for volume, haze on distant layers and
-// blur on smoke/clouds, rather than from bitmap images.
+// Decorative, animated international-airport scene shown beside the login form.
+// Purely visual, so it is hidden from assistive tech and pauses under
+// reduced-motion. Depth comes from gradients, haze on distant layers and a
+// perspective runway rather than from bitmap images.
+//
+// Key content stays inside x 60..340 because the SVG is cropped ("slice") to
+// whatever shape the frame takes.
+
+const HORIZON = 152;
+const RUNWAY_BOTTOM = 258;
+const RUNWAY_CX = 210;
+const RUNWAY_HALF_TOP = 14;
+const RUNWAY_HALF_BOTTOM = 150;
+
+function runwayHalf(t: number): number {
+  return RUNWAY_HALF_TOP + (RUNWAY_HALF_BOTTOM - RUNWAY_HALF_TOP) * t;
+}
+
+function runwayY(t: number): number {
+  return HORIZON + (RUNWAY_BOTTOM - HORIZON) * t;
+}
+
+interface Dash {
+  readonly points: string;
+}
+
+// Centre-line dashes shrink toward the horizon so the runway reads in perspective.
+const CENTER_DASHES: ReadonlyArray<Dash> = Array.from({ length: 11 }, (_, i) => {
+  const t0 = (i / 11) ** 1.8;
+  const t1 = t0 + (((i + 1) / 11) ** 1.8 - t0) * 0.55;
+  const w0 = 0.5 + 2.6 * t0;
+  const w1 = 0.5 + 2.6 * t1;
+  const y0 = runwayY(t0);
+  const y1 = runwayY(t1);
+  return {
+    points: `${RUNWAY_CX - w0},${y0} ${RUNWAY_CX + w0},${y0} ${RUNWAY_CX + w1},${y1} ${RUNWAY_CX - w1},${y1}`,
+  };
+});
+
+// Edge lights along both sides of the runway.
+const EDGE_LIGHTS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly r: number }> = Array.from(
+  { length: 9 },
+  (_, i) => {
+    const t = ((i + 0.5) / 9) ** 1.6;
+    const half = runwayHalf(t) * 1.02;
+    return { x: RUNWAY_CX - half, y: runwayY(t), r: 0.5 + 1.1 * t };
+  },
+).flatMap((l) => [l, { ...l, x: 2 * RUNWAY_CX - l.x }]);
+
+const TERMINAL_WINDOWS: ReadonlyArray<number> = Array.from({ length: 13 }, (_, i) => 52 + i * 10.6);
+
+const PLANE_WINDOWS: ReadonlyArray<number> = Array.from({ length: 9 }, (_, i) => -22 + i * 4.3);
+
 export function LoginScene() {
   return (
     <div className="login-scene" aria-hidden>
       <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" className="login-scene__svg">
         <defs>
           <linearGradient id="ls-sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0e3f86" />
-            <stop offset="45%" stopColor="#3f86d0" />
-            <stop offset="80%" stopColor="#a9d2f2" />
-            <stop offset="100%" stopColor="#f3ead2" />
+            <stop offset="0%" stopColor="#1d7fe0" />
+            <stop offset="55%" stopColor="#62b4f5" />
+            <stop offset="100%" stopColor="#d6efff" />
           </linearGradient>
           <radialGradient id="ls-sun" cx="0.5" cy="0.5" r="0.5">
             <stop offset="0%" stopColor="#fffbe8" />
             <stop offset="35%" stopColor="#fff2b8" stopOpacity="0.9" />
             <stop offset="100%" stopColor="#fff2b8" stopOpacity="0" />
           </radialGradient>
-          <linearGradient id="ls-mountain-far" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#7d9cc4" />
-            <stop offset="100%" stopColor="#b9cfe6" />
+          <linearGradient id="ls-hills" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6f9fc4" />
+            <stop offset="100%" stopColor="#a9cbe0" />
           </linearGradient>
-          <linearGradient id="ls-mountain-near" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4f7a8f" />
-            <stop offset="100%" stopColor="#8fb3b5" />
+          <linearGradient id="ls-grass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#7fbf5a" />
+            <stop offset="100%" stopColor="#3f8a3a" />
           </linearGradient>
-          <linearGradient id="ls-hill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#5e9e4f" />
-            <stop offset="100%" stopColor="#2f6b32" />
+          <linearGradient id="ls-apron" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#c9d1d8" />
+            <stop offset="100%" stopColor="#9aa4ad" />
           </linearGradient>
-          <linearGradient id="ls-meadow" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#79b65a" />
-            <stop offset="100%" stopColor="#3f7d36" />
+          <linearGradient id="ls-asphalt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#5b6168" />
+            <stop offset="100%" stopColor="#2b2f34" />
           </linearGradient>
-          <radialGradient id="ls-leaf" cx="0.35" cy="0.3" r="0.75">
-            <stop offset="0%" stopColor="#7cc36a" />
-            <stop offset="55%" stopColor="#3b8a3f" />
-            <stop offset="100%" stopColor="#1d4f25" />
-          </radialGradient>
-          <linearGradient id="ls-pine" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#2d6b3a" />
-            <stop offset="100%" stopColor="#143d22" />
+          <linearGradient id="ls-glass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#bfe3ff" />
+            <stop offset="100%" stopColor="#4b8fcf" />
           </linearGradient>
-          <linearGradient id="ls-trunk" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#7a5333" />
-            <stop offset="100%" stopColor="#3f2a19" />
-          </linearGradient>
-          <linearGradient id="ls-ballast" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#9a958c" />
-            <stop offset="100%" stopColor="#5f5a52" />
-          </linearGradient>
-          <linearGradient id="ls-rail" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#e6ebef" />
-            <stop offset="40%" stopColor="#8d979f" />
-            <stop offset="100%" stopColor="#4a5158" />
-          </linearGradient>
-          <linearGradient id="ls-boiler" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3c4a57" />
-            <stop offset="30%" stopColor="#7f8e9b" />
-            <stop offset="55%" stopColor="#2a333c" />
-            <stop offset="100%" stopColor="#11161b" />
-          </linearGradient>
-          <linearGradient id="ls-body" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2f6fbf" />
-            <stop offset="50%" stopColor="#1d4f91" />
-            <stop offset="100%" stopColor="#123563" />
-          </linearGradient>
-          <linearGradient id="ls-window" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#f6fbff" />
-            <stop offset="100%" stopColor="#9cc3e6" />
-          </linearGradient>
-          <radialGradient id="ls-wheel" cx="0.5" cy="0.5" r="0.5">
-            <stop offset="0%" stopColor="#c0392b" />
-            <stop offset="70%" stopColor="#8e2318" />
-            <stop offset="100%" stopColor="#2b0d09" />
-          </radialGradient>
-          <radialGradient id="ls-smoke" cx="0.4" cy="0.35" r="0.6">
+          <linearGradient id="ls-wall" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="70%" stopColor="#d9dee4" />
-            <stop offset="100%" stopColor="#a8b0ba" />
-          </radialGradient>
-          <linearGradient id="ls-water" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#5cc4a0" />
-            <stop offset="35%" stopColor="#2b977a" />
-            <stop offset="100%" stopColor="#0b4f3c" />
+            <stop offset="100%" stopColor="#cfd9e3" />
           </linearGradient>
-          <pattern id="ls-ripple" width="60" height="12" patternUnits="userSpaceOnUse">
-            <path d="M0 6 Q15 3 30 6 T60 6" fill="none" stroke="#d8fff0" strokeWidth="0.9" opacity="0.55" />
-          </pattern>
-          <pattern id="ls-ripple-fine" width="34" height="7" patternUnits="userSpaceOnUse">
-            <path d="M0 4 Q8.5 2 17 4 T34 4" fill="none" stroke="#a7f0d3" strokeWidth="0.6" opacity="0.45" />
-          </pattern>
-          {FISH.map((f) => (
-            <linearGradient key={f.id} id={`ls-fish-${f.id}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={f.top} />
-              <stop offset="45%" stopColor={f.mid} />
-              <stop offset="100%" stopColor={f.belly} />
-            </linearGradient>
-          ))}
-          <clipPath id="ls-above-water" clipPathUnits="userSpaceOnUse">
-            <rect x="0" y="0" width="400" height="238" />
-          </clipPath>
+          <linearGradient id="ls-fuselage" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="70%" stopColor="#e6edf4" />
+            <stop offset="100%" stopColor="#b7c4d1" />
+          </linearGradient>
+          <linearGradient id="ls-road" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#4a5057" />
+            <stop offset="100%" stopColor="#30353b" />
+          </linearGradient>
           <filter id="ls-blur-soft" x="-20%" y="-50%" width="140%" height="200%">
             <feGaussianBlur stdDeviation="2.2" />
           </filter>
-          <filter id="ls-blur-smoke" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.6" />
-          </filter>
           <filter id="ls-shadow" x="-10%" y="-10%" width="120%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="1.4" floodColor="#0b1d12" floodOpacity="0.45" />
+            <feDropShadow dx="0" dy="1.5" stdDeviation="1.1" floodColor="#0b1d12" floodOpacity="0.4" />
           </filter>
         </defs>
 
-        {/* Sky and light */}
+        {/* Clear sky and sun */}
         <rect width="400" height="300" fill="url(#ls-sky)" />
-        <circle cx="318" cy="70" r="48" fill="url(#ls-sun)" />
-        <circle cx="318" cy="70" r="13" fill="#fffdf2" />
+        <circle cx="318" cy="56" r="46" fill="url(#ls-sun)" />
+        <circle cx="318" cy="56" r="12" fill="#fffdf2" />
 
         <g className="login-scene__clouds" filter="url(#ls-blur-soft)">
-          <ellipse cx="80" cy="56" rx="38" ry="9" fill="#ffffff" opacity="0.85" />
-          <ellipse cx="102" cy="50" rx="22" ry="9" fill="#ffffff" opacity="0.9" />
-          <ellipse cx="220" cy="84" rx="34" ry="6" fill="#f2f7fc" opacity="0.75" />
-          <ellipse cx="160" cy="36" rx="26" ry="5" fill="#eaf3fb" opacity="0.6" />
+          <ellipse cx="90" cy="48" rx="36" ry="8" fill="#ffffff" opacity="0.9" />
+          <ellipse cx="112" cy="42" rx="20" ry="8" fill="#ffffff" opacity="0.95" />
+          <ellipse cx="230" cy="74" rx="32" ry="6" fill="#f2f7fc" opacity="0.8" />
+          <ellipse cx="170" cy="28" rx="24" ry="5" fill="#eaf3fb" opacity="0.7" />
+          <ellipse cx="345" cy="104" rx="28" ry="5" fill="#ffffff" opacity="0.7" />
         </g>
 
-        {/* Distant layers fade into haze for atmospheric depth */}
-        <path
-          d="M0 150 L40 112 L70 128 L110 92 L150 130 L190 104 L230 134 L270 98 L310 126 L350 108 L400 140 V180 H0 Z"
-          fill="url(#ls-mountain-far)"
+        {/* Distant hills fade into haze */}
+        <path d="M0 150 Q60 128 130 142 T260 138 T400 144 V160 H0 Z" fill="url(#ls-hills)" />
+        <rect x="0" y="140" width="400" height="14" fill="#dff0fb" opacity="0.35" />
+
+        {/* Ground: grass, then concrete aprons either side of the runway */}
+        <rect x="0" y={HORIZON} width="400" height={RUNWAY_BOTTOM + 8 - HORIZON} fill="url(#ls-grass)" />
+        <polygon points={`0,${HORIZON} ${RUNWAY_CX - RUNWAY_HALF_TOP},${HORIZON} ${RUNWAY_CX - RUNWAY_HALF_BOTTOM},${RUNWAY_BOTTOM} 0,${RUNWAY_BOTTOM}`} fill="url(#ls-apron)" />
+        <polygon points={`400,${HORIZON} ${RUNWAY_CX + RUNWAY_HALF_TOP},${HORIZON} ${RUNWAY_CX + RUNWAY_HALF_BOTTOM},${RUNWAY_BOTTOM} 400,${RUNWAY_BOTTOM}`} fill="url(#ls-apron)" />
+        <path d="M150 168 Q170 190 120 258" fill="none" stroke="#f3c614" strokeWidth="1.4" opacity="0.9" />
+
+        {/* Runway: asphalt, white edge lines and a white centre line */}
+        <polygon
+          points={`${RUNWAY_CX - RUNWAY_HALF_TOP},${HORIZON} ${RUNWAY_CX + RUNWAY_HALF_TOP},${HORIZON} ${RUNWAY_CX + RUNWAY_HALF_BOTTOM},${RUNWAY_BOTTOM} ${RUNWAY_CX - RUNWAY_HALF_BOTTOM},${RUNWAY_BOTTOM}`}
+          fill="url(#ls-asphalt)"
         />
-        <path d="M110 92 L100 102 L108 100 L114 104 L120 98 Z M270 98 L262 106 L270 104 L276 107 L281 104 Z" fill="#eef4fb" opacity="0.85" />
-        <path
-          d="M0 162 L50 132 L95 150 L140 124 L185 152 L240 128 L290 150 L340 130 L400 155 V190 H0 Z"
-          fill="url(#ls-mountain-near)"
+        <line
+          x1={RUNWAY_CX - RUNWAY_HALF_TOP * 0.92}
+          y1={HORIZON}
+          x2={RUNWAY_CX - RUNWAY_HALF_BOTTOM * 0.92}
+          y2={RUNWAY_BOTTOM}
+          stroke="#ffffff"
+          strokeWidth="1.6"
         />
-        <rect x="0" y="140" width="400" height="40" fill="#cfe2f2" opacity="0.25" />
-
-        <path d="M0 176 Q60 150 130 168 T260 162 T400 170 V230 H0 Z" fill="url(#ls-hill)" />
-
-        {/* Treeline on the hill */}
-        <g fill="#24562c" opacity="0.9">
-          {TREELINE.map((t) => (
-            <ellipse key={t.x} cx={t.x} cy={t.y} rx={t.r} ry={t.r * 1.2} />
-          ))}
-        </g>
-
-        <path d="M0 192 Q100 178 200 188 T400 186 V240 H0 Z" fill="url(#ls-meadow)" />
-
-        <g filter="url(#ls-shadow)">
-          <LeafyTree x={30} y={198} scale={1.05} />
-          <Pine x={52} y={196} scale={1.25} />
-          <LeafyTree x={78} y={199} scale={1.15} />
-          <LeafyTree x={112} y={197} scale={0.85} />
-          <Pine x={136} y={195} scale={0.95} />
-          <LeafyTree x={258} y={196} scale={0.9} />
-          <LeafyTree x={292} y={197} scale={1.25} />
-          <Pine x={322} y={198} scale={1.35} />
-          <LeafyTree x={350} y={200} scale={1.1} />
-          <LeafyTree x={378} y={198} scale={0.95} />
-        </g>
-
-        {/* Manicured, theme-park style planting: clipped topiary, trimmed hedge and flower beds */}
-        <g>
-          <rect x="0" y="203" width="400" height="7" rx="3" fill="#2f7d32" />
-          <rect x="0" y="203" width="400" height="2.4" rx="1.2" fill="#6cc24a" opacity="0.8" />
-          {HEDGE_FLOWERS.map((f) => (
-            <circle key={f.x} cx={f.x} cy={f.y} r="1.1" fill={f.color} />
-          ))}
-          {TOPIARY.map((p) => (
-            <Topiary key={p.x} x={p.x} kind={p.kind} />
-          ))}
-          <MickeyBed x={204} />
-        </g>
-
-        {/* Embankment, sleepers and steel rails */}
-        <path d="M0 210 H400 V224 Q300 228 200 226 T0 226 Z" fill="url(#ls-ballast)" />
-        <g fill="#4b3324">
-          {SLEEPERS.map((x) => (
-            <rect key={x} x={x} y="211" width="7" height="4" rx="0.6" />
-          ))}
-        </g>
-        <rect x="0" y="210" width="400" height="2.4" fill="url(#ls-rail)" />
-        <rect x="0" y="214" width="400" height="2" fill="url(#ls-rail)" opacity="0.9" />
-
-        <g className="login-scene__train">
-          <g transform="translate(0 41) scale(0.8)">
-            <g className="login-scene__smoke" filter="url(#ls-blur-smoke)">
-              <circle cx="71" cy="144" r="7" fill="url(#ls-smoke)" />
-              <circle cx="71" cy="144" r="7" fill="url(#ls-smoke)" />
-              <circle cx="71" cy="144" r="7" fill="url(#ls-smoke)" />
-              <circle cx="71" cy="144" r="7" fill="url(#ls-smoke)" />
-              <circle cx="71" cy="144" r="7" fill="url(#ls-smoke)" />
-            </g>
-
-            {CARRIAGES.map((x) => (
-              <Carriage key={x} x={x} />
-            ))}
-
-            <g filter="url(#ls-shadow)">
-              {/* Tender */}
-              <rect x="-40" y="178" width="38" height="26" rx="2" fill="#1b232b" />
-              <rect x="-40" y="176" width="38" height="4" fill="#2c3a46" />
-              <path d="M-38 178 Q-21 168 -4 178 Z" fill="#0d0f12" />
-
-              {/* Cab */}
-              <rect x="0" y="160" width="28" height="44" rx="2" fill="url(#ls-body)" />
-              <rect x="-3" y="155" width="34" height="6" rx="2" fill="#26313b" />
-              <rect x="6" y="166" width="14" height="13" rx="1.5" fill="url(#ls-window)" />
-
-              {/* Boiler, dome, chimney, smokebox */}
-              <rect x="27" y="172" width="54" height="26" rx="12" fill="url(#ls-boiler)" />
-              <rect x="36" y="172" width="2" height="26" fill="#c9a227" opacity="0.8" />
-              <rect x="58" y="172" width="2" height="26" fill="#c9a227" opacity="0.8" />
-              <path d="M46 173 Q46 162 54 162 Q62 162 62 173 Z" fill="#c9a227" />
-              <path d="M66 172 L67 156 L64 151 H78 L75 156 L76 172 Z" fill="#1a1f24" />
-              <rect x="77" y="168" width="11" height="32" rx="3" fill="#15191d" />
-              <circle cx="87" cy="166" r="8" fill="url(#ls-sun)" opacity="0.8" />
-              <circle cx="86" cy="166" r="3.4" fill="#fff5c4" stroke="#3a3f44" strokeWidth="1" />
-
-              <rect x="0" y="198" width="92" height="4" fill="#9b2a1d" />
-              <path d="M88 202 L100 214 H86 Z" fill="#7a2017" />
-            </g>
-
-            <Wheel cx={-32} cy={208} r={6} />
-            <Wheel cx={-12} cy={208} r={6} />
-            <Wheel cx={14} cy={208} r={6} />
-            <Wheel cx={38} cy={204} r={10} />
-            <Wheel cx={62} cy={204} r={10} />
-            <Wheel cx={82} cy={208} r={6} />
-            <rect x="36" y="203" width="28" height="2.6" rx="1.3" fill="#c9ced3" />
-          </g>
-        </g>
-
-        {/* River bank and flowing water */}
-        <path d="M0 226 Q100 232 200 228 T400 230 V240 H0 Z" fill="#3f7d36" />
-        {BANK_FLOWERS.map((f) => (
-          <g key={f.x}>
-            <circle cx={f.x} cy={f.y} r="1.6" fill={f.color} />
-            <circle cx={f.x} cy={f.y} r="0.6" fill="#fff6a8" />
-          </g>
+        <line
+          x1={RUNWAY_CX + RUNWAY_HALF_TOP * 0.92}
+          y1={HORIZON}
+          x2={RUNWAY_CX + RUNWAY_HALF_BOTTOM * 0.92}
+          y2={RUNWAY_BOTTOM}
+          stroke="#ffffff"
+          strokeWidth="1.6"
+        />
+        {CENTER_DASHES.map((d) => (
+          <polygon key={d.points} points={d.points} fill="#ffffff" />
         ))}
-        <rect x="0" y="236" width="400" height="64" fill="url(#ls-water)" />
-        <g opacity="0.28" filter="url(#ls-blur-soft)">
-          <ellipse cx="84" cy="246" rx="22" ry="6" fill="#1d4f25" />
-          <ellipse cx="300" cy="246" rx="26" ry="6" fill="#1d4f25" />
-          <rect x="0" y="238" width="400" height="5" fill="#e9fbf3" />
-        </g>
-        <rect className="login-scene__ripple" x="-60" y="240" width="520" height="60" fill="url(#ls-ripple)" />
-        <rect
-          className="login-scene__ripple login-scene__ripple--fine"
-          x="-34"
-          y="243"
-          width="500"
-          height="57"
-          fill="url(#ls-ripple-fine)"
-        />
-        <path
-          d="M0 237 q4 -7 6 0 q3 -9 6 0 q4 -6 6 0 M60 237 q3 -8 6 0 q4 -6 6 0 M140 237 q4 -7 6 0 q3 -9 6 0 M230 237 q3 -8 6 0 q4 -7 6 0 M320 237 q4 -9 6 0 q3 -6 6 0 M380 237 q3 -7 6 0"
-          fill="none"
-          stroke="#2f6b32"
-          strokeWidth="1.2"
-        />
+        {EDGE_LIGHTS.map((l) => (
+          <circle key={`${l.x}-${l.y}`} cx={l.x} cy={l.y} r={l.r} fill="#ffe27a" />
+        ))}
 
-        {/* Leaping fish, clipped at the waterline so it rises out of the river */}
-        <g clipPath="url(#ls-above-water)">
-          {FISH.map((f) => (
-            <g key={f.id} transform={`translate(${f.x} 250) scale(${f.scale})`}>
-              <g className="login-scene__fish" style={fishTiming(f)}>
-                <Fish spec={f} />
+        {/* Right-hand hangar */}
+        <g>
+          <path d="M262 152 V138 Q306 118 350 138 V152 Z" fill="#aebccb" />
+          <path d="M262 138 Q306 118 350 138" fill="none" stroke="#e8eef4" strokeWidth="1.6" />
+          <g stroke="#8fa0b2" strokeWidth="0.6">
+            {[274, 286, 298, 310, 322, 334].map((x) => (
+              <line key={x} x1={x} y1="152" x2={x} y2="130" />
+            ))}
+          </g>
+          <rect x="296" y="142" width="22" height="10" fill="#51606f" />
+        </g>
+
+        {/* Control tower */}
+        <g filter="url(#ls-shadow)">
+          <rect x="237" y="104" width="7" height="48" fill="url(#ls-wall)" />
+          <path d="M231 104 L250 104 L247 94 L234 94 Z" fill="#7a8794" />
+          <rect x="234" y="88" width="13" height="6" fill="url(#ls-glass)" />
+          <rect x="232" y="86" width="17" height="2.4" fill="#e8eef4" />
+          <line x1="240.5" y1="86" x2="240.5" y2="74" stroke="#7a8794" strokeWidth="1" />
+          <circle className="login-scene__beacon" cx="240.5" cy="73.5" r="1.8" fill="#ff4d4d" />
+        </g>
+
+        {/* Passenger terminal with the Prima Husada 2030 sign */}
+        <g filter="url(#ls-shadow)">
+          <rect x="46" y="118" width="148" height="34" fill="url(#ls-wall)" />
+          <path d="M96 118 V106 Q120 96 144 106 V118 Z" fill="url(#ls-glass)" />
+          <path d="M96 106 Q120 96 144 106" fill="none" stroke="#e8eef4" strokeWidth="1.8" />
+          <rect x="42" y="113" width="156" height="6" rx="2" fill="#1d4f91" />
+          <rect x="42" y="113" width="156" height="1.8" fill="#6fb3ee" />
+          <rect x="62" y="122" width="116" height="14" rx="2.5" fill="#0e2f63" stroke="#f1c40f" strokeWidth="1" />
+          <text
+            x="120"
+            y="132"
+            textAnchor="middle"
+            fontFamily="Arial, Helvetica, sans-serif"
+            fontSize="8.6"
+            fontWeight="700"
+            fill="#ffffff"
+            textLength="102"
+            lengthAdjust="spacingAndGlyphs"
+          >
+            PRIMA HUSADA 2030
+          </text>
+          <rect x="46" y="138" width="148" height="14" fill="url(#ls-glass)" />
+          {TERMINAL_WINDOWS.map((x) => (
+            <rect key={x} x={x} y="138" width="0.9" height="14" fill="#e8f4ff" opacity="0.85" />
+          ))}
+          <rect x="46" y="138" width="148" height="1.4" fill="#1d4f91" />
+        </g>
+
+        {/* Trees at the edge of the airfield */}
+        <g>
+          <TreeBlob x={206} y={150} />
+          <TreeBlob x={216} y={150} small />
+          <TreeBlob x={370} y={150} />
+          <TreeBlob x={30} y={152} />
+        </g>
+
+        {/* Jet bridge and the stand-by aircraft */}
+        <path d="M118 150 L112 163" stroke="#9aa5ae" strokeWidth="4.2" strokeLinecap="round" />
+        <circle cx="118" cy="150" r="3" fill="#7a8794" />
+        <g transform="translate(100 170)" filter="url(#ls-shadow)">
+          <Plane tail="#1d6fc4" label />
+        </g>
+        <g transform="translate(300 170) scale(0.78)" filter="url(#ls-shadow)">
+          <Plane tail="#f39c34" />
+        </g>
+        <ServiceVan x={142} y={182} />
+
+        {/* Take-off and landing aircraft */}
+        <g className="login-scene__takeoff" filter="url(#ls-shadow)">
+          <Plane tail="#1d6fc4" label />
+        </g>
+        <g className="login-scene__landing" filter="url(#ls-shadow)">
+          <g transform="scale(-1 1)">
+            <Plane tail="#1d6fc4" />
+          </g>
+        </g>
+
+        {/* Forecourt: planting, road with moving cars and the pavement with people */}
+        <rect x="0" y={RUNWAY_BOTTOM} width="400" height="10" fill="url(#ls-grass)" />
+        <g>
+          {[48, 128, 208, 288, 364].map((x) => (
+            <ellipse key={x} cx={x} cy="262" rx="9" ry="4.5" fill="#2f7d32" />
+          ))}
+          {[48, 128, 208, 288, 364].map((x) => (
+            <g key={x}>
+              <circle cx={x - 3} cy="261" r="1" fill="#ff3b5c" />
+              <circle cx={x + 3} cy="262.5" r="1" fill="#ffd400" />
+            </g>
+          ))}
+        </g>
+        <rect x="0" y="266" width="400" height="22" fill="url(#ls-road)" />
+        <rect x="0" y="265" width="400" height="1.6" fill="#e8eef4" />
+        <g fill="#f4f6f8">
+          {Array.from({ length: 14 }, (_, i) => (
+            <rect key={i} x={i * 32 + 4} y="276.5" width="16" height="1.3" />
+          ))}
+        </g>
+        {CARS.map((c) => (
+          <g key={c.id} transform={`translate(0 ${c.y})`}>
+            <g className={c.reverse ? 'login-scene__car login-scene__car--rev' : 'login-scene__car'} style={carTiming(c)}>
+              <g transform={c.reverse ? 'scale(-1 1) translate(-26 0)' : undefined}>
+                <Car color={c.color} />
               </g>
             </g>
-          ))}
-        </g>
-        {/* Where each scaled leap arc crosses the waterline on the way up and down */}
-        {FISH.map((f) => (
-          <g key={f.id}>
-            <Splash x={f.x + 10 * f.scale} timing={fishTiming(f)} />
-            <Splash x={f.x + 78 * f.scale} timing={fishTiming(f)} late />
+          </g>
+        ))}
+        <rect x="0" y="288" width="400" height="12" fill="#d9dee3" />
+        <rect x="0" y="288" width="400" height="1.6" fill="#b4bcc4" />
+        {PEOPLE.map((p) => (
+          <g key={p.id} transform={`translate(${p.x} 298.5)`}>
+            <g className={p.walk ? 'login-scene__walker' : undefined} style={walkTiming(p)}>
+              <Person shirt={p.shirt} pants={p.pants} skin={p.skin} />
+            </g>
           </g>
         ))}
       </svg>
@@ -287,280 +282,146 @@ export function LoginScene() {
   );
 }
 
-// Rough ridge of the hill path, used to seat the treeline on its crest.
-const HILL_RIDGE: ReadonlyArray<readonly [number, number]> = [
-  [0, 176],
-  [60, 163],
-  [130, 168],
-  [200, 170],
-  [260, 162],
-  [330, 160],
-  [400, 170],
-];
-
-function hillY(x: number): number {
-  for (let i = 1; i < HILL_RIDGE.length; i += 1) {
-    const [x1, y1] = HILL_RIDGE[i] ?? [400, 170];
-    const [x0, y0] = HILL_RIDGE[i - 1] ?? [0, 176];
-    if (x <= x1) {
-      return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
-    }
-  }
-  return 170;
+interface CarSpec {
+  readonly id: string;
+  readonly color: string;
+  readonly y: number;
+  readonly reverse: boolean;
+  readonly duration: number;
+  readonly delay: number;
+  readonly x: number;
 }
 
-// Deterministic jitter so the forest looks natural but renders identically every time.
-const TREELINE: ReadonlyArray<{ readonly x: number; readonly y: number; readonly r: number }> = Array.from(
-  { length: 58 },
-  (_, i) => {
-    const x = i * 7;
-    const r = 4.5 + ((i * 37) % 5) * 0.6;
-    return { x, y: hillY(x) - 1 - ((i * 13) % 4), r };
-  },
-);
-
-const FLOWER_COLORS: ReadonlyArray<string> = ['#ff3b5c', '#ffd400', '#ff8fc7', '#ffffff', '#b46bff', '#ff8a1f'];
-
-// Deterministic scatter so the beds look planted but render identically every time.
-const HEDGE_FLOWERS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly color: string }> = Array.from(
-  { length: 90 },
-  (_, i) => ({
-    x: 2 + i * 4.4,
-    y: 204.5 + ((i * 7) % 5) * 1.1,
-    color: FLOWER_COLORS[(i * 5) % FLOWER_COLORS.length] ?? '#ffffff',
-  }),
-);
-
-const BANK_FLOWERS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly color: string }> = Array.from(
-  { length: 56 },
-  (_, i) => ({
-    x: 3 + i * 7.1,
-    y: 229.5 + ((i * 3) % 4) * 1.6,
-    color: FLOWER_COLORS[(i * 3 + 1) % FLOWER_COLORS.length] ?? '#ffffff',
-  }),
-);
-
-type TopiaryKind = 'cone' | 'ball' | 'spiral';
-
-const TOPIARY: ReadonlyArray<{ readonly x: number; readonly kind: TopiaryKind }> = [
-  { x: 18, kind: 'cone' },
-  { x: 44, kind: 'ball' },
-  { x: 98, kind: 'spiral' },
-  { x: 130, kind: 'cone' },
-  { x: 158, kind: 'ball' },
-  { x: 250, kind: 'spiral' },
-  { x: 282, kind: 'ball' },
-  { x: 312, kind: 'cone' },
-  { x: 366, kind: 'spiral' },
-  { x: 392, kind: 'ball' },
+// Lane at y 275 drives right, lane at y 286 drives left; timings differ so cars never bunch.
+const CARS: ReadonlyArray<CarSpec> = [
+  { id: 'red', color: '#d63031', y: 275, reverse: false, duration: 14, delay: -2, x: 60 },
+  { id: 'white', color: '#f1f3f5', y: 275, reverse: false, duration: 18, delay: -11, x: 250 },
+  { id: 'blue', color: '#1d6fc4', y: 286, reverse: true, duration: 16, delay: -5, x: 150 },
+  { id: 'yellow', color: '#f2b81c', y: 286, reverse: true, duration: 20, delay: -14, x: 320 },
 ];
 
-const SLEEPERS: ReadonlyArray<number> = Array.from({ length: 34 }, (_, i) => i * 12);
-
-// Left edge of each passenger carriage, in train-local units behind the tender.
-const CARRIAGES: ReadonlyArray<number> = Array.from({ length: 9 }, (_, i) => -142 - i * 102);
-
-function Carriage({ x }: { readonly x: number }) {
-  return (
-    <g>
-      <g filter="url(#ls-shadow)">
-        <rect x={x} y="166" width="96" height="38" rx="3" fill="url(#ls-body)" />
-        <path d={`M${x - 3} 168 Q${x + 48} 154 ${x + 99} 168 Z`} fill="#26313b" />
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <rect key={i} x={x + 6 + i * 15} y="172" width="10" height="9" rx="1.5" fill="url(#ls-window)" />
-        ))}
-        <rect x={x} y="184" width="96" height="1.6" fill="#f1c40f" opacity="0.9" />
-        <text
-          x={x + 48}
-          y="196"
-          textAnchor="middle"
-          fontFamily="Arial, Helvetica, sans-serif"
-          fontSize="8.4"
-          fontWeight="700"
-          fill="#ffffff"
-          stroke="#0b2a55"
-          strokeWidth="0.3"
-        >
-          Klinik Prima Husada
-        </text>
-        <rect x={x} y="200" width="96" height="1.4" fill="#f1c40f" opacity="0.9" />
-        <rect x={x + 96} y="196" width="6" height="3" fill="#30363c" />
-      </g>
-      <Wheel cx={x + 12} cy={208} r={6} />
-      <Wheel cx={x + 26} cy={208} r={6} />
-      <Wheel cx={x + 70} cy={208} r={6} />
-      <Wheel cx={x + 84} cy={208} r={6} />
-    </g>
-  );
+function carTiming(c: CarSpec): CSSProperties {
+  return { '--ls-dur': `${c.duration}s`, '--ls-delay': `${c.delay}s`, '--ls-x': `${c.x}px` } as CSSProperties;
 }
 
-interface FishSpec {
+interface PersonSpec {
   readonly id: string;
   readonly x: number;
-  readonly scale: number;
-  readonly top: string;
-  readonly mid: string;
-  readonly belly: string;
-  readonly fin: string;
-  readonly outline: string;
-  readonly delay: number;
+  readonly shirt: string;
+  readonly pants: string;
+  readonly skin: string;
+  readonly walk: boolean;
   readonly duration: number;
 }
 
-// Seven fish, each its own colour, size and leap timing so they never jump in unison.
-const FISH: ReadonlyArray<FishSpec> = [
-  { id: 'orange', x: 8, scale: 1.0, top: '#b5541a', mid: '#f39c34', belly: '#fde7b8', fin: '#e0782a', outline: '#8a3a10', delay: 0.8, duration: 6 },
-  { id: 'blue', x: 64, scale: 0.9, top: '#1d4f91', mid: '#3fa0e8', belly: '#d6efff', fin: '#2b7fd0', outline: '#10325c', delay: 2.6, duration: 5.4 },
-  { id: 'pink', x: 120, scale: 1.2, top: '#b0306a', mid: '#f06fa8', belly: '#ffe0ee', fin: '#e0508d', outline: '#6e1a41', delay: 4.2, duration: 6.6 },
-  { id: 'purple', x: 178, scale: 0.95, top: '#4b2a8a', mid: '#8e63d6', belly: '#e8dcff', fin: '#7048c0', outline: '#2c1659', delay: 1.4, duration: 5.8 },
-  { id: 'yellow', x: 232, scale: 1.3, top: '#c9930a', mid: '#ffd23f', belly: '#fff6c9', fin: '#f0b400', outline: '#7d5a00', delay: 3.4, duration: 7 },
-  { id: 'red', x: 288, scale: 0.85, top: '#8f1d1d', mid: '#e5393b', belly: '#ffd9d4', fin: '#c92a2a', outline: '#561010', delay: 5.2, duration: 5.2 },
-  { id: 'teal', x: 338, scale: 1.1, top: '#0b6b5e', mid: '#25c2a0', belly: '#d4fff1', fin: '#14a085', outline: '#064038', delay: 0.2, duration: 6.2 },
+const PEOPLE: ReadonlyArray<PersonSpec> = [
+  { id: 'p1', x: 70, shirt: '#e74c3c', pants: '#2c3e50', skin: '#f1c27d', walk: true, duration: 9 },
+  { id: 'p2', x: 84, shirt: '#2980b9', pants: '#34495e', skin: '#c68642', walk: false, duration: 0 },
+  { id: 'p3', x: 150, shirt: '#27ae60', pants: '#1f2d3a', skin: '#e0ac69', walk: true, duration: 11 },
+  { id: 'p4', x: 168, shirt: '#f39c12', pants: '#3b3b3b', skin: '#8d5524', walk: false, duration: 0 },
+  { id: 'p5', x: 222, shirt: '#8e44ad', pants: '#2c3e50', skin: '#f1c27d', walk: true, duration: 10 },
+  { id: 'p6', x: 290, shirt: '#16a085', pants: '#2d3436', skin: '#c68642', walk: true, duration: 12 },
+  { id: 'p7', x: 306, shirt: '#ecf0f1', pants: '#2c3e50', skin: '#e0ac69', walk: false, duration: 0 },
 ];
 
-// CSS custom properties let one stylesheet rule drive every fish with its own timing.
-function fishTiming(f: FishSpec): CSSProperties {
-  return { '--ls-delay': `${f.delay}s`, '--ls-dur': `${f.duration}s` } as CSSProperties;
+function walkTiming(p: PersonSpec): CSSProperties {
+  return { '--ls-dur': `${p.duration}s` } as CSSProperties;
 }
 
-function Fish({ spec }: { readonly spec: FishSpec }) {
+interface PlaneProps {
+  readonly tail: string;
+  readonly label?: boolean;
+}
+
+// Side-view jet facing right, centred on its fuselage. Wheels sit about 10 units below the origin.
+function Plane({ tail, label = false }: PlaneProps) {
   return (
     <g>
-      <path d="M-20 0 L-32 -11 Q-29 0 -32 11 Z" fill={spec.fin} stroke={spec.outline} strokeWidth="0.6" />
-      <path d="M-6 -9 Q2 -20 10 -9 Z" fill={spec.fin} />
+      <path d="M-30 -5 L-38 -21 L-28 -21 L-19 -6 Z" fill={tail} />
+      <path d="M-29 -1 L-40 -6 L-35 0 Z" fill="#9fb0c0" />
       <path
-        d="M22 0 Q16 -11 0 -11 Q-14 -11 -21 0 Q-14 11 0 11 Q16 11 22 0 Z"
-        fill={`url(#ls-fish-${spec.id})`}
-        stroke={spec.outline}
-        strokeWidth="0.6"
+        d="M-31 -2 Q-31 -7 -22 -7 H20 Q30 -6 32 0 Q29 5 18 6 H-22 Q-31 5 -31 -2 Z"
+        fill="url(#ls-fuselage)"
+        stroke="#9fb0c0"
+        strokeWidth="0.4"
       />
-      <path d="M-12 -4 Q0 -7 12 -3" fill="none" stroke="#fff3d6" strokeWidth="0.8" opacity="0.7" />
-      <path d="M-2 4 L-8 11 L2 7 Z" fill={spec.fin} />
-      <path d="M10 -9 Q8 0 10 9" fill="none" stroke={spec.outline} strokeWidth="0.7" opacity="0.6" />
-      <circle cx="15" cy="-3" r="2.2" fill="#ffffff" />
-      <circle cx="15.5" cy="-3" r="1.2" fill="#111" />
-    </g>
-  );
-}
-
-function Splash({ x, timing, late = false }: { readonly x: number; readonly timing: CSSProperties; readonly late?: boolean }) {
-  return (
-    <g transform={`translate(${x} 239)`}>
-      <g className={late ? 'login-scene__splash login-scene__splash--late' : 'login-scene__splash'} style={timing}>
-        <ellipse rx="12" ry="3" fill="none" stroke="#f2fffa" strokeWidth="1.2" />
-        <circle cx="-7" cy="-7" r="1.4" fill="#f2fffa" />
-        <circle cx="0" cy="-10" r="1.6" fill="#f2fffa" />
-        <circle cx="7" cy="-6" r="1.3" fill="#f2fffa" />
+      <path d="M-31 2 H31 Q29 5 18 6 H-22 Q-31 5 -31 2 Z" fill={tail} opacity="0.9" />
+      <path d="M22 -6 Q29 -5 31 -1 H22 Z" fill="#273746" />
+      <g fill="#6fa8d6">
+        {PLANE_WINDOWS.map((x) => (
+          <circle key={x} cx={x} cy="-2.4" r="1" />
+        ))}
       </g>
+      {label ? (
+        <text x="-6" y="3.9" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontSize="2.6" fontWeight="700" fill="#ffffff">
+          PRIMA HUSADA
+        </text>
+      ) : null}
+      <path d="M-2 1 L-14 13 L-6 13 L10 1 Z" fill="#b7c4d1" stroke="#8fa0b2" strokeWidth="0.4" />
+      <ellipse cx="3" cy="8" rx="5.5" ry="2.6" fill="#8fa0b2" />
+      <ellipse cx="8" cy="8" rx="1.2" ry="2.2" fill="#52606d" />
+      <rect x="18" y="5" width="1.2" height="4.4" fill="#4a5158" />
+      <circle cx="18.6" cy="10" r="1.7" fill="#2b2f34" />
+      <rect x="-6" y="5" width="1.2" height="4.4" fill="#4a5158" />
+      <circle cx="-5.4" cy="10" r="1.9" fill="#2b2f34" />
     </g>
   );
 }
 
-function Topiary({ x, kind }: { readonly x: number; readonly kind: TopiaryKind }) {
+function ServiceVan({ x, y }: { readonly x: number; readonly y: number }) {
   return (
-    <g transform={`translate(${x} 205)`}>
-      <ellipse cx="0" cy="0.5" rx="7" ry="1.6" fill="#0b1d12" opacity="0.35" />
-      <path d="M-5 0 L-4 -4 H4 L5 0 Z" fill="#c4572a" />
-      <rect x="-5.6" y="-5" width="11.2" height="1.8" rx="0.6" fill="#e0703a" />
-      {kind === 'cone' && <path d="M0 -26 L-8 -5 H8 Z" fill="url(#ls-leaf)" />}
-      {kind === 'ball' && (
-        <>
-          <rect x="-0.7" y="-12" width="1.4" height="8" fill="#5a3a22" />
-          <circle cx="0" cy="-17" r="8" fill="url(#ls-leaf)" />
-        </>
-      )}
-      {kind === 'spiral' && (
-        <>
-          <ellipse cx="0" cy="-9" rx="7.5" ry="4.5" fill="url(#ls-leaf)" />
-          <ellipse cx="0" cy="-16" rx="5.5" ry="4" fill="url(#ls-leaf)" />
-          <ellipse cx="0" cy="-22" rx="3.6" ry="3.4" fill="url(#ls-leaf)" />
-          <circle cx="0" cy="-27" r="1.8" fill="url(#ls-leaf)" />
-        </>
-      )}
+    <g transform={`translate(${x} ${y}) scale(0.8)`}>
+      <rect x="0" y="-9" width="16" height="7" rx="1.2" fill="#f2b81c" />
+      <rect x="16" y="-7" width="7" height="5" rx="1" fill="#e08a14" />
+      <rect x="17.6" y="-6.2" width="3.4" height="2.4" fill="#cfe9ff" />
+      <circle cx="5" cy="-1.6" r="2" fill="#2b2f34" />
+      <circle cx="18" cy="-1.6" r="2" fill="#2b2f34" />
     </g>
   );
 }
 
-const MICKEY_PARTS: ReadonlyArray<readonly [number, number, number]> = [
-  [-9, -14, 5],
-  [9, -14, 5],
-  [0, -6, 9],
-];
-
-// Mickey-head floral bed: one round bed with two ears, planted in colour.
-function MickeyBed({ x }: { readonly x: number }) {
+function Car({ color }: { readonly color: string }) {
   return (
-    <g transform={`translate(${x} 205)`}>
-      {MICKEY_PARTS.map(([cx, cy, r]) => (
-        <g key={cx + ',' + cy}>
-          <circle cx={cx} cy={cy} r={r} fill="#2f7d32" />
-          <circle cx={cx - r * 0.4} cy={cy - r * 0.2} r="1.3" fill="#ff3b5c" />
-          <circle cx={cx + r * 0.4} cy={cy + r * 0.2} r="1.3" fill="#ffd400" />
-          <circle cx={cx} cy={cy + r * 0.5} r="1.2" fill="#ffffff" />
-        </g>
-      ))}
+    <g>
+      <ellipse cx="13" cy="0.4" rx="13" ry="1.2" fill="#000000" opacity="0.25" />
+      <rect x="0" y="-7" width="26" height="5" rx="1.6" fill={color} />
+      <path d="M6 -7 L9 -11.5 H17 L20 -7 Z" fill={color} />
+      <path d="M8 -7 L10 -10.6 H16.2 L18.4 -7 Z" fill="#cfe9ff" />
+      <rect x="24.6" y="-6" width="1.6" height="1.6" fill="#fff3a0" />
+      <circle cx="6" cy="-2" r="2.4" fill="#1d2023" />
+      <circle cx="20" cy="-2" r="2.4" fill="#1d2023" />
+      <circle cx="6" cy="-2" r="1" fill="#aab2ba" />
+      <circle cx="20" cy="-2" r="1" fill="#aab2ba" />
     </g>
   );
 }
 
-interface TreeProps {
-  readonly x: number;
-  readonly y: number;
-  readonly scale: number;
+interface PersonProps {
+  readonly shirt: string;
+  readonly pants: string;
+  readonly skin: string;
 }
 
-function LeafyTree({ x, y, scale }: TreeProps) {
+// Feet at the origin.
+function Person({ shirt, pants, skin }: PersonProps) {
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`}>
-      <path d="M-3 0 L-2.2 -22 Q0 -24 2.2 -22 L3 0 Z" fill="url(#ls-trunk)" />
-      <path d="M0 -14 L-9 -22 M0 -17 L8 -25" stroke="#4a3220" strokeWidth="1.6" />
-      {/* Back canopy is darker so the front clusters read as nearer foliage */}
-      <g fill="#1d4f25">
-        <circle cx="-15" cy="-26" r="10" />
-        <circle cx="15" cy="-27" r="10" />
-        <circle cx="0" cy="-46" r="12" />
-      </g>
-      <circle cx="-13" cy="-20" r="9" fill="url(#ls-leaf)" />
-      <circle cx="12" cy="-21" r="9.5" fill="url(#ls-leaf)" />
-      <circle cx="0" cy="-22" r="9" fill="url(#ls-leaf)" />
-      <circle cx="-10" cy="-33" r="11" fill="url(#ls-leaf)" />
-      <circle cx="10" cy="-34" r="11" fill="url(#ls-leaf)" />
-      <circle cx="0" cy="-40" r="12" fill="url(#ls-leaf)" />
-      <circle cx="-4" cy="-48" r="8" fill="url(#ls-leaf)" />
-      <circle cx="6" cy="-28" r="7" fill="url(#ls-leaf)" opacity="0.85" />
+    <g>
+      <rect x="-2" y="-5" width="1.8" height="5" fill={pants} />
+      <rect x="0.2" y="-5" width="1.8" height="5" fill={pants} />
+      <rect x="-2.4" y="-11" width="4.8" height="6.4" rx="1.6" fill={shirt} />
+      <circle cx="0" cy="-13.2" r="2.2" fill={skin} />
+      <rect x="2.4" y="-8" width="2.6" height="3.6" rx="0.6" fill="#3b3b3b" />
     </g>
   );
 }
 
-function Pine({ x, y, scale }: TreeProps) {
+function TreeBlob({ x, y, small = false }: { readonly x: number; readonly y: number; readonly small?: boolean }) {
+  const s = small ? 0.7 : 1;
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`}>
-      <rect x="-1.8" y="-6" width="3.6" height="6" fill="url(#ls-trunk)" />
-      <path
-        d="M0 -50 L-8 -36 H-4 L-12 -24 H-6 L-15 -13 H-8 L-18 -4 H18 L8 -13 H15 L6 -24 H12 L4 -36 H8 Z"
-        fill="url(#ls-pine)"
-      />
-      <path d="M0 -50 L-4 -36 L-8 -24 L-11 -13 L-14 -4 H0 Z" fill="#3b7d46" opacity="0.45" />
-    </g>
-  );
-}
-
-interface WheelProps {
-  readonly cx: number;
-  readonly cy: number;
-  readonly r: number;
-}
-
-function Wheel({ cx, cy, r }: WheelProps) {
-  return (
-    <g transform={`translate(${cx} ${cy})`}>
-      <circle r={r} fill="url(#ls-wheel)" stroke="#1a1d20" strokeWidth="1.4" />
-      <g className="login-scene__wheel" stroke="#e7c9c4" strokeWidth="0.8" opacity="0.85">
-        <line x1={-r + 1.5} y1="0" x2={r - 1.5} y2="0" />
-        <line x1="0" y1={-r + 1.5} x2="0" y2={r - 1.5} />
-        <line x1={-(r - 2) * 0.7} y1={-(r - 2) * 0.7} x2={(r - 2) * 0.7} y2={(r - 2) * 0.7} />
-      </g>
-      <circle r={r * 0.25} fill="#d8dde1" />
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <rect x="-1.2" y="-6" width="2.4" height="6" fill="#5a3a22" />
+      <circle cx="0" cy="-11" r="7" fill="#2f7d32" />
+      <circle cx="-3" cy="-13" r="4.5" fill="#4aa44a" />
     </g>
   );
 }
