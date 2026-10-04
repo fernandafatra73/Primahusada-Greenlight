@@ -16,6 +16,8 @@ import {
 } from './config/navigation.ts';
 import { useAppNavigation } from './hooks/useAppNavigation.ts';
 import { useIdleLogout } from './hooks/useIdleLogout.ts';
+import { setCabinSilent } from './lib/cabinSounds.ts';
+import { stopLoginMusic } from './lib/loginMusic.ts';
 import { clearStoredAuthUser,loadStoredAuthUser, storeAuthUser, type AuthUser } from './lib/auth.ts';
 import { withIndonesianVoice } from './lib/speechVoice.ts';
 import { ChatWidget } from './components/chat/ChatWidget.tsx';
@@ -481,6 +483,7 @@ export function App() {
   const [extrasActive, setExtrasActive] = useState(false);
 
   function handleLogin(user: AuthUser): void {
+    setCabinSilent(false);
     storeAuthUser(user);
     setExtrasActive(false);
     setAuthUser(user);
@@ -494,7 +497,14 @@ export function App() {
     setExtrasActive(false);
   }
 
-  useIdleLogout(authUser !== null, handleLogout);
+  // Kembali ke login karena 30 menit tidak dipakai: halaman login senyap (tanpa ucapan, deru, musik).
+  function handleIdleLogout(): void {
+    setCabinSilent(true);
+    stopLoginMusic();
+    handleLogout();
+  }
+
+  useIdleLogout(authUser !== null, handleIdleLogout);
 
   if (!authUser) {
     return <LoginPage onLogin={handleLogin} />;

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { apiPost } from '../lib/api.ts';
 import type { AuthUser } from '../lib/auth.ts';
+import { isCabinSilent, unlockCabinAudio } from '../lib/cabinSounds.ts';
+import { startLoginMusic, stopLoginMusic } from '../lib/loginMusic.ts';
 import { LoginParkedPlane } from './LoginParkedPlane.tsx';
 import { LoginProfile } from './LoginProfile.tsx';
 import { LoginScene } from './LoginScene.tsx';
@@ -32,6 +34,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   speedRef.current = speed;
   const [arrival, setArrival] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [musicOn, setMusicOn] = useState(() => !isCabinSilent());
   const [photoVisible, setPhotoVisible] = useState(false);
   const [parkedVisible, setParkedVisible] = useState(false);
   const photoTimerRef = useRef<number | null>(null);
@@ -53,6 +56,23 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     const id = window.setInterval(apply, 400);
     return () => window.clearInterval(id);
   }, [speed]);
+
+  // Musik latar login: baru terdengar setelah interaksi pertama (aturan browser), berhenti saat masuk.
+  useEffect(() => {
+    if (!musicOn) {
+      stopLoginMusic();
+      return undefined;
+    }
+    startLoginMusic();
+    const unlock = (): void => void unlockCabinAudio();
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+      stopLoginMusic();
+    };
+  }, [musicOn]);
 
   useEffect(
     () => () => {
@@ -155,6 +175,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </button>
           <button type="button" className="login-controls__login" aria-pressed={showLogin} onClick={() => setShowLogin((on) => !on)}>
             {showLogin ? 'Sembunyikan Login' : 'Login'}
+          </button>
+          <button type="button" aria-pressed={musicOn} onClick={() => setMusicOn((on) => !on)}>
+            {musicOn ? 'Musik: Hidup' : 'Musik: Mati'}
           </button>
           <label className="login-controls__speed">
             <span>Kecepatan</span>

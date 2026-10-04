@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { playCabinChime, playJetSound, setCabinAudioPaused, unlockCabinAudio } from '../lib/cabinSounds.ts';
+import { isCabinSilent, playCabinChime, playJetSound, setCabinAudioPaused, unlockCabinAudio } from '../lib/cabinSounds.ts';
+import { setLoginMusicDucked } from '../lib/loginMusic.ts';
 import { withIndonesianVoice } from '../lib/speechVoice.ts';
 
 // Seberapa jauh siklus animasi pesawat mendarat (login.css, login-landing) saat roda
@@ -8,6 +9,24 @@ const TOUCHDOWN_PROGRESS = 0.54;
 const POLL_MS = 150;
 const LANDING_SOUND_MS = 6000;
 const TAKEOFF_SOUND_MS = 9000;
+// Ucapan hanya sekali saat komputer/peramban baru dinyalakan: ditandai per sesi peramban.
+const VOICE_FLAG = 'login-voice-played';
+
+function voicePlayedThisSession(): boolean {
+  try {
+    return window.sessionStorage.getItem(VOICE_FLAG) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markVoicePlayed(): void {
+  try {
+    window.sessionStorage.setItem(VOICE_FLAG, '1');
+  } catch {
+    // Tanpa penyimpanan sesi, ucapan hanya dijaga oleh ref komponen.
+  }
+}
 
 function greetingWord(date: Date): string {
   const hour = date.getHours();
@@ -63,6 +82,7 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
     const synthSupported = 'speechSynthesis' in window;
 
     function finishVoice(): void {
+      setLoginMusicDucked(false);
       void playCabinChime().then(() => {
         busyRef.current = false;
         onVoiceDoneRef.current();
@@ -75,6 +95,8 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
         return;
       }
       busyRef.current = true;
+      markVoicePlayed();
+      setLoginMusicDucked(true);
       const utter = new SpeechSynthesisUtterance(welcomeSpeech(new Date()));
       utter.lang = 'id-ID';
       utter.rate = 0.9;
@@ -85,6 +107,7 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
         if (event.error === 'not-allowed') {
           pendingVoiceRef.current = true;
           busyRef.current = false;
+          setLoginMusicDucked(false);
           return;
         }
         finishVoice();
@@ -103,8 +126,14 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
       if (busyRef.current) return;
       if (!voiceUsedRef.current) {
         voiceUsedRef.current = true;
-        speak();
-        return;
+        // Setelah logout otomatis, atau bila ucapan sudah dibacakan di sesi ini: tanpa ucapan,
+        // tetapi adegan samping tetap lanjut.
+        if (isCabinSilent() || voicePlayedThisSession()) {
+          onVoiceDoneRef.current();
+        } else {
+          speak();
+          return;
+        }
       }
       playJetSound(LANDING_SOUND_MS);
     }

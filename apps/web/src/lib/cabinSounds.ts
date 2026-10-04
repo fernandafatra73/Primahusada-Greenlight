@@ -4,6 +4,20 @@
 // audio belum "running".
 
 let context: AudioContext | null = null;
+// Setelah logout otomatis karena tidak dipakai, halaman login harus senyap (tanpa ucapan, bel, deru, musik).
+let silent = false;
+
+export function setCabinSilent(value: boolean): void {
+  silent = value;
+}
+
+export function isCabinSilent(): boolean {
+  return silent;
+}
+
+export function getAudioContext(): AudioContext | null {
+  return getContext();
+}
 
 function getContext(): AudioContext | null {
   if (typeof window === 'undefined' || !('AudioContext' in window)) return null;
@@ -32,7 +46,7 @@ export function setCabinAudioPaused(paused: boolean): void {
 export function playCabinChime(): Promise<void> {
   return new Promise((resolve) => {
     const ctx = getContext();
-    if (!ctx || ctx.state !== 'running') {
+    if (silent || !ctx || ctx.state !== 'running') {
       resolve();
       return;
     }
@@ -71,7 +85,7 @@ function noiseBuffer(ctx: AudioContext): AudioBuffer {
 /** Deru mesin jet yang membesar lalu mereda (derau tersaring + dengung rendah + desing turbin). */
 export function playJetSound(durationMs = 10000): void {
   const ctx = getContext();
-  if (!ctx || ctx.state !== 'running') return;
+  if (silent || !ctx || ctx.state !== 'running') return;
   const t0 = ctx.currentTime;
   const dur = durationMs / 1000;
   const end = t0 + dur;

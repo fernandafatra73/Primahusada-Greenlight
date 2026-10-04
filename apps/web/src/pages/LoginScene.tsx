@@ -11,10 +11,10 @@ import { LoginArrival } from './LoginArrival.tsx';
 // runway are drawn head-on / from behind and scaled with perspective so they
 // follow the white centre line.
 
-const HORIZON = 140;
+const HORIZON = 124;
 const RUNWAY_BOTTOM = 266;
 const RUNWAY_CX = 210;
-const RUNWAY_HALF_TOP = 14;
+const RUNWAY_HALF_TOP = 9;
 const RUNWAY_HALF_BOTTOM = 165;
 const WIDE_L = -60;
 const WIDE_R = 540;
@@ -29,9 +29,9 @@ function runwayY(t: number): number {
 }
 
 // Centre-line dashes shrink toward the horizon so the runway reads in perspective.
-const CENTER_DASHES: ReadonlyArray<string> = Array.from({ length: 11 }, (_, i) => {
-  const t0 = (i / 11) ** 1.8;
-  const t1 = t0 + (((i + 1) / 11) ** 1.8 - t0) * 0.55;
+const CENTER_DASHES: ReadonlyArray<string> = Array.from({ length: 15 }, (_, i) => {
+  const t0 = (i / 15) ** 1.8;
+  const t1 = t0 + (((i + 1) / 15) ** 1.8 - t0) * 0.55;
   const w0 = 0.5 + 2.6 * t0;
   const w1 = 0.5 + 2.6 * t1;
   const y0 = runwayY(t0);
@@ -54,9 +54,9 @@ const THRESHOLD_BARS: ReadonlyArray<string> = [-1, 1].flatMap((side) =>
 
 // Edge lights along both sides of the runway, with a soft glow.
 const EDGE_LIGHTS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly r: number }> = Array.from(
-  { length: 10 },
+  { length: 14 },
   (_, i) => {
-    const t = ((i + 0.5) / 10) ** 1.6;
+    const t = ((i + 0.5) / 14) ** 1.6;
     const half = runwayHalf(t) * 1.03;
     return { x: RUNWAY_CX - half, y: runwayY(t), r: 0.5 + 1.1 * t };
   },
@@ -208,7 +208,7 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
         if (event.target === event.currentTarget) onArrivalEnd();
       }}
     >
-      <svg viewBox="0 0 640 360" preserveAspectRatio="xMidYMax slice" className="login-scene__svg">
+      <svg viewBox="0 0 640 413" preserveAspectRatio="xMidYMax slice" className="login-scene__svg">
         <defs>
           <linearGradient id="ls-sky" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#1670d6" />
@@ -222,12 +222,12 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
             <stop offset="100%" stopColor="#fff2b8" stopOpacity="0" />
           </radialGradient>
           <linearGradient id="ls-hills-far" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#8aa9cf" />
-            <stop offset="100%" stopColor="#c3d8ea" />
+            <stop offset="0%" stopColor="#5fa56a" />
+            <stop offset="100%" stopColor="#a9d6a0" />
           </linearGradient>
           <linearGradient id="ls-hills" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#5f93bd" />
-            <stop offset="100%" stopColor="#a9cbe0" />
+            <stop offset="0%" stopColor="#3f8f4c" />
+            <stop offset="100%" stopColor="#7cc276" />
           </linearGradient>
           <linearGradient id="ls-grass" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#7fbf5a" />
@@ -317,13 +317,23 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
             </g>
           ))}
 
-          {/* Distant hills fade into haze */}
-          <path d="M-60 146 L-10 124 L40 140 L100 118 L160 138 L230 120 L300 140 L370 116 L440 138 L540 122 V160 H-60 Z" fill="url(#ls-hills-far)" />
-          <path d="M-60 150 Q0 128 70 142 T210 138 T350 142 T540 140 V160 H-60 Z" fill="url(#ls-hills)" />
-          <rect x={WIDE_L} y="138" width={WIDE_W} height="16" fill="#dff0fb" opacity="0.4" />
+          {/* Green mountains fade into haze */}
+          <path d="M-60 128 L-20 96 L10 108 L60 70 L110 104 L150 90 L200 112 L260 84 L300 100 L360 78 L420 100 L470 80 L540 104 V130 H-60 Z" fill="url(#ls-hills-far)" />
+          <path d="M-60 128 L6 64 L34 84 L58 70 L112 128 Z" fill="#3a8a48" />
+          <path d="M6 64 L34 84 L24 100 L8 90 Z" fill="#2f7a3e" opacity="0.7" />
+          <path d="M296 128 L372 50 L394 70 L418 56 L500 128 Z" fill="#3a8a48" />
+          <path d="M372 50 L394 70 L384 92 L366 78 Z" fill="#2f7a3e" opacity="0.7" />
+          <path d="M418 56 L450 86 L430 110 L412 84 Z" fill="#56a85c" opacity="0.7" />
+          <g fill="#276b35" opacity="0.55">
+            {[[380, 96], [392, 104], [402, 92], [426, 104], [440, 112], [356, 108], [344, 116], [20, 98], [34, 106], [50, 112], [8, 108]].map(([x, y]) => (
+              <circle key={`${x}-${y}`} cx={x} cy={y} r="3.2" />
+            ))}
+          </g>
+          <path d="M-60 132 Q0 110 70 122 T210 120 T350 122 T540 118 V132 H-60 Z" fill="url(#ls-hills)" />
+          <rect x={WIDE_L} y="118" width={WIDE_W} height="14" fill="#e6f5e8" opacity="0.35" />
 
           {/* Ground: grass, then concrete aprons either side of the runway */}
-          <rect x={WIDE_L} y={HORIZON} width={WIDE_W} height={RUNWAY_BOTTOM + 8 - HORIZON} fill="url(#ls-grass)" />
+          <rect x={WIDE_L} y={HORIZON} width={WIDE_W} height={310 - HORIZON} fill="url(#ls-grass)" />
           <polygon
             points={`${WIDE_L},${HORIZON} ${RUNWAY_CX - RUNWAY_HALF_TOP},${HORIZON} ${RUNWAY_CX - RUNWAY_HALF_BOTTOM},${RUNWAY_BOTTOM} ${WIDE_L},${RUNWAY_BOTTOM}`}
             fill="url(#ls-apron)"
@@ -362,6 +372,9 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
           {CENTER_DASHES.map((points) => (
             <polygon key={points} points={points} fill="#ffffff" />
           ))}
+          <g transform={`translate(${RUNWAY_CX} 243) scale(1 0.36)`} opacity="0.95">
+            <GarudaEmblem />
+          </g>
           {EDGE_LIGHTS.map((l) => (
             <g key={`${l.x}-${l.y}`}>
               <circle cx={l.x} cy={l.y} r={l.r * 3} fill="url(#ls-glow)" opacity="0.7" />
@@ -407,8 +420,11 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
             <path d="M96 106 Q120 96 144 106" fill="none" stroke="#e8eef4" strokeWidth="1.8" />
             <rect x="42" y="113" width="156" height="6" rx="2" fill="#1d4f91" />
             <rect x="42" y="113" width="156" height="1.8" fill="#6fb3ee" />
-            <line x1="120" y1="99" x2="120" y2="84" stroke="#7a8794" strokeWidth="0.8" />
-            <path className="login-scene__flag" d="M120 84 H132 L129 87 L132 90 H120 Z" fill="#e5393b" />
+            <line x1="120" y1="99" x2="120" y2="81" stroke="#7a8794" strokeWidth="0.8" />
+            <g className="login-scene__flag">
+              <rect x="120" y="81.5" width="15" height="4.5" fill="#e5222b" />
+              <rect x="120" y="86" width="15" height="4.5" fill="#ffffff" stroke="#c9d1d8" strokeWidth="0.25" />
+            </g>
             <rect x="62" y="122" width="116" height="14" rx="2.5" fill="#0e2f63" stroke="#f1c40f" strokeWidth="1" />
             <text
               x="120"
@@ -428,16 +444,6 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
               <rect key={x} x={x} y="138" width="0.9" height="14" fill="#e8f4ff" opacity="0.85" />
             ))}
             <rect x="46" y="138" width="148" height="1.4" fill="#1d4f91" />
-          </g>
-
-          {/* Trees at the edge of the airfield */}
-          <g>
-            <TreeBlob x={206} y={150} />
-            <TreeBlob x={216} y={150} small />
-            <TreeBlob x={370} y={150} />
-            <TreeBlob x={30} y={152} />
-            <TreeBlob x={496} y={152} />
-            <TreeBlob x={-30} y={152} small />
           </g>
 
           {/* Windsock beside the runway */}
@@ -520,7 +526,11 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
             </g>
           )}
 
-          {/* Forecourt: planting, lamps, road with moving cars and the pavement with people */}
+          {/* Row of buildings across the road from the pavement walkers, with coconut palms in front */}
+          <CityRow />
+
+          {/* Forecourt (moved down to make room for the buildings): planting, lamps, road with cars, pavement with people */}
+          <g transform="translate(0 44)">
           <rect x={WIDE_L} y={RUNWAY_BOTTOM} width={WIDE_W} height="6" fill="url(#ls-grass)" />
           <g>
             {[8, 48, 88, 128, 168, 208, 248, 288, 328, 364, 404, 444, 484].map((x) => (
@@ -574,7 +584,7 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
             return (
               <g key={p.id} transform={`translate(${p.x} ${p.y ?? 298.5}) scale(${p.scale ?? 1})`}>
                 <g className={direction ? 'login-scene__stroll' : undefined} style={direction ? strollTiming(p, direction) : undefined}>
-                  <Person shirt={p.shirt} pants={p.pants} skin={p.skin} walking={direction !== undefined} facing={facing} />
+                  <Person shirt={p.shirt} pants={p.pants} skin={p.skin} outfit={OUTFITS[i % OUTFITS.length]} walking={direction !== undefined} facing={facing} />
                 </g>
               </g>
             );
@@ -594,12 +604,14 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
                 shirt={PICKUP_LOOK[i]?.shirt ?? '#e74c3c'}
                 pants="#2c3e50"
                 skin={PICKUP_LOOK[i]?.skin ?? '#f1c27d'}
+                outfit={OUTFITS[(i + 1) % OUTFITS.length]}
                 pack={i % 2 === 0 ? 'koper' : 'ransel'}
                 walking
                 facing={i < 3 ? 1 : -1}
               />
             </g>
           ))}
+          </g>
         </g>
       </svg>
     </div>
@@ -610,12 +622,25 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
 
 interface WingsProps {
   readonly dark?: boolean;
+  /** Shows the red and green wing-tip lights; the value is the side (1 right, -1 left on screen) that carries the red one. */
+  readonly nav?: 1 | -1;
 }
 
 // Swept wings and engines seen head-on or from behind; wingspan is 100 units.
-function Wings({ dark = false }: WingsProps) {
+function Wings({ dark = false, nav }: WingsProps) {
   return (
     <g>
+      {nav
+        ? ([1, -1] as const).map((side) => {
+            const colour = side === nav ? '#ff2b2b' : '#27e06a';
+            return (
+              <g key={`nav${side}`} className="login-scene__nav">
+                <circle cx={side * 50} cy="-16" r="5" fill={colour} opacity="0.45" />
+                <circle cx={side * 50} cy="-16" r="1.4" fill={colour} />
+              </g>
+            );
+          })
+        : null}
       {[1, -1].map((side) => (
         <g key={side} transform={`scale(${side} 1)`}>
           <path d="M6 -10 L50 -15 L50 -13 L6 -5 Z" fill="#c8d3de" stroke="#8fa0b2" strokeWidth="0.4" />
@@ -655,7 +680,7 @@ function PlaneRear({ tail }: TailProps) {
   return (
     <g>
       <Gear />
-      <Wings />
+      <Wings nav={-1} />
       <path d="M-20 -19.5 L0 -21.5 L20 -19.5 L0 -16.5 Z" fill="#d3dce5" stroke="#9fb0c0" strokeWidth="0.3" />
       <ellipse cx="0" cy="-12" rx="7.6" ry="8.6" fill="url(#ls-fuselage-h)" stroke="#9fb0c0" strokeWidth="0.4" />
       <path d="M-2.6 -18 L-1.6 -45 L1.6 -45 L2.6 -18 Z" fill={tail} />
@@ -681,7 +706,9 @@ function PlaneRear({ tail }: TailProps) {
           ))}
         </g>
       ))}
-      <circle className="login-scene__strobe" cx="0" cy="-46" r="1.4" fill="#ffffff" />
+      <circle cx="0" cy="-46" r="5" fill="url(#ls-glow)" />
+      <circle className="login-scene__strobe" cx="0" cy="-46" r="1.6" fill="#ffffff" />
+      <circle cx="0" cy="-17" r="1.1" fill="#ff3b3b" className="login-scene__nav" />
     </g>
   );
 }
@@ -692,12 +719,25 @@ function PlaneFront({ tail }: TailProps) {
     <g>
       <path d="M-2.4 -19 L-1.5 -36 L1.5 -36 L2.4 -19 Z" fill={tail} />
       <Gear />
-      <Wings dark />
+      <Wings dark nav={1} />
       <ellipse cx="0" cy="-12" rx="7.6" ry="8.6" fill="url(#ls-fuselage-h)" stroke="#9fb0c0" strokeWidth="0.4" />
-      <path d="M-5 -15.5 Q0 -19.5 5 -15.5 L3.6 -12.4 Q0 -13.8 -3.6 -12.4 Z" fill="#1f2d3a" />
-      <path d="M-0.6 -15.6 V-13.4 M0.6 -15.6 V-13.4" stroke="#8aa0b4" strokeWidth="0.4" />
+      <path d="M-5 -15.5 Q0 -19.5 5 -15.5 L3.6 -12.4 Q0 -13.8 -3.6 -12.4 Z" fill="#8cc4ea" />
+      {[-2.1, 2.1].map((px) => (
+        <g key={px}>
+          <path d={`M${px - 1.7} -12.9 Q${px} -14.2 ${px + 1.7} -12.9 L${px + 1.5} -12.5 H${px - 1.5} Z`} fill="#ffffff" />
+          <circle cx={px} cy="-14.5" r="1.2" fill="#e0ac69" />
+          <path d={`M${px - 1.4} -15.1 Q${px} -17.3 ${px + 1.4} -15.1 Z`} fill="#1d2a44" />
+          <circle cx={px - 0.55} cy="-14.6" r="0.46" fill="none" stroke="#111111" strokeWidth="0.2" />
+          <circle cx={px + 0.55} cy="-14.6" r="0.46" fill="none" stroke="#111111" strokeWidth="0.2" />
+          <path d={`M${px - 0.1} -14.6 h0.2`} stroke="#111111" strokeWidth="0.2" />
+        </g>
+      ))}
+      <path d="M0 -17.6 V-13" stroke="#5d7488" strokeWidth="0.4" />
       {[-9, 9].map((x) => (
-        <circle key={x} className="login-scene__landing-light" cx={x} cy="-8" r="5" fill="url(#ls-glow)" />
+        <g key={x}>
+          <circle className="login-scene__landing-light" cx={x} cy="-8" r="8" fill="url(#ls-glow)" />
+          <circle cx={x} cy="-8" r="1.4" fill="#fffbe0" />
+        </g>
       ))}
       <circle cx="0" cy="-8.5" r="1" fill="#fff8c4" />
     </g>
@@ -835,7 +875,15 @@ export function SidePlane({ tail, label }: SidePlaneProps) {
         strokeWidth="0.4"
       />
       <path d="M-31 2 H31 Q29 5 18 6 H-22 Q-31 5 -31 2 Z" fill={tail} opacity="0.9" />
-      <path d="M22 -6 Q29 -5 31 -1 H22 Z" fill="#273746" />
+      <path d="M22 -6 Q29 -5 31 -1 H22 Z" fill="#8cc4ea" />
+      {[24, 27.2].map((hx, i) => (
+        <g key={hx} opacity={i === 0 ? 0.8 : 1}>
+          <circle cx={hx} cy="-2.8" r="1.25" fill="#e0ac69" />
+          <path d={`M${hx - 1.4} -3.4 Q${hx} -5.2 ${hx + 1.5} -3.4 Z`} fill="#1d2a44" />
+          <circle cx={hx + 0.75} cy="-2.9" r="0.5" fill="none" stroke="#111111" strokeWidth="0.22" />
+          <path d={`M${hx + 0.25} -2.9 h-1.2`} stroke="#111111" strokeWidth="0.2" />
+        </g>
+      ))}
       <g fill="#6fa8d6">
         {PLANE_WINDOWS.map((x) => (
           <circle key={x} cx={x} cy="-2.4" r="1" />
@@ -887,12 +935,19 @@ function Car({ color }: { readonly color: string }) {
 
 type HatKind = 'cap' | 'hat' | 'none';
 type PackKind = 'ransel' | 'koper' | 'none';
+type Outfit = 'plain' | 'colorful' | 'jersey' | 'casual';
+
+const OUTFITS: ReadonlyArray<Outfit> = ['colorful', 'jersey', 'casual', 'plain'];
+const ACCENTS: ReadonlyArray<string> = ['#ff5a5f', '#ffd23f', '#3bceac', '#5b8def', '#ff8c42', '#b36bff'];
+const JEANS = '#3b5b92';
 
 interface PersonProps {
   readonly shirt: string;
   readonly pants: string;
   readonly skin: string;
   readonly hair?: string;
+  /** Clothes: colourful batik-style, football jersey, casual tee and jeans, or a plain shirt. */
+  readonly outfit?: Outfit;
   /** 'f' draws long hair and a dress, 'm' short hair and trousers; derived from the clothes when omitted. */
   readonly gender?: 'm' | 'f';
   readonly hat?: HatKind;
@@ -953,10 +1008,219 @@ export function Suitcase({ color, arm, skin }: SuitcaseProps) {
   );
 }
 
+interface LegProps {
+  readonly kind: Outfit;
+  readonly fill: string;
+  readonly skin: string;
+  readonly sock: string;
+  readonly opacity: number;
+}
+
+// One leg and shoe; the jersey outfit has white shorts, bare knees and socks in the shirt colour.
+function Leg({ kind, fill, skin, sock, opacity }: LegProps) {
+  return (
+    <g opacity={opacity}>
+      {kind === 'jersey' ? (
+        <g>
+          <rect x="-1.2" y="-6.6" width="2.4" height="2.8" fill="#f4f4f4" />
+          <rect x="-1.1" y="-3.8" width="2.2" height="2" fill={skin} />
+          <rect x="-1.1" y="-1.8" width="2.2" height="0.9" fill={sock} />
+        </g>
+      ) : (
+        <rect x="-1.1" y="-6.6" width="2.2" height="5.6" fill={fill} />
+      )}
+      <rect x="-1.1" y="-1" width="3.6" height="1" rx="0.4" fill={kind === 'casual' ? '#ffffff' : '#2b2f34'} />
+    </g>
+  );
+}
+
+// Garuda Pancasila, painted gold on a red disc with a white ring (flattened by the caller to lie on the ground).
+function GarudaEmblem() {
+  const wing = 'M-7 -6 L-26 -22 L-22 -12 L-30 -10 L-24 -4 L-32 0 L-24 4 L-30 10 L-20 12 L-9 12 Z';
+  return (
+    <g>
+      <circle r="44" fill="#ffffff" />
+      <circle r="40" fill="#b3121b" />
+      <g fill="#f2c230" stroke="#b8860b" strokeWidth="0.8" strokeLinejoin="round">
+        <path d={wing} />
+        <path d={wing} transform="scale(-1 1)" />
+        <path d="M-9 14 L-12 34 L-4 30 L0 36 L4 30 L12 34 L9 14 Z" />
+        <ellipse cx="0" cy="2" rx="9" ry="17" />
+        <circle cx="2" cy="-19" r="6" />
+        <path d="M6 -21 L14 -17 L6 -14 Z" />
+        <path d="M-2 -25 L1 -30 L4 -25 Z" />
+        <path d="M-8 18 L-14 30 M8 18 L14 30" fill="none" strokeWidth="2" />
+      </g>
+      <path d="M-7 -5 H7 V8 Q0 17 -7 8 Z" fill="#c0161b" stroke="#ffffff" strokeWidth="1" />
+      <path d="M0 -2 L1.2 1 L4.4 1 L1.8 3 L2.8 6 L0 4 L-2.8 6 L-1.8 3 L-4.4 1 L-1.2 1 Z" fill="#f2c230" />
+      <path d="M-26 22 Q0 32 26 22 L26 27 Q0 37 -26 27 Z" fill="#ffffff" stroke="#b8860b" strokeWidth="0.6" />
+    </g>
+  );
+}
+
+// Coconut palm: leaning trunk, a crown of swaying fronds and a few coconuts.
+function Palm({ x, y, scale = 1, lean = 5 }: { readonly x: number; readonly y: number; readonly scale?: number; readonly lean?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <path d={`M0 0 Q${lean * 0.2} -24 ${lean} -46`} fill="none" stroke="#8b6b3d" strokeWidth="2.4" strokeLinecap="round" />
+      <g transform={`translate(${lean} -46)`} className="login-scene__frond">
+        {[-150, -115, -75, -35, -5, 25, 70, 110].map((deg) => (
+          <path
+            key={deg}
+            d="M0 0 Q11 -8 22 4 Q11 -1 0 1.4 Z"
+            fill={deg % 2 === 0 ? '#2f8f3a' : '#43a948'}
+            transform={`rotate(${deg})`}
+          />
+        ))}
+        <circle cx="-1.2" cy="1.4" r="1.5" fill="#6b4a22" />
+        <circle cx="1.4" cy="1.6" r="1.5" fill="#7a5527" />
+      </g>
+    </g>
+  );
+}
+
+const BASE = 306;
+
+function Mosque({ x }: { readonly x: number }) {
+  return (
+    <g transform={`translate(${x} ${BASE})`}>
+      <rect x="0" y="-22" width="44" height="22" fill="#f6efe0" />
+      <rect x="0" y="-23.5" width="44" height="2" fill="#c9a24a" />
+      <path d="M8 -23 Q22 -52 36 -23 Z" fill="#2f9e6e" />
+      <path d="M21.3 -44 V-52" stroke="#c9a24a" strokeWidth="1.2" />
+      <circle cx="22" cy="-53" r="1.3" fill="#f1c40f" />
+      {[-8, 46].map((mx) => (
+        <g key={mx}>
+          <rect x={mx} y="-46" width="6" height="46" fill="#f6efe0" />
+          <rect x={mx - 1} y="-47" width="8" height="2" fill="#c9a24a" />
+          <path d={`M${mx - 0.5} -47 L${mx + 3} -58 L${mx + 6.5} -47 Z`} fill="#2f9e6e" />
+        </g>
+      ))}
+      {[5, 17, 29].map((wx) => (
+        <path key={wx} d={`M${wx} -1 V-11 Q${wx + 4.5} -17 ${wx + 9} -11 V-1 Z`} fill="#4b8fcf" stroke="#c9a24a" strokeWidth="0.5" />
+      ))}
+    </g>
+  );
+}
+
+function Joglo({ x }: { readonly x: number }) {
+  return (
+    <g transform={`translate(${x} ${BASE})`}>
+      <rect x="0" y="-14" width="46" height="14" fill="#e8d3a8" />
+      {[4, 14, 24, 34].map((cx) => (
+        <rect key={cx} x={cx} y="-14" width="2.4" height="14" fill="#7a4a2a" />
+      ))}
+      <rect x="19" y="-10" width="9" height="10" fill="#5a3418" />
+      <path d="M-5 -14 L10 -27 H36 L51 -14 Z" fill="#b24a2e" />
+      <path d="M12 -27 L18 -38 H28 L34 -27 Z" fill="#8f3a26" />
+      <path d="M17 -38 L23 -43 L29 -38 Z" fill="#6f2c1c" />
+    </g>
+  );
+}
+
+function Hotel({ x }: { readonly x: number }) {
+  return (
+    <g transform={`translate(${x} ${BASE})`}>
+      <rect x="0" y="-48" width="40" height="48" fill="#dfe7ef" />
+      <rect x="0" y="-52" width="40" height="5" fill="#1d4f91" />
+      <text x="20" y="-48" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontSize="4" fontWeight="700" fill="#ffffff">HOTEL NUSANTARA</text>
+      {[0, 1, 2, 3, 4].map((row) =>
+        [0, 1, 2, 3].map((col) => (
+          <rect key={`${row}-${col}`} x={4 + col * 9} y={-43 + row * 8} width="6" height="5" fill={(row + col) % 3 === 0 ? '#ffe9a6' : '#4b8fcf'} />
+        )),
+      )}
+      <rect x="15" y="-6" width="10" height="6" fill="#3a444d" />
+    </g>
+  );
+}
+
+function Shophouses({ x }: { readonly x: number }) {
+  const colours: ReadonlyArray<string> = ['#f2c6a0', '#bfe0c4', '#f6e08a'];
+  return (
+    <g transform={`translate(${x} ${BASE})`}>
+      {colours.map((c, i) => (
+        <g key={c} transform={`translate(${i * 26} 0)`}>
+          <rect x="0" y="-32" width="26" height="32" fill={c} stroke="#00000022" strokeWidth="0.4" />
+          <rect x="-1" y="-34" width="28" height="3" fill="#8a6a4a" />
+          {[3, 15].map((wx) => (
+            <rect key={wx} x={wx} y="-27" width="8" height="8" fill="#4b8fcf" stroke="#ffffff" strokeWidth="0.6" />
+          ))}
+          <path d="M0 -14 H26 L24 -10 H2 Z" fill={i % 2 === 0 ? '#d63031' : '#0984e3'} />
+          <rect x="3" y="-10" width="20" height="10" fill="#3a444d" opacity="0.85" />
+        </g>
+      ))}
+    </g>
+  );
+}
+
+function RumahGadang({ x }: { readonly x: number }) {
+  return (
+    <g transform={`translate(${x} ${BASE})`}>
+      <rect x="6" y="-12" width="46" height="12" fill="#6b3f26" />
+      {[10, 20, 30, 40].map((cx) => (
+        <rect key={cx} x={cx} y="-12" width="2" height="12" fill="#d9a441" />
+      ))}
+      <path d="M-2 -12 Q4 -22 8 -28 Q12 -34 12 -42 Q19 -31 29 -31 Q39 -31 46 -42 Q46 -34 50 -28 Q54 -22 60 -12 Z" fill="#7a3b24" stroke="#d9a441" strokeWidth="0.8" />
+      <path d="M12 -42 Q15 -46 17 -40 M46 -42 Q43 -46 41 -40" fill="none" stroke="#d9a441" strokeWidth="0.8" />
+    </g>
+  );
+}
+
+function GlassTower({ x }: { readonly x: number }) {
+  return (
+    <g transform={`translate(${x} ${BASE})`}>
+      <rect x="0" y="-54" width="30" height="54" fill="url(#ls-glass)" stroke="#8fa0b2" strokeWidth="0.5" />
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((r) => (
+        <rect key={r} x="0" y={-54 + r * 6} width="30" height="0.6" fill="#e8f4ff" opacity="0.8" />
+      ))}
+      {[10, 20].map((c) => (
+        <rect key={c} x={c} y="-54" width="0.6" height="54" fill="#e8f4ff" opacity="0.6" />
+      ))}
+      <path d="M15 -54 V-64" stroke="#8a97a3" strokeWidth="0.8" />
+      <circle className="login-scene__beacon" cx="15" cy="-64.5" r="1.1" fill="#ff4d4d" />
+    </g>
+  );
+}
+
+function Colonial({ x }: { readonly x: number }) {
+  return (
+    <g transform={`translate(${x} ${BASE})`}>
+      <rect x="0" y="-26" width="60" height="26" fill="#f3e9d2" />
+      <path d="M14 -26 L30 -38 L46 -26 Z" fill="#f8f1e0" stroke="#c9a24a" strokeWidth="0.6" />
+      <rect x="0" y="-27.5" width="60" height="2" fill="#b24a2e" />
+      {[16, 22, 28, 34, 40].map((cx) => (
+        <rect key={cx} x={cx} y="-24" width="2.2" height="24" fill="#ffffff" stroke="#d6cbb0" strokeWidth="0.3" />
+      ))}
+      {[3, 48].map((wx) => (
+        <rect key={wx} x={wx} y="-18" width="8" height="10" fill="#4b8fcf" stroke="#ffffff" strokeWidth="0.7" />
+      ))}
+    </g>
+  );
+}
+
+// The street frontage opposite the pavement, from left to right, with coconut palms in front.
+function CityRow() {
+  return (
+    <g>
+      <Mosque x={-32} />
+      <Joglo x={80} />
+      <Hotel x={140} />
+      <Shophouses x={188} />
+      <RumahGadang x={276} />
+      <GlassTower x={346} />
+      <Colonial x={390} />
+      <Shophouses x={456} />
+      {[-42, 66, 134, 184, 268, 338, 384, 452, 540].map((px, i) => (
+        <Palm key={px} x={px} y={309 + (i % 2)} scale={0.9 + (i % 3) * 0.12} lean={i % 2 === 0 ? 5 : -5} />
+      ))}
+    </g>
+  );
+}
+
 // Person seen from the side, with eyes, a nose, optional cap or hat, five-finger hands and
 // optionally a backpack or rolling suitcase. Variety (hair, hat, bag) is derived from the clothes
 // unless set explicitly. Feet at the origin, about 20 units tall; faces right unless `facing` is -1.
-export function Person({ shirt, pants, skin, hair, gender, hat, hatColor, pack, packColor, walking = false, facing = 1 }: PersonProps) {
+export function Person({ shirt, pants, skin, hair, outfit, gender, hat, hatColor, pack, packColor, walking = false, facing = 1 }: PersonProps) {
   const h = colourHash(`${shirt}${pants}`);
   const hairColor = hair ?? HAIR_COLORS[h % HAIR_COLORS.length] ?? '#1b1b1b';
   const hatKind: HatKind = hat ?? (h % 4 === 0 ? 'cap' : h % 7 === 0 ? 'hat' : 'none');
@@ -967,44 +1231,78 @@ export function Person({ shirt, pants, skin, hair, gender, hat, hatColor, pack, 
   const female = (gender ?? (h % 2 === 0 ? 'm' : 'f')) === 'f';
   // Long hair comes in different lengths: to the shoulder, mid-back or the waist.
   const hairEnd = -10.4 + ((h >> 3) % 3) * 2.4;
-  const legColor = female ? skin : pants;
+  const outfitKind: Outfit = outfit ?? OUTFITS[(h >> 5) % OUTFITS.length] ?? 'plain';
+  const accentA = ACCENTS[(h >> 1) % ACCENTS.length] ?? '#ff5a5f';
+  const accentB = ACCENTS[((h >> 1) + 2) % ACCENTS.length] ?? '#ffd23f';
+  const shortSleeve = outfitKind === 'jersey' || outfitKind === 'casual';
+  // Women wear a dress with the plain and colourful outfits, and shorts or jeans with jersey and casual.
+  const skirt = female && (outfitKind === 'plain' || outfitKind === 'colorful');
+  const legColor = skirt ? skin : outfitKind === 'casual' ? JEANS : pants;
+  const skirtColor = outfitKind === 'colorful' ? accentB : pants;
 
   return (
     <g className={walking ? 'person person--walking' : 'person'} transform={facing === -1 ? 'scale(-1 1)' : undefined}>
       {packKind === 'ransel' ? <rect x="-5.6" y="-12.6" width="4.4" height="7.4" rx="1.7" fill={packTint} /> : null}
-      {pullsSuitcase ? <Suitcase color={packTint} arm={shirt} skin={skin} /> : null}
+      {pullsSuitcase ? <Suitcase color={packTint} arm={shortSleeve ? skin : shirt} skin={skin} /> : null}
 
       {/* Far arm and leg */}
       <g className="person__arm-b">
-        <rect x="-0.8" y="-12" width="1.5" height="5.6" rx="0.7" fill={shirt} opacity="0.8" />
+        <rect x="-0.8" y="-12" width="1.5" height="5.6" rx="0.7" fill={shortSleeve ? skin : shirt} opacity="0.8" />
+        {shortSleeve ? <rect x="-0.8" y="-12" width="1.5" height="2.6" rx="0.7" fill={shirt} opacity="0.8" /> : null}
         <Hand x={0} y={-5.7} skin={skin} />
       </g>
       <g className="person__leg-b">
-        <rect x="-1.1" y="-6.6" width="2.2" height="5.6" fill={legColor} opacity="0.85" />
+        <Leg kind={outfitKind} fill={legColor} skin={skin} sock={shirt} opacity={0.85} />
         <rect x="-1.1" y="-1" width="3.6" height="1" rx="0.4" fill="#2b2f34" />
       </g>
 
       {/* Near leg, torso and near arm */}
       <g className="person__leg-a">
-        <rect x="-1.1" y="-6.6" width="2.2" height="5.6" fill={legColor} />
+        <Leg kind={outfitKind} fill={legColor} skin={skin} sock={shirt} opacity={1} />
         <rect x="-1.1" y="-1" width="3.6" height="1" rx="0.4" fill="#2b2f34" />
       </g>
       <rect x="-2.6" y="-12.4" width="5.2" height="6.4" rx="1.8" fill={shirt} />
-      {female ? (
+      {outfitKind === 'colorful' ? (
         <g>
-          <path d="M-2.4 -8.4 L-3.9 -3.4 L3.9 -3.4 L2.4 -8.4 Z" fill={pants} />
+          <rect x="-2.5" y="-11.4" width="5" height="0.9" fill={accentA} />
+          <rect x="-2.5" y="-9.6" width="5" height="0.9" fill={accentB} />
+          <rect x="-2.5" y="-7.8" width="5" height="0.9" fill={accentA} />
+          <circle cx="-1.1" cy="-10.3" r="0.35" fill="#ffffff" />
+          <circle cx="1.2" cy="-8.6" r="0.35" fill="#ffffff" />
+        </g>
+      ) : null}
+      {outfitKind === 'jersey' ? (
+        <g>
+          {[-1.9, -0.3, 1.3].map((sx) => (
+            <rect key={sx} x={sx} y="-12.2" width="0.8" height="5.8" fill="#ffffff" opacity="0.85" />
+          ))}
+          <path d="M-1.2 -12.4 L0 -10.9 L1.2 -12.4 Z" fill="#ffffff" />
+          <circle cx="1.5" cy="-9.8" r="0.5" fill="#ffd23f" />
+        </g>
+      ) : null}
+      {outfitKind === 'casual' ? (
+        <g>
+          <circle cx="0" cy="-12.4" r="1.1" fill={skin} />
+          <rect x="-1.4" y="-10.4" width="2.8" height="2" rx="0.4" fill="#ffffff" opacity="0.85" />
+        </g>
+      ) : null}
+      {skirt ? (
+        <g>
+          <path d="M-2.4 -8.4 L-3.9 -3.4 L3.9 -3.4 L2.4 -8.4 Z" fill={skirtColor} />
           <rect x="-2.5" y="-8.7" width="5" height="0.7" fill="#ffffff" opacity="0.55" />
         </g>
-      ) : (
+      ) : null}
+      {!skirt && (outfitKind === 'plain' || outfitKind === 'colorful') ? (
         <g>
           <path d="M-1 -12.4 L0 -10.8 L1 -12.4 Z" fill="#ffffff" opacity="0.85" />
           <rect x="-2.6" y="-6.7" width="5.2" height="0.7" fill="#2b2f34" />
         </g>
-      )}
+      ) : null}
       {packKind === 'ransel' ? <rect x="-2.4" y="-12.2" width="0.9" height="5.6" fill={packTint} /> : null}
       {pullsSuitcase ? null : (
         <g className="person__arm-a">
-          <rect x="-0.8" y="-12" width="1.6" height="5.8" rx="0.7" fill={shirt} />
+          <rect x="-0.8" y="-12" width="1.6" height="5.8" rx="0.7" fill={shortSleeve ? skin : shirt} />
+          {shortSleeve ? <rect x="-0.8" y="-12" width="1.6" height="2.8" rx="0.7" fill={shirt} /> : null}
           <Hand x={0} y={-5.7} skin={skin} />
         </g>
       )}
@@ -1037,17 +1335,6 @@ export function Person({ shirt, pants, skin, hair, gender, hat, hatColor, pack, 
           <ellipse cx="0.5" cy="-18.6" rx="5" ry="1" fill={hatTint} stroke="#00000033" strokeWidth="0.2" />
         </g>
       ) : null}
-    </g>
-  );
-}
-
-function TreeBlob({ x, y, small = false }: { readonly x: number; readonly y: number; readonly small?: boolean }) {
-  const s = small ? 0.7 : 1;
-  return (
-    <g transform={`translate(${x} ${y}) scale(${s})`}>
-      <rect x="-1.2" y="-6" width="2.4" height="6" fill="#5a3a22" />
-      <circle cx="0" cy="-11" r="7" fill="#2f7d32" />
-      <circle cx="-3" cy="-13" r="4.5" fill="#4aa44a" />
     </g>
   );
 }
