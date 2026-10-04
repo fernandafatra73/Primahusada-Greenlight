@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import logoPrimahusada from '@src/image/logo-primahusada.png';
+import { apiGet } from '../lib/api.ts';
 
 // Jadwal di bawah adalah contoh awal: sesuaikan dengan jam layanan klinik yang sebenarnya.
 const PROFILE = {
@@ -19,18 +21,47 @@ const PROFILE = {
   ],
 } as const;
 
+interface KopSurat {
+  readonly namaKlinik: string;
+  readonly alamat: string;
+  readonly telepon: string;
+  readonly logoDataUrl: string | null;
+}
+
+interface KopSuratResponse {
+  readonly item: KopSurat;
+}
+
+const KOP_FALLBACK: KopSurat = {
+  namaKlinik: 'KLINIK PRIMA HUSADA',
+  alamat: '',
+  telepon: PROFILE.telepon,
+  logoDataUrl: null,
+};
+
 export function LoginProfile() {
   const [open, setOpen] = useState(false);
+  const [kop, setKop] = useState<KopSurat>(KOP_FALLBACK);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
     closeRef.current?.focus();
+    // Kop surat diambil dari Pengaturan; bila gagal dimuat pakai nilai bawaan.
+    let cancelled = false;
+    apiGet<KopSuratResponse>('/api/kop-surat')
+      .then((res) => {
+        if (!cancelled) setKop(res.item);
+      })
+      .catch(() => undefined);
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === 'Escape') setOpen(false);
     }
     document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [open]);
 
   return (
@@ -48,7 +79,19 @@ export function LoginProfile() {
             aria-labelledby="login-profile-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 id="login-profile-title" className="login-profile__title">Klinik Prima Husada</h2>
+            <div className="login-profile__watermark" aria-hidden>
+              <img src={logoPrimahusada} alt="" />
+              <span>Klinik Prima Husada</span>
+            </div>
+
+            <header className="login-profile__kop">
+              <img src={kop.logoDataUrl ?? logoPrimahusada} alt="" className="login-profile__kop-logo" />
+              <div>
+                <h2 id="login-profile-title" className="login-profile__title">{kop.namaKlinik}</h2>
+                {kop.alamat ? <p className="login-profile__kop-line">{kop.alamat}</p> : null}
+                <p className="login-profile__kop-line">Telp: {kop.telepon}</p>
+              </div>
+            </header>
             <p className="login-profile__sub">Roentgen, Laboratorium &amp; Praktek Dokter</p>
 
             <h3>Visi</h3>
