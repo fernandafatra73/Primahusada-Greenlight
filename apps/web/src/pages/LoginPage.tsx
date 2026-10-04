@@ -36,6 +36,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [parkedVisible, setParkedVisible] = useState(false);
   const photoTimerRef = useRef<number | null>(null);
   const parkedTimerRef = useRef<number | null>(null);
+  // Tampilan samping baru dimulai bila ucapan selesai DAN semua pesawat di apron kiri sudah lepas landas.
+  const voiceDoneRef = useRef(false);
+  const apronEmptyRef = useRef(false);
+  const arrivalStartedRef = useRef(false);
 
   // Bar kecepatan: semua animasi di bingkai (adegan utama, kedatangan, mobil, orang) dipercepat
   // lewat playbackRate. Animasi baru (adegan kedatangan) dipasangi lagi tiap 0,4 detik.
@@ -78,11 +82,22 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   // Setelah ucapan sambutan selesai: tampilan beralih ke samping (penumpang turun, ambil bagasi,
   // naik DAMRI) lalu kembali pelan-pelan; tanpa animasi langsung tampilkan foto.
   function startArrival(): void {
+    arrivalStartedRef.current = true;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       showPhoto();
       return;
     }
     setArrival(true);
+  }
+
+  function onVoiceDone(): void {
+    voiceDoneRef.current = true;
+    if (apronEmptyRef.current && !arrivalStartedRef.current) startArrival();
+  }
+
+  function onLeftApronEmpty(): void {
+    apronEmptyRef.current = true;
+    if (voiceDoneRef.current && !arrivalStartedRef.current) startArrival();
   }
 
   function endArrival(): void {
@@ -116,8 +131,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <main className="login-page">
       <div ref={frameRef} className={paused ? 'login-frame login-frame--paused' : 'login-frame'}>
-        <LoginScene arrival={arrival} onArrivalEnd={endArrival} />
-        <LoginWelcome paused={paused} onVoiceDone={startArrival} />
+        <LoginScene arrival={arrival} onArrivalEnd={endArrival} onLeftApronEmpty={onLeftApronEmpty} />
+        <LoginWelcome paused={paused} onVoiceDone={onVoiceDone} />
         {parkedVisible ? <LoginParkedPlane /> : null}
         {photoVisible ? (
           <figure className="login-photo">

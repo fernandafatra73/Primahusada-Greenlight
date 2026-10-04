@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { LoginArrival } from './LoginArrival.tsx';
 
 // Decorative, animated international-airport scene that fills the login screen.
@@ -102,6 +102,8 @@ interface LoginSceneProps {
   /** Swings the view to the side for the passenger-arrival story, then back. */
   readonly arrival: boolean;
   readonly onArrivalEnd: () => void;
+  /** Called once the last aircraft on the left apron has taken off. */
+  readonly onLeftApronEmpty: () => void;
 }
 
 interface Airline {
@@ -182,9 +184,16 @@ function waitingAirline(cycle: number): Airline | null {
   return plane ? { name: plane.name, tail: plane.tail } : null;
 }
 
-export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
+export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSceneProps) {
   // Bumped each time the 30s take-off cycle restarts, i.e. right after one airline has departed.
   const [departures, setDepartures] = useState(0);
+  const apronEmptyRef = useRef(onLeftApronEmpty);
+  apronEmptyRef.current = onLeftApronEmpty;
+  // The waiting plane plus the whole fleet have left once the final take-off has finished.
+  const apronEmpty = departures >= LEFT_FLEET.length + 2;
+  useEffect(() => {
+    if (apronEmpty) apronEmptyRef.current();
+  }, [apronEmpty]);
   const waiting = waitingAirline(departures);
   const leaving = waitingAirline(departures - 1);
   // The aircraft that waited in the previous cycle takes off now; none before the first or after the last.
@@ -933,6 +942,8 @@ export function Person({ shirt, pants, skin, hair, gender, hat, hatColor, pack, 
   const packTint = packColor ?? PACK_COLORS[(h >> 1) % PACK_COLORS.length] ?? '#1d4f91';
   const pullsSuitcase = packKind === 'koper';
   const female = (gender ?? (h % 2 === 0 ? 'm' : 'f')) === 'f';
+  // Long hair comes in different lengths: to the shoulder, mid-back or the waist.
+  const hairEnd = -10.4 + ((h >> 3) % 3) * 2.4;
   const legColor = female ? skin : pants;
 
   return (
@@ -981,7 +992,10 @@ export function Person({ shirt, pants, skin, hair, gender, hat, hatColor, pack, 
       <path d="M3.3 -16.6 L4.6 -15.4 L3.3 -15 Z" fill={skin} stroke="#00000022" strokeWidth="0.2" />
       <path d="M-2.6 -15.4 Q-3 -19.6 0.6 -19.6 Q3.5 -19.4 3.4 -17.2 Q1.2 -18.5 -0.6 -17.6 Q-1.6 -16.8 -1.8 -15 Z" fill={hairColor} />
       {female ? (
-        <path d="M-2.7 -17.6 Q-4.3 -12.5 -2.2 -10.4 L0.2 -10.8 Q-0.9 -13.5 -1.6 -15.4 Z" fill={hairColor} />
+        <path
+          d={`M-2.7 -17.6 Q-4.3 ${(-12.5 + hairEnd) / 2 - 1} -2.2 ${hairEnd} L0.2 ${hairEnd - 0.4} Q-0.9 -13.5 -1.6 -15.4 Z`}
+          fill={hairColor}
+        />
       ) : null}
       <circle cx="-0.7" cy="-16" r="0.75" fill={skin} stroke="#00000033" strokeWidth="0.2" />
       <ellipse cx="1.9" cy="-16.5" rx="0.8" ry="0.85" fill="#ffffff" />
