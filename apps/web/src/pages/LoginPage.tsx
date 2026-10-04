@@ -4,6 +4,7 @@ import { apiPost } from '../lib/api.ts';
 import type { AuthUser } from '../lib/auth.ts';
 import { LoginProfile } from './LoginProfile.tsx';
 import { LoginScene } from './LoginScene.tsx';
+import { LoginWelcome } from './LoginWelcome.tsx';
 import './login.css';
 
 interface LoginPageProps {
@@ -19,6 +20,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [paused, setPaused] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
 
   function onEmailKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
@@ -45,8 +47,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   return (
     <main className="login-page">
-      <div className="login-frame">
+      <div className={paused ? 'login-frame login-frame--paused' : 'login-frame'}>
         <LoginScene />
+        <LoginWelcome paused={paused} />
+        <div className="login-controls">
+          <button type="button" onClick={() => setPaused(true)} disabled={paused}>
+            Stop
+          </button>
+          <button type="button" onClick={() => setPaused(false)} disabled={!paused}>
+            Lanjut
+          </button>
+        </div>
         <section className="login-panel" aria-labelledby="login-title">
           <div className="login-panel__brand">
             <img src={logoPrimahusada} alt="Klinik Prima Husada" className="login-panel__logo" />
