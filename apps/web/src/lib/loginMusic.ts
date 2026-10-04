@@ -9,7 +9,6 @@ const STEP_S = 60 / BPM / 2; // satu langkah = not seperdelapan
 const LOOKAHEAD_S = 0.4;
 const TICK_MS = 120;
 const MASTER_GAIN = 0.1;
-const DUCKED_GAIN = 0.025;
 
 // C - Am - F - G, satu akor per birama (8 langkah): [bass, nada akor...] dalam Hz.
 const CHORDS: ReadonlyArray<readonly [number, number, number, number]> = [
@@ -125,10 +124,4 @@ export function stopLoginMusic(): void {
   timer = null;
   master?.disconnect();
   master = null;
-}
-
-/** Kecilkan musik sementara ucapan sambutan dibacakan. */
-export function setLoginMusicDucked(ducked: boolean): void {
-  if (!master) return;
-  master.gain.value = ducked ? DUCKED_GAIN : MASTER_GAIN;
 }

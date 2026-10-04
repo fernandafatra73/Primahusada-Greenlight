@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { isCabinSilent, playCabinChime, playJetSound, setCabinAudioPaused, unlockCabinAudio } from '../lib/cabinSounds.ts';
-import { setLoginMusicDucked } from '../lib/loginMusic.ts';
 import { withIndonesianVoice } from '../lib/speechVoice.ts';
 
 // Seberapa jauh siklus animasi pesawat mendarat (login.css, login-landing) saat roda
@@ -82,7 +81,6 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
     const synthSupported = 'speechSynthesis' in window;
 
     function finishVoice(): void {
-      setLoginMusicDucked(false);
       void playCabinChime().then(() => {
         busyRef.current = false;
         onVoiceDoneRef.current();
@@ -92,11 +90,11 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
     function speak(): void {
       if (!synthSupported) {
         busyRef.current = false;
+        onVoiceDoneRef.current();
         return;
       }
       busyRef.current = true;
       markVoicePlayed();
-      setLoginMusicDucked(true);
       const utter = new SpeechSynthesisUtterance(welcomeSpeech(new Date()));
       utter.lang = 'id-ID';
       utter.rate = 0.9;
@@ -107,7 +105,6 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
         if (event.error === 'not-allowed') {
           pendingVoiceRef.current = true;
           busyRef.current = false;
-          setLoginMusicDucked(false);
           return;
         }
         finishVoice();

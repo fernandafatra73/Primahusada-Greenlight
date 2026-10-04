@@ -35,6 +35,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [arrival, setArrival] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [musicOn, setMusicOn] = useState(() => !isCabinSilent());
+  // Musik baru berjalan setelah ucapan sambutan (dan bel kabin) selesai.
+  const [voiceFinished, setVoiceFinished] = useState(false);
   const [photoVisible, setPhotoVisible] = useState(false);
   const [parkedVisible, setParkedVisible] = useState(false);
   const photoTimerRef = useRef<number | null>(null);
@@ -57,9 +59,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     return () => window.clearInterval(id);
   }, [speed]);
 
-  // Musik latar login: baru terdengar setelah interaksi pertama (aturan browser), berhenti saat masuk.
+  // Musik latar login: mulai setelah ucapan selesai dan interaksi pertama (aturan browser), berhenti saat masuk.
   useEffect(() => {
-    if (!musicOn) {
+    if (!musicOn || !voiceFinished) {
       stopLoginMusic();
       return undefined;
     }
@@ -72,7 +74,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       window.removeEventListener('keydown', unlock);
       stopLoginMusic();
     };
-  }, [musicOn]);
+  }, [musicOn, voiceFinished]);
 
   useEffect(
     () => () => {
@@ -112,6 +114,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   function onVoiceDone(): void {
     voiceDoneRef.current = true;
+    setVoiceFinished(true);
     if (apronEmptyRef.current && !arrivalStartedRef.current) startArrival();
   }
 
