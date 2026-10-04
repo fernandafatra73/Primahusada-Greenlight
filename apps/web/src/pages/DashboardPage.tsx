@@ -1,3 +1,4 @@
+import { WelcomePhoto } from '../components/WelcomePhoto.tsx';
 import { useCallback, useEffect, useState } from 'react';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
@@ -108,6 +109,8 @@ export function DashboardPage() {
           </button>
         </div>
       </div>
+
+      <WelcomePhoto className="dashboard-photo" />
 
       {animasi && <AnimasiShow />}
 

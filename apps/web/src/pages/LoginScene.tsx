@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { LoginArrival } from './LoginArrival.tsx';
 
 // Decorative, animated international-airport scene that fills the login screen.
 // Purely visual, so it is hidden from assistive tech and pauses under
@@ -76,19 +77,19 @@ const SUN_RAYS: ReadonlyArray<{ readonly deg: number; readonly x: number; readon
 );
 
 interface LoginSceneProps {
-  /** Turns the whole airfield 90 degrees, then eases it back to normal. */
-  readonly spinning: boolean;
-  readonly onSpinEnd: () => void;
+  /** Swings the view to the side for the passenger-arrival story, then back. */
+  readonly arrival: boolean;
+  readonly onArrivalEnd: () => void;
 }
 
-export function LoginScene({ spinning, onSpinEnd }: LoginSceneProps) {
+export function LoginScene({ arrival, onArrivalEnd }: LoginSceneProps) {
   return (
+    <div className="login-stage" aria-hidden>
     <div
-      className={spinning ? 'login-scene login-scene--spin' : 'login-scene'}
+      className={arrival ? 'login-scene login-scene--away' : 'login-scene'}
       onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget) onSpinEnd();
+        if (event.target === event.currentTarget) onArrivalEnd();
       }}
-      aria-hidden
     >
       <svg viewBox="0 0 640 360" preserveAspectRatio="xMidYMax slice" className="login-scene__svg">
         <defs>
@@ -392,6 +393,8 @@ export function LoginScene({ spinning, onSpinEnd }: LoginSceneProps) {
         </g>
       </svg>
     </div>
+    {arrival ? <LoginArrival /> : null}
+    </div>
   );
 }
 
@@ -547,7 +550,7 @@ interface SidePlaneProps {
 }
 
 // Side-view jet facing right, centred on its fuselage. Wheels sit about 10 units below the origin.
-function SidePlane({ tail, label }: SidePlaneProps) {
+export function SidePlane({ tail, label }: SidePlaneProps) {
   return (
     <g>
       <path d="M-30 -5 L-38 -21 L-28 -21 L-19 -6 Z" fill={tail} />
@@ -616,7 +619,7 @@ interface PersonProps {
 }
 
 // Feet at the origin.
-function Person({ shirt, pants, skin }: PersonProps) {
+export function Person({ shirt, pants, skin }: PersonProps) {
   return (
     <g>
       <rect x="-2" y="-5" width="1.8" height="5" fill={pants} />
@@ -785,7 +788,7 @@ interface BusProps {
 }
 
 // Coach seen from the side, nose to the right; 64 units long, baseline at y 0.
-function Bus({ color, accent, operator, name, mirrored }: BusProps) {
+export function Bus({ color, accent, operator, name, mirrored }: BusProps) {
   const lightBody = color === '#ffffff';
   return (
     <g>

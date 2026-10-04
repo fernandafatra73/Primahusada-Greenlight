@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import logoPrimahusada from '@src/image/logo-primahusada.png';
+import { useEffect, useRef } from 'react';
 import { playCabinChime, playJetSound, setCabinAudioPaused, unlockCabinAudio } from '../lib/cabinSounds.ts';
 import { withIndonesianVoice } from '../lib/speechVoice.ts';
 
@@ -8,8 +7,6 @@ import { withIndonesianVoice } from '../lib/speechVoice.ts';
 const TOUCHDOWN_PROGRESS = 0.74;
 const POLL_MS = 150;
 const JET_SOUND_MS = 10000;
-const BANNER_AFTER_CHIME_MS = 1000;
-const BANNER_FALLBACK_MS = 12000;
 
 function greetingWord(date: Date): string {
   const hour = date.getHours();
@@ -46,34 +43,26 @@ interface LoginWelcomeProps {
   readonly onVoiceDone: () => void;
 }
 
-// Saat pesawat di adegan login mendarat: tampilkan banner sambutan di atas.
-// Pendaratan pertama membacakan ucapan selamat datang sekali saja, lalu bel
+// Saat pesawat di adegan login mendarat:
+// pendaratan pertama membacakan ucapan selamat datang sekali saja, lalu bel
 // kabin. Pendaratan berikutnya hanya memutar deru mesin pesawat ~10 detik.
 // Browser dapat menolak suara sebelum pengguna berinteraksi, jadi ucapan yang
 // tertahan diputar pada interaksi pertama.
 export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
-  const [visible, setVisible] = useState(false);
   // Efek utama hanya jalan sekali; callback terbaru dibaca lewat ref.
   const onVoiceDoneRef = useRef(onVoiceDone);
   onVoiceDoneRef.current = onVoiceDone;
   const busyRef = useRef(false);
   const voiceUsedRef = useRef(false);
   const pendingVoiceRef = useRef(false);
-  const hideTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const synthSupported = 'speechSynthesis' in window;
 
-    function scheduleHide(ms: number): void {
-      if (hideTimerRef.current !== null) window.clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = window.setTimeout(() => setVisible(false), ms);
-    }
-
     function finishVoice(): void {
       void playCabinChime().then(() => {
         busyRef.current = false;
-        scheduleHide(BANNER_AFTER_CHIME_MS);
         onVoiceDoneRef.current();
       });
     }
@@ -81,7 +70,6 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
     function speak(): void {
       if (!synthSupported) {
         busyRef.current = false;
-        scheduleHide(BANNER_FALLBACK_MS);
         return;
       }
       busyRef.current = true;
@@ -95,7 +83,6 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
         if (event.error === 'not-allowed') {
           pendingVoiceRef.current = true;
           busyRef.current = false;
-          scheduleHide(BANNER_FALLBACK_MS);
           return;
         }
         finishVoice();
@@ -112,8 +99,6 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
 
     function onLanded(): void {
       if (busyRef.current) return;
-      setVisible(true);
-      if (hideTimerRef.current !== null) window.clearTimeout(hideTimerRef.current);
       if (!voiceUsedRef.current) {
         voiceUsedRef.current = true;
         speak();
@@ -123,7 +108,6 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
       playJetSound(JET_SOUND_MS);
       window.setTimeout(() => {
         busyRef.current = false;
-        scheduleHide(0);
       }, JET_SOUND_MS);
     }
 
@@ -131,7 +115,6 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
       void unlockCabinAudio();
       if (!pendingVoiceRef.current) return;
       pendingVoiceRef.current = false;
-      setVisible(true);
       speak();
     }
 
@@ -154,7 +137,6 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
     return () => {
       window.clearInterval(poll);
       window.clearTimeout(noAnimationTimer);
-      if (hideTimerRef.current !== null) window.clearTimeout(hideTimerRef.current);
       window.removeEventListener('pointerdown', onFirstInteraction);
       window.removeEventListener('keydown', onFirstInteraction);
       if (synthSupported) window.speechSynthesis.cancel();
@@ -172,15 +154,5 @@ export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
     setCabinAudioPaused(paused);
   }, [paused]);
 
-  if (!visible) return null;
-
-  return (
-    <div className="login-welcome" role="status">
-      <img src={logoPrimahusada} alt="Klinik Prima Husada" className="login-welcome__logo" />
-      <div>
-        <p className="login-welcome__title">Selamat Datang di Klinik Prima Husada</p>
-        <p className="login-welcome__sub">Roentgen, Laboratorium &amp; Praktek Dokter</p>
-      </div>
-    </div>
-  );
+  return null;
 }

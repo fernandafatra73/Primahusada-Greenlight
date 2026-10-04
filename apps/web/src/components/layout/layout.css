@@ -563,3 +563,14 @@
   display: flex;
   gap: 0.4rem;
 }
+
+/* Foto sambutan di atas dashboard. */
+.dashboard-photo {
+  display: block;
+  width: min(100%, 760px);
+  height: auto;
+  margin: 0 auto 1rem;
+  border: 4px solid #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(8, 37, 77, 0.25);
+}

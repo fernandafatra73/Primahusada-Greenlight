@@ -1,11 +1,14 @@
-import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { apiPost } from '../lib/api.ts';
 import type { AuthUser } from '../lib/auth.ts';
 import { LoginProfile } from './LoginProfile.tsx';
 import { LoginScene } from './LoginScene.tsx';
 import { LoginWelcome } from './LoginWelcome.tsx';
+import { WelcomePhoto, WELCOME_PHOTO_URL } from '../components/WelcomePhoto.tsx';
 import './login.css';
+
+const PHOTO_VISIBLE_MS = 20000;
 
 interface LoginPageProps {
   readonly onLogin: (user: AuthUser) => void;
@@ -21,12 +24,37 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [spinning, setSpinning] = useState(false);
+  const [arrival, setArrival] = useState(false);
+  const [photoVisible, setPhotoVisible] = useState(false);
+  const photoTimerRef = useRef<number | null>(null);
 
-  // Setelah ucapan sambutan selesai, lapangan berputar 90 derajat lalu pelan-pelan kembali.
-  function startSpin(): void {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    setSpinning(true);
+  useEffect(
+    () => () => {
+      if (photoTimerRef.current !== null) window.clearTimeout(photoTimerRef.current);
+    },
+    [],
+  );
+
+  // Foto sambutan muncul di atas setelah semua adegan pesawat selesai, lalu hilang setelah 20 detik.
+  function showPhoto(): void {
+    setPhotoVisible(true);
+    if (photoTimerRef.current !== null) window.clearTimeout(photoTimerRef.current);
+    photoTimerRef.current = window.setTimeout(() => setPhotoVisible(false), PHOTO_VISIBLE_MS);
+  }
+
+  // Setelah ucapan sambutan selesai: tampilan beralih ke samping (penumpang turun, ambil bagasi,
+  // naik DAMRI) lalu kembali pelan-pelan; tanpa animasi langsung tampilkan foto.
+  function startArrival(): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      showPhoto();
+      return;
+    }
+    setArrival(true);
+  }
+
+  function endArrival(): void {
+    setArrival(false);
+    showPhoto();
   }
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -55,8 +83,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <main className="login-page">
       <div className={paused ? 'login-frame login-frame--paused' : 'login-frame'}>
-        <LoginScene spinning={spinning} onSpinEnd={() => setSpinning(false)} />
-        <LoginWelcome paused={paused} onVoiceDone={startSpin} />
+        <LoginScene arrival={arrival} onArrivalEnd={endArrival} />
+        <LoginWelcome paused={paused} onVoiceDone={startArrival} />
+        {photoVisible ? (
+          <figure className="login-photo">
+            {WELCOME_PHOTO_URL ? (
+              <WelcomePhoto />
+            ) : (
+              <div className="login-photo__fallback">
+                <img src={logoPrimahusada} alt="Klinik Prima Husada" />
+                <p className="login-photo__title">Selamat Datang di Klinik Prima Husada</p>
+              </div>
+            )}
+          </figure>
+        ) : null}
         <div className="login-controls">
           <button type="button" onClick={() => setPaused(true)} disabled={paused}>
             Stop
