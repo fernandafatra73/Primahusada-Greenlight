@@ -42,6 +42,8 @@ function landingProgress(): number | null {
 
 interface LoginWelcomeProps {
   readonly paused: boolean;
+  /** Dipanggil setelah ucapan sambutan dan bel kabin selesai. */
+  readonly onVoiceDone: () => void;
 }
 
 // Saat pesawat di adegan login mendarat: tampilkan banner sambutan di atas.
@@ -49,8 +51,11 @@ interface LoginWelcomeProps {
 // kabin. Pendaratan berikutnya hanya memutar deru mesin pesawat ~10 detik.
 // Browser dapat menolak suara sebelum pengguna berinteraksi, jadi ucapan yang
 // tertahan diputar pada interaksi pertama.
-export function LoginWelcome({ paused }: LoginWelcomeProps) {
+export function LoginWelcome({ paused, onVoiceDone }: LoginWelcomeProps) {
   const [visible, setVisible] = useState(false);
+  // Efek utama hanya jalan sekali; callback terbaru dibaca lewat ref.
+  const onVoiceDoneRef = useRef(onVoiceDone);
+  onVoiceDoneRef.current = onVoiceDone;
   const busyRef = useRef(false);
   const voiceUsedRef = useRef(false);
   const pendingVoiceRef = useRef(false);
@@ -69,6 +74,7 @@ export function LoginWelcome({ paused }: LoginWelcomeProps) {
       void playCabinChime().then(() => {
         busyRef.current = false;
         scheduleHide(BANNER_AFTER_CHIME_MS);
+        onVoiceDoneRef.current();
       });
     }
 

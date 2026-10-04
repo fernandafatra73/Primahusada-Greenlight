@@ -75,9 +75,21 @@ const SUN_RAYS: ReadonlyArray<{ readonly deg: number; readonly x: number; readon
   },
 );
 
-export function LoginScene() {
+interface LoginSceneProps {
+  /** Turns the whole airfield 90 degrees, then eases it back to normal. */
+  readonly spinning: boolean;
+  readonly onSpinEnd: () => void;
+}
+
+export function LoginScene({ spinning, onSpinEnd }: LoginSceneProps) {
   return (
-    <div className="login-scene" aria-hidden>
+    <div
+      className={spinning ? 'login-scene login-scene--spin' : 'login-scene'}
+      onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget) onSpinEnd();
+      }}
+      aria-hidden
+    >
       <svg viewBox="0 0 640 360" preserveAspectRatio="xMidYMax slice" className="login-scene__svg">
         <defs>
           <linearGradient id="ls-sky" x1="0" y1="0" x2="0" y2="1">

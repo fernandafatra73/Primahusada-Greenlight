@@ -21,6 +21,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [spinning, setSpinning] = useState(false);
+
+  // Setelah ucapan sambutan selesai, lapangan berputar 90 derajat lalu pelan-pelan kembali.
+  function startSpin(): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    setSpinning(true);
+  }
   const passwordRef = useRef<HTMLInputElement>(null);
 
   function onEmailKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
@@ -48,8 +55,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <main className="login-page">
       <div className={paused ? 'login-frame login-frame--paused' : 'login-frame'}>
-        <LoginScene />
-        <LoginWelcome paused={paused} />
+        <LoginScene spinning={spinning} onSpinEnd={() => setSpinning(false)} />
+        <LoginWelcome paused={paused} onVoiceDone={startSpin} />
         <div className="login-controls">
           <button type="button" onClick={() => setPaused(true)} disabled={paused}>
             Stop

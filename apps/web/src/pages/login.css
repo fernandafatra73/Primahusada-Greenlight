@@ -571,3 +571,45 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Setelah suara sambutan: seluruh lapangan berputar 90 derajat (landasan dan semua yang ada
+   di atasnya ikut), ditahan sebentar, lalu pelan-pelan berputar kembali ke posisi biasa.
+   Diperbesar saat berputar agar sudut layar tidak terlihat kosong. */
+.login-scene--spin {
+  animation: login-scene-spin 14.5s ease-in-out;
+}
+
+@keyframes login-scene-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  17%,
+  31% {
+    transform: rotate(90deg) scale(2.2);
+  }
+  45% {
+    transform: rotate(60deg) scale(2.2);
+  }
+  58% {
+    transform: rotate(40deg) scale(2.05);
+  }
+  72% {
+    transform: rotate(22deg) scale(1.8);
+  }
+  86% {
+    transform: rotate(10deg) scale(1.45);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.login-frame--paused .login-scene--spin {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-scene--spin {
+    animation: none;
+  }
+}
