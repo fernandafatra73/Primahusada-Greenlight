@@ -12,10 +12,10 @@ import { LoginArrival } from './LoginArrival.tsx';
 // follow the white centre line.
 
 const HORIZON = 124;
-const RUNWAY_BOTTOM = 266;
+const RUNWAY_BOTTOM = 310;
 const RUNWAY_CX = 210;
 const RUNWAY_HALF_TOP = 9;
-const RUNWAY_HALF_BOTTOM = 165;
+const RUNWAY_HALF_BOTTOM = 213;
 const WIDE_L = -60;
 const WIDE_R = 540;
 const WIDE_W = WIDE_R - WIDE_L;
@@ -221,14 +221,6 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
             <stop offset="35%" stopColor="#fff2b8" stopOpacity="0.9" />
             <stop offset="100%" stopColor="#fff2b8" stopOpacity="0" />
           </radialGradient>
-          <linearGradient id="ls-hills-far" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#5fa56a" />
-            <stop offset="100%" stopColor="#a9d6a0" />
-          </linearGradient>
-          <linearGradient id="ls-hills" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3f8f4c" />
-            <stop offset="100%" stopColor="#7cc276" />
-          </linearGradient>
           <linearGradient id="ls-grass" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#7fbf5a" />
             <stop offset="100%" stopColor="#3f8a3a" />
@@ -317,20 +309,7 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
             </g>
           ))}
 
-          {/* Green mountains fade into haze */}
-          <path d="M-60 128 L-20 96 L10 108 L60 70 L110 104 L150 90 L200 112 L260 84 L300 100 L360 78 L420 100 L470 80 L540 104 V130 H-60 Z" fill="url(#ls-hills-far)" />
-          <path d="M-60 128 L6 64 L34 84 L58 70 L112 128 Z" fill="#3a8a48" />
-          <path d="M6 64 L34 84 L24 100 L8 90 Z" fill="#2f7a3e" opacity="0.7" />
-          <path d="M296 128 L372 50 L394 70 L418 56 L500 128 Z" fill="#3a8a48" />
-          <path d="M372 50 L394 70 L384 92 L366 78 Z" fill="#2f7a3e" opacity="0.7" />
-          <path d="M418 56 L450 86 L430 110 L412 84 Z" fill="#56a85c" opacity="0.7" />
-          <g fill="#276b35" opacity="0.55">
-            {[[380, 96], [392, 104], [402, 92], [426, 104], [440, 112], [356, 108], [344, 116], [20, 98], [34, 106], [50, 112], [8, 108]].map(([x, y]) => (
-              <circle key={`${x}-${y}`} cx={x} cy={y} r="3.2" />
-            ))}
-          </g>
-          <path d="M-60 132 Q0 110 70 122 T210 120 T350 122 T540 118 V132 H-60 Z" fill="url(#ls-hills)" />
-          <rect x={WIDE_L} y="118" width={WIDE_W} height="14" fill="#e6f5e8" opacity="0.35" />
+          <rect x={WIDE_L} y="112" width={WIDE_W} height="14" fill="#e6f5e8" opacity="0.35" />
 
           {/* Ground: grass, then concrete aprons either side of the runway */}
           <rect x={WIDE_L} y={HORIZON} width={WIDE_W} height={310 - HORIZON} fill="url(#ls-grass)" />
@@ -528,7 +507,7 @@ export function LoginScene({ arrival, onArrivalEnd, onLeftApronEmpty }: LoginSce
 
           {/* Forecourt (moved down to make room for the buildings): planting, lamps, road with cars, pavement with people */}
           <g transform="translate(0 44)">
-          <rect x={WIDE_L} y={RUNWAY_BOTTOM} width={WIDE_W} height="6" fill="url(#ls-grass)" />
+          <rect x={WIDE_L} y="266" width={WIDE_W} height="6" fill="url(#ls-grass)" />
           <g>
             {[8, 48, 88, 128, 168, 208, 248, 288, 328, 364, 404, 444, 484].map((x) => (
               <g key={x}>
