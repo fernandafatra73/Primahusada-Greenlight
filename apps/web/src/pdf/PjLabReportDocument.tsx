@@ -123,14 +123,20 @@ const styles = StyleSheet.create({
     fontSize: 8.5,
     marginBottom: 40,
   },
+  // Nama admin berdiri di atas garis; garisnya adalah border bawah teks ini.
   signatureName: {
     fontSize: 9,
     fontWeight: 'bold',
-    borderTopWidth: 0.8,
+    borderBottomWidth: 0.8,
     borderColor: BLACK,
-    paddingTop: 2,
+    paddingBottom: 2,
+    minHeight: 13,
     width: '100%',
     textAlign: 'center',
+  },
+  signatureLabel: {
+    fontSize: 8.5,
+    marginTop: 2,
   },
 });
 
@@ -180,7 +186,8 @@ export function PjLabReportDocument({ data }: { readonly data: PjLabReportData }
           <View style={styles.signatureSection} wrap={false}>
             <View style={styles.signatureBox}>
               <Text style={styles.signatureDate}>Parung Kuda, {data.tanggalCetak}</Text>
-              <Text style={styles.signatureName}>{data.adminNama || '( .............................. )'}</Text>
+              <Text style={styles.signatureName}>{data.adminNama}</Text>
+              <Text style={styles.signatureLabel}>Admin</Text>
             </View>
           </View>
         </View>
