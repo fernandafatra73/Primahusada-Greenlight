@@ -6,7 +6,6 @@ export interface PjLabReportItem {
   readonly nama: string;
   readonly tanggal: string;
   readonly jumlahFormatted: string;
-  readonly admin: string;
 }
 
 export interface PjLabReportData {
@@ -108,11 +107,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.8,
     borderColor: BLACK,
   },
-  colNo: { width: '7%', textAlign: 'center' },
-  colNama: { width: '35%', paddingLeft: 4 },
-  colTanggal: { width: '16%', textAlign: 'center' },
-  colJumlah: { width: '18%', textAlign: 'right', paddingRight: 4 },
-  colAdmin: { width: '24%', paddingLeft: 4 },
+  colNo: { width: '8%', textAlign: 'center' },
+  colNama: { width: '48%', paddingLeft: 4 },
+  colTanggal: { width: '20%', textAlign: 'center' },
+  colJumlah: { width: '24%', textAlign: 'right', paddingRight: 4 },
   signatureSection: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -166,7 +164,6 @@ export function PjLabReportDocument({ data }: { readonly data: PjLabReportData }
               <Text style={styles.colNama}>Nama Penanggung Jawab</Text>
               <Text style={styles.colTanggal}>Tanggal</Text>
               <Text style={styles.colJumlah}>Jumlah</Text>
-              <Text style={styles.colAdmin}>Admin</Text>
             </View>
             {data.items.length === 0 ? (
               <View style={styles.trRow}>
@@ -176,17 +173,15 @@ export function PjLabReportDocument({ data }: { readonly data: PjLabReportData }
               data.items.map((row) => (
                 <View key={row.no} style={styles.trRow} wrap={false}>
                   <Text style={styles.colNo}>{row.no}</Text>
-                  <Text style={styles.colNama}>{truncatePdfCell(row.nama, 36)}</Text>
+                  <Text style={styles.colNama}>{truncatePdfCell(row.nama, 50)}</Text>
                   <Text style={styles.colTanggal}>{row.tanggal}</Text>
                   <Text style={styles.colJumlah}>{row.jumlahFormatted}</Text>
-                  <Text style={styles.colAdmin}>{truncatePdfCell(row.admin, 24)}</Text>
                 </View>
               ))
             )}
             <View style={styles.totalRow}>
-              <Text style={{ width: '58%', textAlign: 'right', paddingRight: 4 }}>Total</Text>
+              <Text style={{ width: '76%', textAlign: 'right', paddingRight: 4 }}>Total</Text>
               <Text style={styles.colJumlah}>{data.totalJumlahFormatted}</Text>
-              <Text style={styles.colAdmin} />
             </View>
           </View>
 

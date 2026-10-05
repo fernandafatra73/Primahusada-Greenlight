@@ -167,7 +167,6 @@ export function PjLabModal({ open, onClose }: PjLabModalProps) {
           nama: item.nama,
           tanggal: formatDateShort(item.tanggal),
           jumlahFormatted: formatRupiah(item.jumlah),
-          admin: item.admin || '—',
         })),
         totalJumlahFormatted: formatRupiah(totalJumlah),
         adminNama: adminTtd.trim(),
