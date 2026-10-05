@@ -165,7 +165,6 @@ export function PjLabModal({ open, onClose }: PjLabModalProps) {
         items: items.map((item, idx) => ({
           no: idx + 1,
           nama: item.nama,
-          tanggal: formatDateShort(item.tanggal),
           jumlahFormatted: formatRupiah(item.jumlah),
         })),
         totalJumlahFormatted: formatRupiah(totalJumlah),

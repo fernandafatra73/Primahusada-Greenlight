@@ -4,7 +4,6 @@ import { truncatePdfCell } from './pdfText.ts';
 export interface PjLabReportItem {
   readonly no: number;
   readonly nama: string;
-  readonly tanggal: string;
   readonly jumlahFormatted: string;
 }
 
@@ -108,8 +107,7 @@ const styles = StyleSheet.create({
     borderColor: BLACK,
   },
   colNo: { width: '8%', textAlign: 'center' },
-  colNama: { width: '48%', paddingLeft: 4 },
-  colTanggal: { width: '20%', textAlign: 'center' },
+  colNama: { width: '68%', paddingLeft: 4 },
   colJumlah: { width: '24%', textAlign: 'right', paddingRight: 4 },
   signatureSection: {
     flexDirection: 'row',
@@ -122,10 +120,6 @@ const styles = StyleSheet.create({
     width: 170,
   },
   signatureDate: {
-    fontSize: 8.5,
-    marginBottom: 2,
-  },
-  signatureTitle: {
     fontSize: 8.5,
     marginBottom: 40,
   },
@@ -155,14 +149,13 @@ export function PjLabReportDocument({ data }: { readonly data: PjLabReportData }
           </View>
           <View style={styles.divider} />
 
-          <Text style={styles.title}>Daftar Penanggung Jawab Laboratorium</Text>
+          <Text style={styles.title}>Penanggung Jawab Laboratorium</Text>
           <Text style={styles.subtitle}>Tanggal cetak: {data.tanggalCetak}</Text>
 
           <View style={styles.table}>
             <View style={styles.thRow}>
               <Text style={styles.colNo}>No</Text>
               <Text style={styles.colNama}>Nama Penanggung Jawab</Text>
-              <Text style={styles.colTanggal}>Tanggal</Text>
               <Text style={styles.colJumlah}>Jumlah</Text>
             </View>
             {data.items.length === 0 ? (
@@ -173,8 +166,7 @@ export function PjLabReportDocument({ data }: { readonly data: PjLabReportData }
               data.items.map((row) => (
                 <View key={row.no} style={styles.trRow} wrap={false}>
                   <Text style={styles.colNo}>{row.no}</Text>
-                  <Text style={styles.colNama}>{truncatePdfCell(row.nama, 50)}</Text>
-                  <Text style={styles.colTanggal}>{row.tanggal}</Text>
+                  <Text style={styles.colNama}>{truncatePdfCell(row.nama, 70)}</Text>
                   <Text style={styles.colJumlah}>{row.jumlahFormatted}</Text>
                 </View>
               ))
@@ -188,7 +180,6 @@ export function PjLabReportDocument({ data }: { readonly data: PjLabReportData }
           <View style={styles.signatureSection} wrap={false}>
             <View style={styles.signatureBox}>
               <Text style={styles.signatureDate}>Parung Kuda, {data.tanggalCetak}</Text>
-              <Text style={styles.signatureTitle}>Admin</Text>
               <Text style={styles.signatureName}>{data.adminNama || '( .............................. )'}</Text>
             </View>
           </View>
