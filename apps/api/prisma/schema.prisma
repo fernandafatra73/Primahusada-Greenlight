@@ -1198,3 +1198,18 @@ model FotoPasienAnalisa {
 
   @@index([pasienId])
 }
+
+/// Daftar penanggung jawab (PJ) Laboratorium — isi tombol "PJ" di halaman
+/// Laboratorium. Dicetak dengan kop surat; nama `admin` masuk ke kolom
+/// tanda tangan laporan.
+model LabPenanggungJawab {
+  id        String   @id @default(cuid())
+  nama      String
+  tanggal   DateTime
+  jumlah    Decimal  @default(0)
+  admin     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tanggal])
+}

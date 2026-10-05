@@ -3433,11 +3433,19 @@ export async function registerCrudRoutes(app: FastifyInstance) {
       totalSharing?: number;
       paymentStatus?: 'BELUM_LUNAS' | 'LUNAS';
       hasilStatus?: 'MENUNGGU_HASIL' | 'SELESAI';
+      /** Tanggal arsip (ISO), dipakai filter periode dan laporan Sharing. */
+      registeredAt?: string;
     };
   }>('/api/pasien-duplikat/:id', async (req, reply) => {
     const existing = await prisma.pasienDuplikat.findUnique({ where: { id: req.params.id } });
     if (!existing) return reply.status(404).send({ error: 'Arsip tidak ditemukan' });
     const b = req.body;
+    let registeredAt = existing.registeredAt;
+    if (b.registeredAt !== undefined) {
+      const parsed = new Date(b.registeredAt);
+      if (Number.isNaN(parsed.getTime())) return badRequest(reply, 'Tanggal tidak valid');
+      registeredAt = parsed;
+    }
     const item = await prisma.pasienDuplikat.update({
       where: { id: req.params.id },
       data: {
@@ -3454,6 +3462,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
         totalSharing: b.totalSharing !== undefined ? b.totalSharing : existing.totalSharing,
         paymentStatus: b.paymentStatus ?? existing.paymentStatus,
         hasilStatus: b.hasilStatus ?? existing.hasilStatus,
+        registeredAt,
       },
     });
     return {

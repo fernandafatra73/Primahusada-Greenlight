@@ -82,6 +82,22 @@ function getPeriodDates(
   return { startDate: '', endDate: '' };
 }
 
+/** ISO tanggal → `YYYY-MM-DD` menurut waktu lokal, untuk `<input type="date">`. */
+function toLocalDateInput(iso: string): string {
+  const d = new Date(iso);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+/** Ganti tanggal (lokal) pada `iso` tanpa mengubah jamnya. */
+function withLocalDate(iso: string, dateInput: string): string {
+  const [y, m, d] = dateInput.split('-').map(Number);
+  const result = new Date(iso);
+  result.setFullYear(y ?? result.getFullYear(), (m ?? 1) - 1, d ?? 1);
+  return result.toISOString();
+}
+
 interface SharingArsipPageProps {
   readonly modul: 'RADIOLOGI' | 'LABORATORIUM';
 }
@@ -147,6 +163,7 @@ export function SharingArsipPage({ modul }: SharingArsipPageProps) {
 
   const [editing, setEditing] = useState<ArsipPasienItem | null>(null);
   const [editForm, setEditForm] = useState({
+    tanggal: '',
     nama: '',
     alamat: '',
     pengirimNama: '',
@@ -178,6 +195,7 @@ export function SharingArsipPage({ modul }: SharingArsipPageProps) {
 
   function openEdit(item: ArsipPasienItem) {
     setEditForm({
+      tanggal: toLocalDateInput(item.createdAt),
       nama: item.nama,
       alamat: item.alamat ?? '',
       pengirimNama: item.pengirimNama,
@@ -206,6 +224,7 @@ export function SharingArsipPage({ modul }: SharingArsipPageProps) {
         totalHarga: Number(editForm.totalHarga) || 0,
         totalSharing: Number(editForm.totalSharing) || 0,
         paymentStatus: editForm.paymentStatus,
+        registeredAt: withLocalDate(editing.createdAt, editForm.tanggal),
       });
       setEditing(null);
       await reload();
@@ -761,6 +780,16 @@ export function SharingArsipPage({ modul }: SharingArsipPageProps) {
           onClose={() => setEditing(null)}
         >
           <form onSubmit={(e) => void handleEditSubmit(e)} className="form-grid">
+            <div className="form-field form-field--full">
+              <label htmlFor="sharing-edit-tanggal">Tanggal *</label>
+              <input
+                id="sharing-edit-tanggal"
+                type="date"
+                required
+                value={editForm.tanggal}
+                onChange={(e) => setEditForm((f) => ({ ...f, tanggal: e.target.value }))}
+              />
+            </div>
             <div className="form-field form-field--full">
               <label htmlFor="sharing-edit-nama">Nama Pasien *</label>
               <input
