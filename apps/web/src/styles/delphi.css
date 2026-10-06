@@ -653,3 +653,54 @@ select,
   background-repeat: no-repeat !important;
   background-position: right 6px center !important;
 }
+
+/* ---- Navbar cyan ---- */
+.app-navbar {
+  background: linear-gradient(180deg, #dffaff 0%, #b5effa 60%, #8ae3f3 100%) !important;
+  border-top: 1px solid #f0fdff;
+  border-bottom: 3px solid #06b6d4;
+}
+.app-navbar__title,
+.app-navbar__credit,
+.app-navbar__user,
+.app-navbar__user-credit {
+  color: #0b4552 !important;
+  text-shadow: 1px 1px 0 #f0fdff !important;
+}
+.app-navbar__link,
+.app-navbar__icon-btn {
+  background: linear-gradient(180deg, #d4f7fd, #a7ebf6) !important;
+  color: #0b4552 !important;
+  border-color: #f0fdff #5bb8c9 #5bb8c9 #f0fdff !important;
+}
+.app-navbar__link {
+  text-shadow: 1px 1px 0 #f0fdff !important;
+}
+.app-navbar__link:hover {
+  background: linear-gradient(180deg, #ecfdff, #c2f3fb) !important;
+  color: #063640 !important;
+  border-color: #ffffff #5bb8c9 #5bb8c9 #ffffff !important;
+}
+.app-navbar__link--active,
+.app-navbar__link--open {
+  background: linear-gradient(180deg, #22d3ee, #0891b2) !important;
+  color: #ffffff !important;
+  border-color: #0e6f85 #a5f3fc #a5f3fc #0e6f85 !important;
+  text-shadow: 1px 1px 0 #075566 !important;
+}
+.app-navbar__caret { color: #0b4552; }
+.app-navbar__avatar { background: #0891b2 !important; }
+
+.app-navbar__dropdown,
+.app-navbar__dropdown--radiologi,
+.app-navbar__dropdown--laboratorium,
+.app-navbar__dropdown--keuangan {
+  background: #f0fdff !important;
+  border-color: #fff #06b6d4 #06b6d4 #fff;
+}
+.app-navbar__dropdown-link { color: #0b4552; }
+.app-navbar__dropdown-link:hover,
+.app-navbar__dropdown-link--active {
+  background: linear-gradient(90deg, #67e8f9, #c2f3fb) !important;
+  color: #063640 !important;
+}
