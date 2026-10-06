@@ -654,53 +654,58 @@ select,
   background-position: right 6px center !important;
 }
 
-/* ---- Navbar cyan ---- */
+/* ---- Navbar electric blue, garis bawah kuning ---- */
 .app-navbar {
-  background: linear-gradient(180deg, #dffaff 0%, #b5effa 60%, #8ae3f3 100%) !important;
-  border-top: 1px solid #f0fdff;
-  border-bottom: 3px solid #06b6d4;
+  background: linear-gradient(180deg, #4d88ff 0%, #2563ff 55%, #1446e0 100%) !important;
+  border-top: 1px solid #8fb4ff;
+  border-bottom: 4px solid #facc15;
 }
 .app-navbar__title,
 .app-navbar__credit,
 .app-navbar__user,
 .app-navbar__user-credit {
-  color: #0b4552 !important;
-  text-shadow: 1px 1px 0 #f0fdff !important;
+  color: #ffffff !important;
+  text-shadow: 1px 1px 0 #0a2a8a !important;
 }
 .app-navbar__link,
 .app-navbar__icon-btn {
-  background: linear-gradient(180deg, #d4f7fd, #a7ebf6) !important;
-  color: #0b4552 !important;
-  border-color: #f0fdff #5bb8c9 #5bb8c9 #f0fdff !important;
+  background: linear-gradient(180deg, #4f8bff, #2a5ef5) !important;
+  color: #ffffff !important;
+  border-color: #a9c4ff #0b35b0 #0b35b0 #a9c4ff !important;
 }
 .app-navbar__link {
-  text-shadow: 1px 1px 0 #f0fdff !important;
+  text-shadow: 1px 1px 0 #0a2a8a !important;
 }
 .app-navbar__link:hover {
-  background: linear-gradient(180deg, #ecfdff, #c2f3fb) !important;
-  color: #063640 !important;
-  border-color: #ffffff #5bb8c9 #5bb8c9 #ffffff !important;
+  background: linear-gradient(180deg, #6f9fff, #3a6dff) !important;
+  color: #ffffff !important;
+  border-color: #d0dfff #0b35b0 #0b35b0 #d0dfff !important;
 }
 .app-navbar__link--active,
 .app-navbar__link--open {
-  background: linear-gradient(180deg, #22d3ee, #0891b2) !important;
+  background: linear-gradient(180deg, #123fc4, #0a2a8a) !important;
   color: #ffffff !important;
-  border-color: #0e6f85 #a5f3fc #a5f3fc #0e6f85 !important;
-  text-shadow: 1px 1px 0 #075566 !important;
+  border-color: #061c5e #7aa3ff #7aa3ff #061c5e !important;
+  text-shadow: 1px 1px 0 #041444 !important;
 }
-.app-navbar__caret { color: #0b4552; }
-.app-navbar__avatar { background: #0891b2 !important; }
+.app-navbar__caret { color: #ffffff; }
+.app-navbar__avatar { background: #0a2a8a !important; }
 
 .app-navbar__dropdown,
 .app-navbar__dropdown--radiologi,
 .app-navbar__dropdown--laboratorium,
 .app-navbar__dropdown--keuangan {
-  background: #f0fdff !important;
-  border-color: #fff #06b6d4 #06b6d4 #fff;
+  background: #f2f6ff !important;
+  border-color: #fff #2563ff #2563ff #fff;
 }
-.app-navbar__dropdown-link { color: #0b4552; }
+.app-navbar__dropdown-link { color: #0a2a8a; }
 .app-navbar__dropdown-link:hover,
 .app-navbar__dropdown-link--active {
-  background: linear-gradient(90deg, #67e8f9, #c2f3fb) !important;
-  color: #063640 !important;
+  background: linear-gradient(90deg, #2563ff, #6f9fff) !important;
+  color: #ffffff !important;
 }
+
+/* Strip di bawah navbar ikut kuning, menyatu dengan garis bawahnya */
+.app-shell__accent-bar span:nth-child(1),
+.app-shell__accent-bar span:nth-child(2),
+.app-shell__accent-bar span:nth-child(3) { background: #facc15 !important; }
