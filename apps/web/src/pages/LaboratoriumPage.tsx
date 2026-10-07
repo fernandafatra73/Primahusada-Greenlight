@@ -209,6 +209,8 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
   const [qeSharingMode, setQeSharingMode] = useState('custom');
   const [qeTotalSharing, setQeTotalSharing] = useState('0');
   const [qeAnalisId, setQeAnalisId] = useState('');
+  const [qeHasilStatus, setQeHasilStatus] = useState<'MENUNGGU_HASIL' | 'SELESAI'>('MENUNGGU_HASIL');
+  const [qePaymentStatus, setQePaymentStatus] = useState<'BELUM_LUNAS' | 'LUNAS'>('BELUM_LUNAS');
   const [qeSaving, setQeSaving] = useState(false);
   const [qeError, setQeError] = useState<string | null>(null);
 
@@ -359,6 +361,8 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     setQePengirimId(item.pengirim.id);
     const parsed = parseLabKesan(item.kesan);
     setQeAnalisId(parsed.analisId || '');
+    setQeHasilStatus(item.hasilStatus);
+    setQePaymentStatus(item.paymentStatus);
     setQeHargaMode('custom');
     setQeSharingMode('custom');
     try {
@@ -391,6 +395,8 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
         pengirimId: qePengirimId,
         harga: Number(qeHargaManual) || 0,
         sharingAmount: Number(qeSharingAmount) || 0,
+        hasilStatus: qeHasilStatus,
+        paymentStatus: qePaymentStatus,
         kesan: serializedKesan,
       });
       setQuickEditItem(null);
@@ -1856,6 +1862,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
       <Modal
         open={quickEditItem !== null}
         title="Edit Cepat"
+        size="lg"
         onClose={() => setQuickEditItem(null)}
       >
         <form onSubmit={(e) => void submitQuickEdit(e)} className="form-grid">
@@ -1882,23 +1889,13 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
             <input id="qe-alamat" value={qeAlamat} onChange={(e) => setQeAlamat(e.target.value)} />
           </div>
 
-          <div className="form-field form-field--full">
-            <label htmlFor="qe-dokter">Dokter Pengirim</label>
-            <select id="qe-dokter" value={qePengirimId} onChange={(e) => setQePengirimId(e.target.value)}>
-              <option value="">-- Pilih Dokter --</option>
-              {dokterList.map((d) => (
-                <option key={d.id} value={d.id}>{d.nama}</option>
-              ))}
-            </select>
-          </div>
-
           <div className="form-field">
             <label htmlFor="qe-harga">Harga</label>
             <div style={{ display: 'flex', gap: '0.4rem' }}>
               <select
                 id="qe-harga-select"
                 value={qeHargaMode}
-                style={{ flex: '1 1 auto' }}
+                style={{ flex: '1 1 auto', minWidth: 0 }}
                 title="Pilihan harga lab"
                 onChange={(e) => {
                   const val = e.target.value;
@@ -1929,12 +1926,14 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
           </div>
 
           <div className="form-field">
-            <label htmlFor="qe-sharing">Sharing</label>
+            <label htmlFor="qe-sharing">
+              Sharing <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>(total: {formatRupiah(qeTotalSharing)})</span>
+            </label>
             <div style={{ display: 'flex', gap: '0.4rem' }}>
               <select
                 id="qe-sharing-select"
                 value={qeSharingMode}
-                style={{ flex: '0 0 auto', width: '2.4rem' }}
+                style={{ flex: '0 0 auto', width: '4.5rem' }}
                 title="Pilihan nominal sharing"
                 onChange={(e) => {
                   const val = e.target.value;
@@ -1957,6 +1956,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                 type="number"
                 min="0"
                 step="1"
+                style={{ flex: '1 1 auto', minWidth: 0 }}
                 value={qeSharingAmount}
                 onChange={(e) => {
                   setQeSharingAmount(e.target.value);
@@ -1967,17 +1967,46 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
           </div>
 
           <div className="form-field">
-            <span className="form-field__static-label">Total Sharing</span>
-            <p className="form-field__static-value">{formatRupiah(qeTotalSharing)}</p>
+            <label htmlFor="qe-dokter">Dokter Pengirim</label>
+            <select id="qe-dokter" value={qePengirimId} onChange={(e) => setQePengirimId(e.target.value)}>
+              <option value="">-- Pilih Dokter --</option>
+              {dokterList.map((d) => (
+                <option key={d.id} value={d.id}>{d.nama}</option>
+              ))}
+            </select>
           </div>
 
-          <div className="form-field form-field--full">
+          <div className="form-field">
             <label htmlFor="qe-analis">Analis</label>
             <select id="qe-analis" value={qeAnalisId} onChange={(e) => setQeAnalisId(e.target.value)}>
               <option value="">-- Pilih Analis --</option>
               {analisList.map((a) => (
                 <option key={a.id} value={a.id}>{a.nama}</option>
               ))}
+            </select>
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="qe-payment-status">Status Pembayaran</label>
+            <select
+              id="qe-payment-status"
+              value={qePaymentStatus}
+              onChange={(e) => setQePaymentStatus(e.target.value as 'BELUM_LUNAS' | 'LUNAS')}
+            >
+              <option value="BELUM_LUNAS">BELUM LUNAS</option>
+              <option value="LUNAS">LUNAS</option>
+            </select>
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="qe-hasil-status">Status Hasil</label>
+            <select
+              id="qe-hasil-status"
+              value={qeHasilStatus}
+              onChange={(e) => setQeHasilStatus(e.target.value as 'MENUNGGU_HASIL' | 'SELESAI')}
+            >
+              <option value="MENUNGGU_HASIL">MENUNGGU HASIL</option>
+              <option value="SELESAI">SELESAI</option>
             </select>
           </div>
 
