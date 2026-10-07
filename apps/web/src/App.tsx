@@ -73,8 +73,6 @@ import { RadiologMasterPage } from './pages/RadiologMasterPage.tsx';
 import { RadiograferPage } from './pages/RadiograferPage.tsx';
 import { KoneksiPhPage } from './pages/KoneksiPhPage.tsx';
 import { LisensiPage } from './pages/LisensiPage.tsx';
-import { SuratSehatKaryawanPage } from './pages/SuratSehatKaryawanPage.tsx';
-import { HasilLabKaryawanPage } from './pages/HasilLabKaryawanPage.tsx';
 import { KondisiAlatPage } from './pages/KondisiAlatPage.tsx';
 import { LogbookPasienPage } from './pages/LogbookPasienPage.tsx';
 import { GajiKaryawanPage } from './pages/GajiKaryawanPage.tsx';
@@ -332,10 +330,6 @@ function renderViewContent(
       return <KoneksiPhPage />;
     case 'lisensi':
       return <LisensiPage />;
-    case 'lisensi-surat-sehat':
-      return <SuratSehatKaryawanPage />;
-    case 'lisensi-hasil-lab':
-      return <HasilLabKaryawanPage />;
     case 'global-warm':
       return <GlobalWarmPage />;
     case 'daftar-akun':

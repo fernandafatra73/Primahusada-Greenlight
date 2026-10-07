@@ -289,10 +289,10 @@ export function HasilLabKaryawanPage() {
   const terisi = baris.filter((b) => b.hasil.trim()).length;
 
   return (
-    <div className="page-frame">
-      <h2 style={{ margin: '0 0 0.2rem', fontSize: '1.1rem' }}>
+    <div>
+      <h3 style={{ margin: '0 0 0.2rem', fontSize: '1.05rem' }}>
         Hasil Lab Karyawan
-      </h2>
+      </h3>
       <p
         style={{ margin: '0 0 0.8rem', fontSize: '0.85rem', color: '#64748b' }}
       >

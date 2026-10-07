@@ -25,6 +25,8 @@ import {
   type LisensiSectionSpec,
 } from '../lib/lisensi.ts';
 import { fetchBerkasBlob, generateLisensiBlob } from '../pdf/printLisensi.tsx';
+import { HasilLabKaryawanPage } from './HasilLabKaryawanPage.tsx';
+import { SuratSehatKaryawanPage } from './SuratSehatKaryawanPage.tsx';
 
 interface LisensiItem {
   readonly id: string;
@@ -593,6 +595,11 @@ function LisensiSection({
   );
 }
 
+const BAGIAN_KARYAWAN = [
+  { id: 'surat-sehat', label: 'Surat Sehat' },
+  { id: 'hasil-lab', label: 'Hasil Lab' },
+] as const;
+
 /** Menu "Lisensi": berkas perizinan klinik per instansi, dari RT/RW sampai surat izin terpadu. */
 export function LisensiPage() {
   const [kategori, setKategori] = useState<LisensiKategori>('rtrw');
@@ -606,6 +613,10 @@ export function LisensiPage() {
   } | null>(null);
   /** Id entri yang sedang disiapkan untuk dicetak, atau 'semua' untuk satu tab. */
   const [cetakId, setCetakId] = useState<string | null>(null);
+  /** Tab karyawan di luar daftar perizinan; null = tab perizinan sesuai `kategori`. */
+  const [bagianKaryawan, setBagianKaryawan] = useState<
+    'surat-sehat' | 'hasil-lab' | null
+  >(null);
   const tab =
     LISENSI_TABS.find((t) => t.kategori === kategori) ?? LISENSI_TABS[0];
 
@@ -710,16 +721,34 @@ export function LisensiPage() {
             key={t.kategori}
             type="button"
             role="tab"
-            aria-selected={t.kategori === kategori}
-            className={`filter-tab${t.kategori === kategori ? ' filter-tab--active' : ''}`}
-            onClick={() => setKategori(t.kategori)}
+            aria-selected={bagianKaryawan === null && t.kategori === kategori}
+            className={`filter-tab${bagianKaryawan === null && t.kategori === kategori ? ' filter-tab--active' : ''}`}
+            onClick={() => {
+              setBagianKaryawan(null);
+              setKategori(t.kategori);
+            }}
           >
             {t.label}
           </button>
         ))}
+        {BAGIAN_KARYAWAN.map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            role="tab"
+            aria-selected={bagianKaryawan === b.id}
+            className={`filter-tab${bagianKaryawan === b.id ? ' filter-tab--active' : ''}`}
+            onClick={() => setBagianKaryawan(b.id)}
+          >
+            {b.label}
+          </button>
+        ))}
       </div>
 
-      {tab ? (
+      {bagianKaryawan === 'surat-sehat' ? <SuratSehatKaryawanPage /> : null}
+      {bagianKaryawan === 'hasil-lab' ? <HasilLabKaryawanPage /> : null}
+
+      {bagianKaryawan === null && tab ? (
         <>
           <div
             style={{
