@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import {
   TahunSelect,
   TtdTersimpanSelect,
@@ -17,7 +11,6 @@ import { SharingPdfPreviewModal } from '../components/ui/SharingPdfPreviewModal.
 import { handleFormFieldNavKeyDown } from '../lib/formFieldNav.ts';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort } from '../lib/format.ts';
-import { readFileAsDataUrl } from '../lib/fotoUpload.ts';
 import { fromDateInput, toDateInput } from '../lib/lisensi.ts';
 import { KESIMPULAN_LABEL, pilihanTahun } from '../lib/lisensiKaryawan.ts';
 import { generateSuratSehatKaryawanBlob } from '../pdf/printLisensiKaryawan.tsx';
@@ -110,9 +103,6 @@ function formDariItem(item: SuratSehatItem): SuratForm {
     ttdDokter: item.ttdDokter,
   };
 }
-
-const TTD_TIPE_GAMBAR = ['image/png', 'image/jpeg', 'image/webp'];
-const TTD_MAKS_BYTE = 2 * 1024 * 1024;
 
 function errorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
@@ -227,30 +217,6 @@ export function SuratSehatKaryawanPage() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  async function handleTtdFile(
-    event: ChangeEvent<HTMLInputElement>,
-  ): Promise<void> {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    if (!TTD_TIPE_GAMBAR.includes(file.type)) {
-      setFormError('File tanda tangan harus berupa gambar PNG, JPG, atau WebP');
-      return;
-    }
-    if (file.size > TTD_MAKS_BYTE) {
-      setFormError('Ukuran file tanda tangan maksimal 2 MB');
-      return;
-    }
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setFormError(null);
-      setForm((f) => ({ ...f, ttdDokter: dataUrl }));
-      setTtdDariPad(false);
-    } catch (err: unknown) {
-      setFormError(errorMessage(err, 'Gagal membaca file tanda tangan'));
-    }
-  }
 
   function bukaForm(item: SuratSehatItem | null): void {
     setEditingId(item?.id ?? null);
@@ -588,17 +554,6 @@ export function SuratSehatKaryawanPage() {
               }}
               onError={setFormError}
             />
-            <div className="form-field">
-              <label htmlFor="surat-sehat-ttd-upload">
-                Atau Unggah File TTD (PNG / JPG / WebP, maks. 2 MB)
-              </label>
-              <input
-                id="surat-sehat-ttd-upload"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                onChange={(e) => void handleTtdFile(e)}
-              />
-            </div>
           </div>
 
           {formError ? <p className="alert alert--error">{formError}</p> : null}
