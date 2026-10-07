@@ -8,13 +8,17 @@ import {
   validateLisensiBerkas,
 } from '../../apps/api/src/lib/lisensi.ts';
 import {
+  isBerkasPdf,
   jadwalTldBerikutnya,
   langkahBelumAda,
   LISENSI_FILE_MAX_BYTES,
   LISENSI_TABS,
   sisaHari,
+  susunCetakLisensi,
   tambahBulan,
   validateLisensiFile,
+  type LisensiEntriCetak,
+  type LisensiTabSpec,
 } from '../../apps/web/src/lib/lisensi.ts';
 
 describe('isLisensiJenis', () => {
@@ -174,5 +178,116 @@ describe('langkahBelumAda', () => {
 
   test('returns nothing once every default step exists', () => {
     expect(langkahBelumAda(['A', 'B'], ['A', 'B'])).toEqual([]);
+  });
+});
+
+describe('susunCetakLisensi', () => {
+  const tab = (kategori: string): LisensiTabSpec => {
+    const found = LISENSI_TABS.find((t) => t.kategori === kategori);
+    if (!found) throw new Error(`tab ${kategori} tidak ada`);
+    return found;
+  };
+  const entri = (over: Partial<LisensiEntriCetak>): LisensiEntriCetak => ({
+    jenis: 'warga',
+    nama: 'Budi',
+    keterangan: null,
+    tanggal: null,
+    berkas: null,
+    berkasNama: null,
+    selesai: false,
+    ...over,
+  });
+  const fmt = (iso: string): string => `F(${iso})`;
+
+  test('RT/RW: residents table with signature column, RW head signature last', () => {
+    const { bagian, lampiran } = susunCetakLisensi(
+      tab('rtrw').sections,
+      [
+        entri({
+          nama: 'Ketua',
+          jenis: 'pejabat',
+          berkas: '/uploads/lisensi/rw.png',
+        }),
+        entri({ nama: 'Ani', berkas: '/uploads/lisensi/a.png' }),
+        entri({ nama: 'Budi', berkas: '/uploads/lisensi/b.png' }),
+      ],
+      fmt,
+    );
+    expect(lampiran).toEqual([]);
+    expect(bagian).toEqual([
+      {
+        tipe: 'tabel',
+        judul: 'Tanda Tangan Warga',
+        kolom: ['No', 'Nama Warga'],
+        kolomTtd: 'Tanda Tangan',
+        baris: [
+          { sel: ['1', 'Ani'], ttd: '/uploads/lisensi/a.png' },
+          { sel: ['2', 'Budi'], ttd: '/uploads/lisensi/b.png' },
+        ],
+      },
+      {
+        tipe: 'pejabat',
+        jabatan: 'Ketua RW',
+        nama: 'Ketua',
+        ttd: '/uploads/lisensi/rw.png',
+      },
+    ]);
+  });
+
+  test('an empty official signature is still printed blank, empty tables are skipped', () => {
+    const { bagian } = susunCetakLisensi(tab('desa').sections, [], fmt);
+    expect(bagian).toEqual([
+      { tipe: 'pejabat', jabatan: 'Kepala Desa', nama: '', ttd: null },
+    ]);
+  });
+
+  test('file sections list dates, status and attachments; images become lampiran, PDFs do not', () => {
+    const { bagian, lampiran } = susunCetakLisensi(
+      tab('filmbadge').sections,
+      [
+        entri({
+          jenis: 'pembayaran',
+          nama: 'Q1',
+          tanggal: '2026-01-01',
+          selesai: true,
+          berkas: '/uploads/lisensi/q1.jpg',
+        }),
+        entri({
+          jenis: 'pembayaran',
+          nama: 'Q2',
+          tanggal: '2026-04-01',
+          berkas: '/uploads/lisensi/q2.PDF',
+          berkasNama: 'q2.pdf',
+        }),
+      ],
+      fmt,
+    );
+    expect(bagian).toEqual([
+      {
+        tipe: 'tabel',
+        judul: 'Jatuh Tempo Pembayaran',
+        kolom: [
+          'No',
+          'Keterangan Tagihan',
+          'Tanggal Jatuh Tempo',
+          'Lunas',
+          'Bukti Bayar',
+        ],
+        kolomTtd: null,
+        baris: [
+          { sel: ['1', 'Q1', 'F(2026-01-01)', 'Ya', 'Terlampir'], ttd: null },
+          { sel: ['2', 'Q2', 'F(2026-04-01)', 'Belum', 'q2.pdf'], ttd: null },
+        ],
+      },
+    ]);
+    expect(lampiran).toEqual([
+      { judul: 'Bukti Bayar — Q1', src: '/uploads/lisensi/q1.jpg' },
+    ]);
+  });
+
+  test('isBerkasPdf checks the extension case-insensitively', () => {
+    expect(isBerkasPdf('/uploads/lisensi/a.PDF')).toBe(true);
+    expect(isBerkasPdf('/uploads/lisensi/a.png')).toBe(false);
+    expect(isBerkasPdf(null)).toBe(false);
   });
 });

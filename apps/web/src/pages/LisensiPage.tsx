@@ -7,18 +7,22 @@ import {
 } from 'react';
 import { SignaturePad } from '../components/SignaturePad.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
+import { SharingPdfPreviewModal } from '../components/ui/SharingPdfPreviewModal.tsx';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort } from '../lib/format.ts';
 import { readFileAsDataUrl } from '../lib/fotoUpload.ts';
 import {
+  isBerkasPdf,
   jadwalTldBerikutnya,
   langkahBelumAda,
   LISENSI_TABS,
   sisaHari,
+  susunCetakLisensi,
   validateLisensiFile,
   type LisensiKategori,
   type LisensiSectionSpec,
 } from '../lib/lisensi.ts';
+import { fetchBerkasBlob, generateLisensiBlob } from '../pdf/printLisensi.tsx';
 
 interface LisensiItem {
   readonly id: string;
@@ -78,9 +82,19 @@ interface SectionProps {
   readonly spec: LisensiSectionSpec;
   readonly items: readonly LisensiItem[];
   readonly onChanged: () => Promise<void>;
+  readonly onCetak: (spec: LisensiSectionSpec, item: LisensiItem) => void;
+  /** Id entri yang sedang disiapkan untuk dicetak. */
+  readonly cetakId: string | null;
 }
 
-function LisensiSection({ kategori, spec, items, onChanged }: SectionProps) {
+function LisensiSection({
+  kategori,
+  spec,
+  items,
+  onChanged,
+  onCetak,
+  cetakId,
+}: SectionProps) {
   const [form, setForm] = useState<EntriForm>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -419,7 +433,7 @@ function LisensiSection({ kategori, spec, items, onChanged }: SectionProps) {
                 className="btn btn--ghost btn--sm"
                 onClick={resetForm}
               >
-                Batal Ubah
+                Batal Edit
               </button>
             ) : null}
             {langkahKurang.length > 0 && !editingId ? (
@@ -451,7 +465,7 @@ function LisensiSection({ kategori, spec, items, onChanged }: SectionProps) {
             {spec.selesaiLabel ? (
               <th style={{ width: '80px' }}>{spec.selesaiLabel}</th>
             ) : null}
-            <th style={{ width: '140px' }}>Aksi</th>
+            <th style={{ width: '200px' }}>Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -553,7 +567,15 @@ function LisensiSection({ kategori, spec, items, onChanged }: SectionProps) {
                         className="btn btn--secondary btn--sm"
                         onClick={() => startEdit(item)}
                       >
-                        Ubah
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        disabled={cetakId !== null}
+                        onClick={() => onCetak(spec, item)}
+                      >
+                        {cetakId === item.id ? 'Menyiapkan...' : 'Cetak'}
                       </button>
                       <button
                         type="button"
@@ -589,6 +611,13 @@ export function LisensiPage() {
   const [items, setItems] = useState<readonly LisensiItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{
+    readonly blob: Blob;
+    readonly filename: string;
+    readonly title: string;
+  } | null>(null);
+  /** Id entri yang sedang disiapkan untuk dicetak, atau 'semua' untuk satu tab. */
+  const [cetakId, setCetakId] = useState<string | null>(null);
   const tab =
     LISENSI_TABS.find((t) => t.kategori === kategori) ?? LISENSI_TABS[0];
 
@@ -611,6 +640,66 @@ export function LisensiPage() {
     setItems([]);
     void load();
   }, [load]);
+
+  async function cetak(
+    id: string,
+    judul: string,
+    filename: string,
+    buat: () => Promise<Blob>,
+  ): Promise<void> {
+    setCetakId(id);
+    setError(null);
+    try {
+      setPreview({ blob: await buat(), filename, title: `Pratinjau ${judul}` });
+    } catch (err: unknown) {
+      setError(errorMessage(err, 'Gagal menyiapkan cetakan'));
+    } finally {
+      setCetakId(null);
+    }
+  }
+
+  function cetakEntri(spec: LisensiSectionSpec, item: LisensiItem): void {
+    if (!tab) return;
+    const judul = `${tab.judul} — ${spec.judul}`;
+    const filename = `Lisensi_${tab.label}_${item.nama}.pdf`.replace(
+      /[^w.-]+/g,
+      '_',
+    );
+    // Surat PDF dicetak apa adanya; selain itu dibuat dokumen berkop surat.
+    const berkas = item.berkas;
+    if (berkas && isBerkasPdf(berkas)) {
+      void cetak(item.id, judul, filename, () => fetchBerkasBlob(berkas));
+      return;
+    }
+    const isi = susunCetakLisensi([spec], [item], formatDateShort);
+    void cetak(item.id, judul, filename, () =>
+      generateLisensiBlob({
+        judul,
+        tanggalCetak: formatDateShort(new Date().toISOString()),
+        ...isi,
+      }),
+    );
+  }
+
+  function cetakSemua(): void {
+    if (!tab) return;
+    const isi = susunCetakLisensi(
+      tab.sections,
+      items.filter((item) => item.kategori === tab.kategori),
+      formatDateShort,
+    );
+    void cetak(
+      'semua',
+      tab.judul,
+      `Lisensi_${tab.label}.pdf`.replace(/[^w.-]+/g, '_'),
+      () =>
+        generateLisensiBlob({
+          judul: tab.judul,
+          tanggalCetak: formatDateShort(new Date().toISOString()),
+          ...isi,
+        }),
+    );
+  }
 
   return (
     <div className="page-frame">
@@ -644,9 +733,27 @@ export function LisensiPage() {
 
       {tab ? (
         <>
-          <h3 style={{ margin: '0 0 0.8rem', fontSize: '1.05rem' }}>
-            {tab.judul}
-          </h3>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              margin: '0 0 0.8rem',
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{tab.judul}</h3>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={cetakId !== null || loading}
+              onClick={cetakSemua}
+            >
+              🖨️{' '}
+              {cetakId === 'semua'
+                ? 'Menyiapkan...'
+                : `Cetak Semua ${tab.label}`}
+            </button>
+          </div>
           {error ? <p className="alert alert--error">{error}</p> : null}
           {loading && items.length === 0 ? (
             <p style={{ color: '#64748b' }}>Memuat...</p>
@@ -661,10 +768,20 @@ export function LisensiPage() {
                   item.kategori === tab.kategori && item.jenis === spec.jenis,
               )}
               onChanged={load}
+              onCetak={cetakEntri}
+              cetakId={cetakId}
             />
           ))}
         </>
       ) : null}
+
+      <SharingPdfPreviewModal
+        open={preview !== null}
+        blob={preview?.blob ?? null}
+        filename={preview?.filename ?? 'Lisensi.pdf'}
+        title={preview?.title ?? 'Pratinjau Lisensi'}
+        onClose={() => setPreview(null)}
+      />
     </div>
   );
 }

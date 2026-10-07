@@ -30,9 +30,11 @@ export interface LisensiSectionSpec {
   readonly selesaiLabel?: string;
   /** Hanya satu entri — tanda tangan pejabat di bawah daftar. */
   readonly tunggal?: boolean;
+  /** Jabatan yang dicetak di bawah tanda tangan (bagian `tunggal`). */
+  readonly jabatan?: string;
   /** Bagian pengiriman TLD: tampilkan jadwal kirim berikutnya. */
   readonly jadwalTld?: boolean;
-  /** Langkah bawaan yang bisa diisi sekaligus saat bagian masih kosong. */
+  /** Langkah bawaan; yang belum tercatat bisa diisi sekaligus. */
   readonly langkahBawaan?: ReadonlyArray<string>;
 }
 
@@ -61,6 +63,7 @@ function ttdPejabat(jabatan: string): LisensiSectionSpec {
     berkas: 'ttd',
     berkasLabel: 'Tanda Tangan',
     tunggal: true,
+    jabatan,
   };
 }
 
@@ -303,4 +306,118 @@ export function sisaHari(target: Date, hariIni: Date): number {
     hariIni.getDate(),
   );
   return Math.round((a - b) / 86_400_000);
+}
+
+/** Bagian dari entri lisensi yang dibutuhkan untuk dicetak. */
+export interface LisensiEntriCetak {
+  readonly jenis: string;
+  readonly nama: string;
+  readonly keterangan: string | null;
+  readonly tanggal: string | null;
+  readonly berkas: string | null;
+  readonly berkasNama: string | null;
+  readonly selesai: boolean;
+}
+
+export interface LisensiCetakTabel {
+  readonly tipe: 'tabel';
+  readonly judul: string;
+  readonly kolom: ReadonlyArray<string>;
+  /** Kolom tanda tangan (gambar) selalu terakhir bila ada. */
+  readonly kolomTtd: string | null;
+  readonly baris: ReadonlyArray<{
+    readonly sel: ReadonlyArray<string>;
+    readonly ttd: string | null;
+  }>;
+}
+
+export interface LisensiCetakPejabat {
+  readonly tipe: 'pejabat';
+  readonly jabatan: string;
+  readonly nama: string;
+  readonly ttd: string | null;
+}
+
+export type LisensiCetakBagian = LisensiCetakTabel | LisensiCetakPejabat;
+
+/** File unggahan yang ikut dicetak sebagai lampiran (hanya gambar; PDF dicetak apa adanya). */
+export interface LisensiCetakLampiran {
+  readonly judul: string;
+  readonly src: string;
+}
+
+export function isBerkasPdf(berkas: string | null): boolean {
+  return berkas !== null && berkas.toLowerCase().endsWith('.pdf');
+}
+
+/** Ubah entri menjadi bagian-bagian dokumen cetak, urut seperti di layar. Bagian
+ * tanpa entri dilewati, kecuali tanda tangan pejabat yang tetap dicetak kosong
+ * supaya bisa ditandatangani di kertas. */
+export function susunCetakLisensi(
+  sections: ReadonlyArray<LisensiSectionSpec>,
+  items: ReadonlyArray<LisensiEntriCetak>,
+  formatTanggal: (iso: string) => string,
+): {
+  readonly bagian: ReadonlyArray<LisensiCetakBagian>;
+  readonly lampiran: ReadonlyArray<LisensiCetakLampiran>;
+} {
+  const bagian: LisensiCetakBagian[] = [];
+  const lampiran: LisensiCetakLampiran[] = [];
+  for (const spec of sections) {
+    const entri = items.filter((item) => item.jenis === spec.jenis);
+    if (spec.tunggal) {
+      const pejabat = entri[0];
+      bagian.push({
+        tipe: 'pejabat',
+        jabatan: spec.jabatan ?? spec.judul,
+        nama: pejabat?.nama ?? '',
+        ttd: pejabat?.berkas ?? null,
+      });
+      continue;
+    }
+    if (entri.length === 0) continue;
+
+    const kolom = ['No', spec.namaLabel];
+    if (spec.tanggalLabel) kolom.push(spec.tanggalLabel);
+    if (spec.keteranganLabel) kolom.push(spec.keteranganLabel);
+    if (spec.selesaiLabel) kolom.push(spec.selesaiLabel);
+    if (spec.berkas === 'file') kolom.push(spec.berkasLabel ?? 'Berkas');
+
+    bagian.push({
+      tipe: 'tabel',
+      judul: spec.judul,
+      kolom,
+      kolomTtd:
+        spec.berkas === 'ttd' ? (spec.berkasLabel ?? 'Tanda Tangan') : null,
+      baris: entri.map((item, idx) => {
+        const sel = [String(idx + 1), item.nama];
+        if (spec.tanggalLabel)
+          sel.push(item.tanggal ? formatTanggal(item.tanggal) : '—');
+        if (spec.keteranganLabel) sel.push(item.keterangan || '—');
+        if (spec.selesaiLabel) sel.push(item.selesai ? 'Ya' : 'Belum');
+        if (spec.berkas === 'file') {
+          sel.push(
+            !item.berkas
+              ? '—'
+              : isBerkasPdf(item.berkas)
+                ? (item.berkasNama ?? 'PDF terlampir')
+                : 'Terlampir',
+          );
+        }
+        return { sel, ttd: spec.berkas === 'ttd' ? item.berkas : null };
+      }),
+    });
+
+    if (spec.berkas === 'file') {
+      for (const item of entri) {
+        if (item.berkas && !isBerkasPdf(item.berkas)) {
+          lampiran.push({
+            judul: `${spec.berkasLabel ?? 'Berkas'} — ${item.nama}`,
+            src: item.berkas,
+          });
+        }
+      }
+    }
+  }
+  return { bagian, lampiran };
 }
