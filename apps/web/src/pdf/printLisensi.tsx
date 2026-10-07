@@ -15,7 +15,7 @@ export interface PrintLisensiInput {
 
 /** react-pdf hanya membaca PNG/JPEG, sedangkan unggahan bisa GIF/WEBP — gambar
  * ulang lewat kanvas menjadi PNG data URL. */
-function gambarKePng(src: string): Promise<string> {
+export function gambarKePng(src: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = (): void => {

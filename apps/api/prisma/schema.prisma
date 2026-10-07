@@ -1236,3 +1236,71 @@ model LisensiEntri {
 
   @@index([kategori, jenis])
 }
+
+/// Surat keterangan sehat tahunan karyawan klinik (menu Lisensi > Surat Sehat),
+/// syarat perizinan seperti pemeriksaan kesehatan pekerja radiasi. Berbeda dari
+/// `SuratKeteranganSehat` (surat untuk pasien di menu Templet).
+model LisensiSuratSehat {
+  id                 String   @id @default(cuid())
+  /// Tahun pemeriksaan, dari `tanggalPeriksa`; dipakai untuk arsip per tahun.
+  tahun              Int
+  nomorSurat         String?
+  nama               String
+  jabatan            String?
+  tempatTanggalLahir String?
+  jenisKelamin       String?
+  alamat             String?
+  tanggalPeriksa     DateTime
+  tinggiBadan        String?
+  beratBadan         String?
+  tekananDarah       String?
+  nadi               String?
+  butaWarna          String?
+  /// `SEHAT` atau `TIDAK_SEHAT`.
+  kesimpulan         String   @default("SEHAT")
+  keperluan          String?
+  catatan            String?
+  namaDokter         String
+  sipDokter          String?
+  /// Path `/uploads/lisensi/...` gambar tanda tangan dokter.
+  ttdDokter          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([tahun])
+}
+
+/// Hasil laboratorium tahunan karyawan klinik (menu Lisensi > Hasil Lab).
+model LisensiHasilLab {
+  id             String                @id @default(cuid())
+  /// Tahun pemeriksaan, dari `tanggalPeriksa`; dipakai untuk arsip per tahun.
+  tahun          Int
+  nama           String
+  jabatan        String?
+  tanggalPeriksa DateTime
+  catatan        String?
+  /// Scan hasil lab asli (opsional), path `/uploads/lisensi/...`.
+  berkas         String?
+  berkasNama     String?
+  items          LisensiHasilLabItem[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([tahun])
+}
+
+/// Satu parameter hasil lab; `jenis` adalah kelompoknya (Hematologi, Diff Count,
+/// LED, Kimia Darah, Urinalisa, atau jenis lain yang ditambahkan sendiri).
+model LisensiHasilLabItem {
+  id          String          @id @default(cuid())
+  hasilLabId  String
+  hasilLab    LisensiHasilLab @relation(fields: [hasilLabId], references: [id], onDelete: Cascade)
+  urutan      Int
+  jenis       String
+  parameter   String
+  hasil       String
+  satuan      String?
+  nilaiNormal String?
+
+  @@index([hasilLabId])
+}

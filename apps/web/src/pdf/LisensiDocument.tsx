@@ -101,7 +101,8 @@ const styles = StyleSheet.create({
   lampiranImage: { width: '100%', maxHeight: 640, objectFit: 'contain' },
 });
 
-function Kop({ logoSrc }: { readonly logoSrc: string }) {
+/** Kop surat klinik, dipakai juga oleh cetakan Surat Sehat dan Hasil Lab karyawan. */
+export function Kop({ logoSrc }: { readonly logoSrc: string }) {
   return (
     <>
       <View style={styles.headerRow}>

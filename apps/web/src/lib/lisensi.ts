@@ -421,3 +421,17 @@ export function susunCetakLisensi(
   }
   return { bagian, lampiran };
 }
+
+/** ISO → `YYYY-MM-DD` waktu lokal, untuk `<input type="date">`. */
+export function toDateInput(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** `YYYY-MM-DD` → ISO pada tengah hari waktu lokal, supaya tanggalnya tidak bergeser oleh zona waktu. */
+export function fromDateInput(value: string): string | null {
+  if (!value) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1, 12).toISOString();
+}

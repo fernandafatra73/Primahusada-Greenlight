@@ -64,7 +64,17 @@ const NAVBAR_SPECS: readonly NavbarSpec[] = [
   { type: 'link', id: 'sosmed', label: 'Sosmed', icon: IconShare },
   { type: 'link', id: 'rad2', label: 'Rad2', icon: IconStethoscope },
   { type: 'link', id: 'koneksi', label: 'Koneksi', icon: IconShare },
-  { type: 'link', id: 'lisensi', label: 'Lisensi', icon: IconDocument },
+  {
+    type: 'group',
+    groupId: 'lisensi',
+    label: 'Lisensi',
+    icon: IconDocument,
+    items: [
+      { id: 'lisensi', label: 'Perizinan' },
+      { id: 'lisensi-surat-sehat', label: 'Surat Sehat' },
+      { id: 'lisensi-hasil-lab', label: 'Hasil Lab' },
+    ],
+  },
 ];
 
 const ACTIVATION_MENU_KEY = 'aktivasi';

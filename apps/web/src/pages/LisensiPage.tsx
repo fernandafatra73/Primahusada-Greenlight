@@ -12,12 +12,14 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort } from '../lib/format.ts';
 import { readFileAsDataUrl } from '../lib/fotoUpload.ts';
 import {
+  fromDateInput,
   isBerkasPdf,
   jadwalTldBerikutnya,
   langkahBelumAda,
   LISENSI_TABS,
   sisaHari,
   susunCetakLisensi,
+  toDateInput,
   validateLisensiFile,
   type LisensiKategori,
   type LisensiSectionSpec,
@@ -54,20 +56,6 @@ const EMPTY_FORM: EntriForm = {
   berkas: null,
   berkasNama: null,
 };
-
-/** ISO → `YYYY-MM-DD` waktu lokal, untuk `<input type="date">`. */
-function toDateInput(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-/** `YYYY-MM-DD` → ISO pada tengah hari waktu lokal, supaya tanggalnya tidak bergeser oleh zona waktu. */
-function fromDateInput(value: string): string | null {
-  if (!value) return null;
-  const [y, m, d] = value.split('-').map(Number);
-  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1, 12).toISOString();
-}
 
 function isStoredPath(berkas: string | null): berkas is string {
   return berkas !== null && berkas.startsWith('/uploads/');
