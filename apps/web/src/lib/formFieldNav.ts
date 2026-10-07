@@ -10,7 +10,8 @@ export function handleFormFieldNavKeyDown(e: KeyboardEvent<HTMLElement>) {
   if (e.key !== 'Enter' && e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
   const target = e.target;
   if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLSelectElement)) return;
-  e.preventDefault();
+  // File/checkbox/radio punya perilaku Enter/panah sendiri; biarkan apa adanya.
+  if (target instanceof HTMLInputElement && ['file', 'checkbox', 'radio', 'button', 'submit'].includes(target.type)) return;
   const focusable = Array.from(
     e.currentTarget.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select'),
   ).filter((el) => !el.disabled);
@@ -18,7 +19,12 @@ export function handleFormFieldNavKeyDown(e: KeyboardEvent<HTMLElement>) {
   if (index === -1) return;
   const nextIndex = e.key === 'ArrowUp' ? index - 1 : index + 1;
   const nextField = focusable[nextIndex];
-  if (!nextField) return;
+  // Enter di field terakhir tetap mengirim form.
+  if (!nextField) {
+    if (e.key !== 'Enter') e.preventDefault();
+    return;
+  }
+  e.preventDefault();
   nextField.focus();
   if (nextField instanceof HTMLInputElement) nextField.select();
 }

@@ -13,6 +13,7 @@ import {
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { SharingPdfPreviewModal } from '../components/ui/SharingPdfPreviewModal.tsx';
+import { handleFormFieldNavKeyDown } from '../lib/formFieldNav.ts';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort } from '../lib/format.ts';
 import { readFileAsDataUrl } from '../lib/fotoUpload.ts';
@@ -289,13 +290,12 @@ export function HasilLabKaryawanPage() {
   async function cetakForm(): Promise<void> {
     setCetakId('form');
     setFormError(null);
+    const tanggalIso = fromDateInput(form.tanggalPeriksa);
     try {
       const blob = await generateHasilLabKaryawanBlob({
         nama: form.nama,
         jabatan: form.jabatan,
-        tanggalPeriksa: form.tanggalPeriksa
-          ? formatDateShort(fromDateInput(form.tanggalPeriksa))
-          : '',
+        tanggalPeriksa: tanggalIso ? formatDateShort(tanggalIso) : '',
         catatan: form.catatan,
         kelompok: kelompokPerJenis(baris.filter((b) => b.hasil.trim())),
       });
@@ -454,7 +454,9 @@ export function HasilLabKaryawanPage() {
         onClose={() => setFormOpen(false)}
         size="xl"
       >
-        <form onSubmit={(e) => void handleSubmit(e)}>
+        <form
+          onKeyDown={handleFormFieldNavKeyDown}
+          onSubmit={(e) => void handleSubmit(e)}>
           <div className="form-grid">
             <div className="form-field">
               <label htmlFor="hasil-lab-nama">Nama Karyawan *</label>

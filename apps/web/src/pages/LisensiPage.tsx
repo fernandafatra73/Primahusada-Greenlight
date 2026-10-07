@@ -8,6 +8,7 @@ import {
 import { SignaturePad } from '../components/SignaturePad.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { SharingPdfPreviewModal } from '../components/ui/SharingPdfPreviewModal.tsx';
+import { handleFormFieldNavKeyDown } from '../lib/formFieldNav.ts';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort } from '../lib/format.ts';
 import { readFileAsDataUrl } from '../lib/fotoUpload.ts';
@@ -266,7 +267,9 @@ function LisensiSection({
       ) : null}
 
       {showForm ? (
-        <form onSubmit={(e) => void handleSubmit(e)} className="form-grid">
+        <form
+          onKeyDown={handleFormFieldNavKeyDown}
+          onSubmit={(e) => void handleSubmit(e)} className="form-grid">
           <div className="form-field">
             <label htmlFor={`${idPrefix}-nama`}>{spec.namaLabel} *</label>
             <input

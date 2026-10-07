@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { handleFormFieldNavKeyDown } from '../lib/formFieldNav.ts';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort, formatRupiah } from '../lib/format.ts';
 import { generatePjLabReportBlob } from '../pdf/printPjLabReport.tsx';
@@ -181,7 +182,9 @@ export function PjLabModal({ open, onClose }: PjLabModalProps) {
   return (
     <>
       <Modal open={open} title="PJ — Penanggung Jawab Laboratorium" onClose={onClose} size="xl">
-        <form onSubmit={(e) => void handleSubmit(e)} className="form-grid">
+        <form
+          onKeyDown={handleFormFieldNavKeyDown}
+          onSubmit={(e) => void handleSubmit(e)} className="form-grid">
           <div className="form-field">
             <label htmlFor="pj-nama">Nama Penanggung Jawab *</label>
             <input

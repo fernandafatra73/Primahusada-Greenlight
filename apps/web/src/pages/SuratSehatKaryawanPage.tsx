@@ -8,6 +8,7 @@ import { SignaturePad } from '../components/SignaturePad.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { SharingPdfPreviewModal } from '../components/ui/SharingPdfPreviewModal.tsx';
+import { handleFormFieldNavKeyDown } from '../lib/formFieldNav.ts';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatDateShort } from '../lib/format.ts';
 import { fromDateInput, toDateInput } from '../lib/lisensi.ts';
@@ -480,7 +481,9 @@ export function SuratSehatKaryawanPage() {
         onClose={() => setFormOpen(false)}
         size="xl"
       >
-        <form onSubmit={(e) => void handleSubmit(e)}>
+        <form
+          onKeyDown={handleFormFieldNavKeyDown}
+          onSubmit={(e) => void handleSubmit(e)}>
           <h4 style={{ margin: '0 0 0.4rem' }}>Identitas Karyawan</h4>
           <div className="form-grid">{FIELD_IDENTITAS.map(renderField)}</div>
 
