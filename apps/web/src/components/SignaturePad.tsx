@@ -1,4 +1,9 @@
-import { useEffect, useRef, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type PointerEvent } from 'react';
+
+import { readFileAsDataUrl } from '../lib/fotoUpload.ts';
+
+const TIPE_GAMBAR = ['image/png', 'image/jpeg', 'image/webp'];
+const MAKS_BYTE = 2 * 1024 * 1024;
 
 interface SignaturePadProps {
   /** Dipanggil setiap selesai satu goresan (PNG data URL) atau setelah dihapus (`null`). */
@@ -7,7 +12,7 @@ interface SignaturePadProps {
   readonly height?: number;
 }
 
-/** Kotak tanda tangan: digambar dengan mouse, pena, atau jari; hasilnya PNG transparan. */
+/** Kotak tanda tangan: digambar dengan mouse, pena, atau jari, atau diunggah dari file gambar; hasilnya PNG. */
 export function SignaturePad({
   onChange,
   width = 360,
@@ -15,6 +20,7 @@ export function SignaturePad({
 }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
@@ -69,7 +75,40 @@ export function SignaturePad({
   function clear(): void {
     const canvas = canvasRef.current;
     canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    setUploadError(null);
     onChange(null);
+  }
+
+  /** Gambar file diletakkan di kanvas (diskalakan muat, rata tengah) lalu dilaporkan seperti hasil goresan. */
+  async function handleFile(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!TIPE_GAMBAR.includes(file.type)) {
+      setUploadError('File tanda tangan harus berupa gambar PNG, JPG, atau WebP');
+      return;
+    }
+    if (file.size > MAKS_BYTE) {
+      setUploadError('Ukuran file tanda tangan maksimal 2 MB');
+      return;
+    }
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    try {
+      const img = new Image();
+      img.src = await readFileAsDataUrl(file);
+      await img.decode();
+      const skala = Math.min(canvas.width / img.width, canvas.height / img.height, 1);
+      const w = img.width * skala;
+      const h = img.height * skala;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+      setUploadError(null);
+      onChange(canvas.toDataURL('image/png'));
+    } catch {
+      setUploadError('Gagal membaca file tanda tangan');
+    }
   }
 
   return (
@@ -97,7 +136,7 @@ export function SignaturePad({
         }}
         aria-label="Kotak tanda tangan"
       />
-      <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
         <button
           type="button"
           className="btn btn--ghost btn--sm"
@@ -105,7 +144,19 @@ export function SignaturePad({
         >
           Hapus Tanda Tangan
         </button>
+        <label className="btn btn--secondary btn--sm" style={{ cursor: 'pointer', margin: 0 }}>
+          Choose File TTD
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(e) => void handleFile(e)}
+            style={{ display: 'none' }}
+          />
+        </label>
       </div>
+      {uploadError ? (
+        <span className="alert alert--error" style={{ margin: 0 }}>{uploadError}</span>
+      ) : null}
     </div>
   );
 }
