@@ -11,6 +11,7 @@ export interface PrintLisensiInput {
   readonly tanggalCetak: string;
   readonly bagian: ReadonlyArray<LisensiCetakBagian>;
   readonly lampiran: ReadonlyArray<LisensiCetakLampiran>;
+  readonly padat?: boolean;
 }
 
 /** react-pdf hanya membaca PNG/JPEG, sedangkan unggahan bisa GIF/WEBP — gambar
@@ -75,6 +76,7 @@ export async function generateLisensiBlob(
         tanggalCetak: input.tanggalCetak,
         bagian,
         lampiran,
+        padat: input.padat,
       }}
     />,
   ).toBlob();

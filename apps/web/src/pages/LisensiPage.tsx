@@ -699,6 +699,9 @@ export function LisensiPage() {
           judul: tab.judul,
           tanggalCetak: formatDateShort(new Date().toISOString()),
           ...isi,
+          // Cetak Semua = daftar semua nama dalam satu halaman; lampiran dicetak per entri.
+          lampiran: [],
+          padat: true,
         }),
     );
   }

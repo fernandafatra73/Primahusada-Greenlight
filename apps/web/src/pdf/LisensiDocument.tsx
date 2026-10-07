@@ -18,6 +18,8 @@ export interface LisensiDocumentData {
   readonly bagian: ReadonlyArray<LisensiCetakBagian>;
   /** `src` sudah berupa data URL PNG/JPEG yang bisa dibaca react-pdf. */
   readonly lampiran: ReadonlyArray<LisensiCetakLampiran>;
+  /** Cetak ringkas ("Cetak Semua"): baris dan tanda tangan dirapatkan supaya daftar muat satu halaman. */
+  readonly padat?: boolean;
 }
 
 const BLUE = '#2b4c9b';
@@ -97,6 +99,14 @@ const styles = StyleSheet.create({
     width: '100%',
     textAlign: 'center',
   },
+  trRowPadat: { minHeight: 13 },
+  cellPadat: { paddingVertical: 1.5 },
+  thRowPadat: { paddingVertical: 2 },
+  ttdPadat: { width: 70, height: 22, objectFit: 'contain' },
+  sectionTitlePadat: { marginTop: 4, marginBottom: 2 },
+  signatureSectionPadat: { marginTop: 8 },
+  signatureImagePadat: { width: 110, height: 34, objectFit: 'contain' },
+  signatureSpacerPadat: { height: 34 },
   lampiranTitle: { fontSize: 10, fontWeight: 'bold', marginBottom: 8 },
   lampiranImage: { width: '100%', maxHeight: 640, objectFit: 'contain' },
 });
@@ -124,19 +134,28 @@ export function Kop({ logoSrc }: { readonly logoSrc: string }) {
 
 function Tabel({
   bagian,
+  padat,
 }: {
   readonly bagian: Extract<LisensiCetakBagian, { tipe: 'tabel' }>;
+  readonly padat: boolean;
 }) {
   // Kolom No dan tanda tangan berlebar tetap; kolom teks berbagi sisa lebar.
   const kolomTeks = bagian.kolom.slice(1);
   return (
     <View>
-      <Text style={styles.sectionTitle}>{bagian.judul}</Text>
+      <Text
+        style={padat ? [styles.sectionTitle, styles.sectionTitlePadat] : styles.sectionTitle}
+      >
+        {bagian.judul}
+      </Text>
       <View style={styles.table}>
-        <View style={styles.thRow} fixed>
-          <Text style={[styles.cell, styles.colNo]}>{bagian.kolom[0]}</Text>
+        <View
+          style={padat ? [styles.thRow, styles.thRowPadat] : styles.thRow}
+          fixed
+        >
+          <Text style={[styles.cell, padat ? styles.cellPadat : {}, styles.colNo]}>{bagian.kolom[0]}</Text>
           {kolomTeks.map((label) => (
-            <Text key={label} style={[styles.cell, { flex: 1 }]}>
+            <Text key={label} style={[styles.cell, padat ? styles.cellPadat : {}, { flex: 1 }]}>
               {label}
             </Text>
           ))}
@@ -145,17 +164,24 @@ function Tabel({
           ) : null}
         </View>
         {bagian.baris.map((baris, idx) => (
-          <View key={idx} style={styles.trRow} wrap={false}>
-            <Text style={[styles.cell, styles.colNo]}>{baris.sel[0]}</Text>
+          <View
+            key={idx}
+            style={padat ? [styles.trRow, styles.trRowPadat] : styles.trRow}
+            wrap={false}
+          >
+            <Text style={[styles.cell, padat ? styles.cellPadat : {}, styles.colNo]}>{baris.sel[0]}</Text>
             {baris.sel.slice(1).map((isi, col) => (
-              <Text key={col} style={[styles.cell, { flex: 1 }]}>
+              <Text key={col} style={[styles.cell, padat ? styles.cellPadat : {}, { flex: 1 }]}>
                 {isi}
               </Text>
             ))}
             {bagian.kolomTtd ? (
               <View style={[styles.cell, styles.colTtd]}>
                 {baris.ttd ? (
-                  <Image style={styles.ttdSmall} src={baris.ttd} />
+                  <Image
+                    style={padat ? styles.ttdPadat : styles.ttdSmall}
+                    src={baris.ttd}
+                  />
                 ) : (
                   <Text>—</Text>
                 )}
@@ -171,19 +197,27 @@ function Tabel({
 function Pejabat({
   bagian,
   tanggalCetak,
+  padat,
 }: {
   readonly bagian: Extract<LisensiCetakBagian, { tipe: 'pejabat' }>;
   readonly tanggalCetak: string;
+  readonly padat: boolean;
 }) {
   return (
-    <View style={styles.signatureSection} wrap={false}>
+    <View
+      style={padat ? [styles.signatureSection, styles.signatureSectionPadat] : styles.signatureSection}
+      wrap={false}
+    >
       <View style={styles.signatureBox}>
         <Text style={styles.signatureJabatan}>Parung Kuda, {tanggalCetak}</Text>
         <Text style={styles.signatureJabatan}>{bagian.jabatan}</Text>
         {bagian.ttd ? (
-          <Image style={styles.signatureImage} src={bagian.ttd} />
+          <Image
+            style={padat ? styles.signatureImagePadat : styles.signatureImage}
+            src={bagian.ttd}
+          />
         ) : (
-          <View style={styles.signatureSpacer} />
+          <View style={padat ? styles.signatureSpacerPadat : styles.signatureSpacer} />
         )}
         <Text style={styles.signatureName}>{bagian.nama}</Text>
       </View>
@@ -213,12 +247,13 @@ export function LisensiDocument({
           ) : null}
           {data.bagian.map((bagian, idx) =>
             bagian.tipe === 'tabel' ? (
-              <Tabel key={idx} bagian={bagian} />
+              <Tabel key={idx} bagian={bagian} padat={data.padat === true} />
             ) : (
               <Pejabat
                 key={idx}
                 bagian={bagian}
                 tanggalCetak={data.tanggalCetak}
+                padat={data.padat === true}
               />
             ),
           )}
