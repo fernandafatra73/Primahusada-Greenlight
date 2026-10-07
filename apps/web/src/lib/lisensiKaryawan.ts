@@ -166,6 +166,78 @@ export function pilihanTahun(
   );
 }
 
+/** Angka gaya Indonesia ("4.000", "4,5") menjadi number; `null` kalau bukan angka. */
+function parseAngkaId(token: string): number | null {
+  const t = token.replace(/[.,]+$/, '');
+  const normal = t.includes(',')
+    ? t.replace(/\./g, '').replace(',', '.')
+    : /^\d{1,3}(\.\d{3})+$/.test(t)
+      ? t.replace(/\./g, '')
+      : t;
+  const n = Number(normal);
+  return Number.isFinite(n) ? n : null;
+}
+
+function jumlahDesimal(token: string): number {
+  const t = token.replace(/[.,]+$/, '');
+  const idx = t.indexOf(',');
+  if (idx !== -1) return t.length - idx - 1;
+  return /^\d{1,3}(\.\d{3})+$/.test(t) ? 0 : (t.split('.')[1]?.length ?? 0);
+}
+
+function formatAngkaId(n: number, desimal: number): string {
+  const [bulat = '0', pecahan] = n.toFixed(desimal).split('.');
+  const ribuan = bulat.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return pecahan ? `${ribuan},${pecahan}` : ribuan;
+}
+
+interface Rentang {
+  readonly lo: number;
+  readonly hi: number;
+}
+
+/** Rentang normal dari satu potongan teks: "a–b" apa adanya, "< x" / "≤ x" dianggap 60%–100% batas. */
+function rentangDariTeks(teks: string): { rentang: Rentang; desimal: number } | null {
+  const tokens = teks.match(/\d[\d.,]*/g) ?? [];
+  const angka = tokens.map(parseAngkaId);
+  const desimal = Math.max(0, ...tokens.map(jumlahDesimal));
+  const a = angka[0];
+  if (a === null || a === undefined) return null;
+  const b = angka[1];
+  if (/[<≤]/.test(teks) || b === null || b === undefined) {
+    return { rentang: { lo: a * 0.6, hi: a }, desimal };
+  }
+  return { rentang: { lo: Math.min(a, b), hi: Math.max(a, b) }, desimal };
+}
+
+/**
+ * Nilai tengah yang aman dari teks nilai normal, untuk tombol "Normal" di form hasil lab.
+ * Teks tanpa angka ("Negatif", "Kuning") dipakai apa adanya. Nilai per jenis kelamin
+ * ("L 13–17 / P 12–15") memakai irisan kedua rentang, atau rentang L bila tidak beririsan,
+ * karena form ini tidak mencatat jenis kelamin.
+ */
+export function isiNormal(nilaiNormal: string): string {
+  const teks = nilaiNormal.trim();
+  if (!teks || !/\d/.test(teks)) return teks;
+  const bagian = /^L\s.*\/\s*P\s/.test(teks)
+    ? teks.split('/').map((p) => rentangDariTeks(p))
+    : [rentangDariTeks(teks)];
+  const pertama = bagian[0];
+  if (!pertama) return teks;
+  let { lo, hi } = pertama.rentang;
+  const kedua = bagian[1];
+  if (kedua) {
+    const irisLo = Math.max(lo, kedua.rentang.lo);
+    const irisHi = Math.min(hi, kedua.rentang.hi);
+    if (irisLo <= irisHi) {
+      lo = irisLo;
+      hi = irisHi;
+    }
+  }
+  const desimal = Math.max(...bagian.map((b) => b?.desimal ?? 0));
+  return formatAngkaId((lo + hi) / 2, desimal);
+}
+
 export const KESIMPULAN_LABEL: Readonly<Record<string, string>> = {
   SEHAT: 'Sehat',
   TIDAK_SEHAT: 'Tidak Sehat',

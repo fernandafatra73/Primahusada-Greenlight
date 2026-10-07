@@ -27,6 +27,7 @@ import {
   barisUntukJenis,
   JENIS_LAB_BAWAAN,
   kelompokPerJenis,
+  isiNormal,
   pilihanTahun,
   type HasilLabBaris,
 } from '../lib/lisensiKaryawan.ts';
@@ -165,6 +166,19 @@ export function HasilLabKaryawanPage() {
     setBaris((list) =>
       list.map((b) => (b.key === key ? { ...b, [field]: value } : b)),
     );
+  }
+
+  /** Isi kolom Hasil semua baris dengan nilai normalnya; baris tanpa nilai normal tidak diubah. */
+  function isiSemuaNormal(): void {
+    setBaris((list) =>
+      list.map((b) =>
+        b.nilaiNormal.trim() ? { ...b, hasil: isiNormal(b.nilaiNormal) } : b,
+      ),
+    );
+  }
+
+  function kosongkanSemuaHasil(): void {
+    setBaris((list) => list.map((b) => ({ ...b, hasil: '' })));
   }
 
   function tambahParameter(jenis: string): void {
@@ -563,6 +577,24 @@ export function HasilLabKaryawanPage() {
             Isi kolom Hasil untuk parameter yang diperiksa; parameter dengan
             hasil kosong tidak disimpan. Terisi: <strong>{terisi}</strong>.
           </p>
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              title="Isi hasil semua pemeriksaan dengan nilai normal"
+              onClick={isiSemuaNormal}
+            >
+              Normal
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              title="Kosongkan hasil semua pemeriksaan"
+              onClick={kosongkanSemuaHasil}
+            >
+              Kosongkan
+            </button>
+          </div>
 
           {kelompokPerJenis(baris).map((k) => (
             <fieldset

@@ -9,6 +9,7 @@ import {
   barisUntukJenis,
   JENIS_LAB_BAWAAN,
   kelompokPerJenis,
+  isiNormal,
   pilihanTahun,
 } from '../../apps/web/src/lib/lisensiKaryawan.ts';
 
@@ -223,5 +224,24 @@ describe('hasil lab form helpers', () => {
     expect(pilihanTahun([2019], 2023, 2021)).toEqual([
       2023, 2022, 2021, 2019,
     ]);
+  });
+  test('isiNormal picks a value inside the normal range', () => {
+    expect(isiNormal('4.000–10.000')).toBe('7.000');
+    expect(isiNormal('4,5–8,0')).toBe('6,3');
+    expect(isiNormal('0–5')).toBe('3');
+  });
+
+  test('isiNormal copies non-numeric normal values as-is', () => {
+    expect(isiNormal('Negatif')).toBe('Negatif');
+    expect(isiNormal('Kuning')).toBe('Kuning');
+    expect(isiNormal('')).toBe('');
+  });
+
+  test('isiNormal handles upper limits and per-gender ranges', () => {
+    expect(isiNormal('< 200')).toBe('160');
+    expect(isiNormal('L 13–17 / P 12–15')).toBe('14');
+    expect(isiNormal('L 40–50 / P 35–45')).toBe('43');
+    // Tidak beririsan: pakai rentang L.
+    expect(isiNormal('L 10–12 / P 20–22')).toBe('11');
   });
 });
