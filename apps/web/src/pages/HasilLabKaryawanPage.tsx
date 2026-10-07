@@ -285,6 +285,34 @@ export function HasilLabKaryawanPage() {
     }
   }
 
+  /** Cetak isi form apa adanya (termasuk yang belum disimpan); baris tanpa hasil dilewati. */
+  async function cetakForm(): Promise<void> {
+    setCetakId('form');
+    setFormError(null);
+    try {
+      const blob = await generateHasilLabKaryawanBlob({
+        nama: form.nama,
+        jabatan: form.jabatan,
+        tanggalPeriksa: form.tanggalPeriksa
+          ? formatDateShort(fromDateInput(form.tanggalPeriksa))
+          : '',
+        catatan: form.catatan,
+        kelompok: kelompokPerJenis(baris.filter((b) => b.hasil.trim())),
+      });
+      setPreview({
+        blob,
+        filename: `Hasil_Lab_${form.nama || 'Karyawan'}_${form.tanggalPeriksa.slice(0, 4) || tahun}.pdf`.replace(
+          /[^\w.-]+/g,
+          '_',
+        ),
+      });
+    } catch (err: unknown) {
+      setFormError(errorMessage(err, 'Gagal membuat PDF hasil lab'));
+    } finally {
+      setCetakId(null);
+    }
+  }
+
   const jenisDiForm = new Set(baris.map((b) => b.jenis.toLowerCase()));
   const jenisBawaanTersisa = JENIS_LAB_BAWAAN.filter(
     (j) => !jenisDiForm.has(j.jenis.toLowerCase()),
@@ -693,6 +721,14 @@ export function HasilLabKaryawanPage() {
               disabled={saving}
             >
               {saving ? 'Menyimpan...' : 'Simpan'}
+            </button>
+            <button
+              type="button"
+              className="btn btn--secondary"
+              disabled={cetakId !== null || terisi === 0 || !form.nama.trim()}
+              onClick={() => void cetakForm()}
+            >
+              {cetakId === 'form' ? 'Menyiapkan...' : '🖨️ Cetak'}
             </button>
             <button
               type="button"
