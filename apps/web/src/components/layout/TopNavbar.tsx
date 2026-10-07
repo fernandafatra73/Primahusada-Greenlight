@@ -64,6 +64,7 @@ const NAVBAR_SPECS: readonly NavbarSpec[] = [
   { type: 'link', id: 'sosmed', label: 'Sosmed', icon: IconShare },
   { type: 'link', id: 'rad2', label: 'Rad2', icon: IconStethoscope },
   { type: 'link', id: 'koneksi', label: 'Koneksi', icon: IconShare },
+  { type: 'link', id: 'lisensi', label: 'Lisensi', icon: IconDocument },
 ];
 
 const ACTIVATION_MENU_KEY = 'aktivasi';

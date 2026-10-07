@@ -25,6 +25,12 @@ describe('saveImageDataUrl', () => {
     expect(existsSync(join(UPLOADS_DIR, url.slice('/uploads/'.length)))).toBe(true);
   });
 
+  test('saves a PDF data URL with a .pdf extension so it is served as a PDF', () => {
+    const url = saveImageDataUrl('data:application/pdf;base64,JVBERi0xLjQK', TEST_SUBDIR);
+
+    expect(url).toMatch(new RegExp(`^/uploads/${TEST_SUBDIR}/[\\w-]+\\.pdf$`));
+  });
+
   test('returns non-data-url values unchanged (already-stored path)', () => {
     const stored = `/uploads/${TEST_SUBDIR}/existing.jpg`;
 

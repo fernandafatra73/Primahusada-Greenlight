@@ -15,6 +15,9 @@ const IMAGE_EXTENSION_BY_MEDIA_TYPE: Record<string, string> = {
   'image/png': 'png',
   'image/gif': 'gif',
   'image/webp': 'webp',
+  // Surat perizinan (menu Lisensi) sering berupa scan PDF; ekstensi yang
+  // benar membuat @fastify/static menyajikannya sebagai application/pdf.
+  'application/pdf': 'pdf',
 };
 
 const DATA_URL_PATTERN = /^data:([a-zA-Z0-9/+.-]+);base64,(.+)$/s;

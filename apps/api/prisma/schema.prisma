@@ -1213,3 +1213,26 @@ model LabPenanggungJawab {
 
   @@index([tanggal])
 }
+
+/// Berkas perizinan klinik — isi tombol "Lisensi" di navbar. Satu tabel untuk
+/// kedelapan tab (RT/RW, Desa, Camat, Puskesmas, Dinas, Film Badge, Bapeten,
+/// Terpadu): `kategori` memilih tab, `jenis` memilih bagian di dalam tab (mis.
+/// daftar tanda tangan warga vs. tanda tangan Ketua RW). Daftar pasangan yang
+/// sah ada di `apps/api/src/lib/lisensi.ts`.
+model LisensiEntri {
+  id         String    @id @default(cuid())
+  kategori   String
+  jenis      String
+  nama       String
+  keterangan String?
+  tanggal    DateTime?
+  /// Path `/uploads/lisensi/...`: gambar tanda tangan atau surat yang diunggah.
+  berkas     String?
+  /// Nama file asli, dipakai saat surat diunduh kembali.
+  berkasNama String?
+  selesai    Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([kategori, jenis])
+}

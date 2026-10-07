@@ -72,6 +72,7 @@ import { PetugasLabPage } from './pages/PetugasLabPage.tsx';
 import { RadiologMasterPage } from './pages/RadiologMasterPage.tsx';
 import { RadiograferPage } from './pages/RadiograferPage.tsx';
 import { KoneksiPhPage } from './pages/KoneksiPhPage.tsx';
+import { LisensiPage } from './pages/LisensiPage.tsx';
 import { KondisiAlatPage } from './pages/KondisiAlatPage.tsx';
 import { LogbookPasienPage } from './pages/LogbookPasienPage.tsx';
 import { GajiKaryawanPage } from './pages/GajiKaryawanPage.tsx';
@@ -327,6 +328,8 @@ function renderViewContent(
       return <Rad2Page />;
     case 'koneksi':
       return <KoneksiPhPage />;
+    case 'lisensi':
+      return <LisensiPage />;
     case 'global-warm':
       return <GlobalWarmPage />;
     case 'daftar-akun':
