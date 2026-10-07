@@ -151,6 +151,7 @@ export interface HasilLabData {
   readonly nama: string;
   readonly jabatan: string | null;
   readonly catatan: string | null;
+  readonly namaAnalis: string | null;
   readonly items: ReadonlyArray<HasilLabItemData>;
 }
 
@@ -175,6 +176,10 @@ export function parseHasilLabBody(
   const catatan = teksOpsional(body.catatan, CATATAN_MAX);
   if (catatan === undefined)
     return { ok: false, error: `Catatan maksimal ${CATATAN_MAX} karakter` };
+
+  const namaAnalis = teksOpsional(body.namaAnalis);
+  if (namaAnalis === undefined)
+    return { ok: false, error: 'Nama analis tidak valid' };
 
   const rawItems = body.items ?? [];
   if (!Array.isArray(rawItems))
@@ -218,6 +223,7 @@ export function parseHasilLabBody(
       nama,
       jabatan,
       catatan,
+      namaAnalis,
       items,
     },
   };

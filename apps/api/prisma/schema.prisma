@@ -1282,6 +1282,9 @@ model LisensiHasilLab {
   /// Scan hasil lab asli (opsional), path `/uploads/lisensi/...`.
   berkas         String?
   berkasNama     String?
+  /// Analis yang memeriksa; tanda tangan berupa path `/uploads/lisensi/...`.
+  namaAnalis     String?
+  ttdAnalis      String?
   items          LisensiHasilLabItem[]
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt

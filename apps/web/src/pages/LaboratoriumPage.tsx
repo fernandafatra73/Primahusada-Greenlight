@@ -1011,6 +1011,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
           open={true}
           onClose={() => setSelected(null)}
           size="xl"
+          className="modal--penuh"
         >
           {/* Top section: Form full-width */}
           <form onSubmit={(e) => void handleSave(e)}>
@@ -1125,7 +1126,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                     </button>
                   </div>
                 </div>
-                <div style={{ overflowY: 'auto', maxHeight: '240px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)' }}>
+                <div style={{ overflowY: 'auto', maxHeight: 'max(240px, calc(100vh - 26rem))', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)' }}>
                   <table className="data-table" style={{ fontSize: '0.85rem', marginBottom: 0 }}>
                     <thead>
                       <tr>

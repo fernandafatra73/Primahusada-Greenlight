@@ -554,6 +554,13 @@
   width: 96vw;
 }
 
+/* Hampir layar penuh, untuk form yang padat seperti Input Hasil Laboratorium. */
+.modal--penuh {
+  max-width: 98vw;
+  width: 98vw;
+  max-height: calc(100vh - 1rem);
+}
+
 .form-grid--wide {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

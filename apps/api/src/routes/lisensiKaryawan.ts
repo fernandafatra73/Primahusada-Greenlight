@@ -187,10 +187,13 @@ export async function registerLisensiKaryawanRoutes(
     if (!parsed.ok) return badRequest(reply, parsed.error);
     const berkas = resolveBerkas(req.body.berkas, null);
     if ('error' in berkas) return badRequest(reply, berkas.error);
+    const ttd = resolveBerkas(req.body.ttdAnalis, null);
+    if ('error' in ttd) return badRequest(reply, ttd.error);
     const { items, ...data } = parsed.data;
     const item = await prisma.lisensiHasilLab.create({
       data: {
         ...data,
+        ttdAnalis: ttd.berkas,
         berkas: berkas.berkas,
         berkasNama:
           berkas.berkas && typeof req.body.berkasNama === 'string'
@@ -220,6 +223,8 @@ export async function registerLisensiKaryawanRoutes(
         : berkas.berkas && typeof req.body.berkasNama === 'string'
           ? req.body.berkasNama.trim() || null
           : null;
+      const ttd = resolveBerkas(req.body.ttdAnalis, existing.ttdAnalis);
+      if ('error' in ttd) return badRequest(reply, ttd.error);
       const { items, ...data } = parsed.data;
       // Daftar parameter diganti utuh: lebih sederhana daripada mencocokkan baris satu per satu.
       const [, item] = await prisma.$transaction([
@@ -230,6 +235,7 @@ export async function registerLisensiKaryawanRoutes(
           where: { id: existing.id },
           data: {
             ...data,
+            ttdAnalis: ttd.berkas,
             berkas: berkas.berkas,
             berkasNama,
             items: { create: [...items] },
@@ -238,6 +244,7 @@ export async function registerLisensiKaryawanRoutes(
         }),
       ]);
       if (berkas.berubah) deleteStoredImage(existing.berkas);
+      if (ttd.berubah) deleteStoredImage(existing.ttdAnalis);
       return { item: serializeHasilLab(item) };
     },
   );
@@ -252,6 +259,7 @@ export async function registerLisensiKaryawanRoutes(
         return reply.status(404).send({ error: 'Hasil lab tidak ditemukan' });
       await prisma.lisensiHasilLab.delete({ where: { id: existing.id } });
       deleteStoredImage(existing.berkas);
+      deleteStoredImage(existing.ttdAnalis);
       return { ok: true };
     },
   );

@@ -209,6 +209,8 @@ export interface HasilLabKaryawanData {
   readonly jabatan: string | null;
   readonly tanggalPeriksa: string;
   readonly catatan: string | null;
+  readonly namaAnalis: string | null;
+  readonly ttdAnalis: string | null;
   readonly kelompok: ReadonlyArray<{
     readonly jenis: string;
     readonly baris: ReadonlyArray<{
@@ -272,6 +274,23 @@ export function HasilLabKaryawanDocument({
               Catatan: {data.catatan}
             </Text>
           ) : null}
+
+          <View style={styles.signatureSection} wrap={false}>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureText}>
+                Parung Kuda, {data.tanggalPeriksa}
+              </Text>
+              <Text style={styles.signatureText}>Analis Pemeriksa</Text>
+              {data.ttdAnalis ? (
+                <Image style={styles.signatureImage} src={data.ttdAnalis} />
+              ) : (
+                <View style={styles.signatureSpacer} />
+              )}
+              <Text style={styles.signatureName}>
+                {data.namaAnalis?.trim() || '(................)'}
+              </Text>
+            </View>
+          </View>
         </View>
       </Page>
     </Document>

@@ -114,6 +114,7 @@ describe('parseHasilLabBody', () => {
         nama: 'Ani',
         jabatan: null,
         catatan: null,
+        namaAnalis: null,
         items: [
           {
             urutan: 0,
@@ -133,6 +134,20 @@ describe('parseHasilLabBody', () => {
           },
         ],
       },
+    });
+  });
+
+  test('trims the analyst name and treats a blank one as absent', () => {
+    expect(
+      parseHasilLabBody({ ...valid, namaAnalis: '  Budi  ' }),
+    ).toMatchObject({ ok: true, data: { namaAnalis: 'Budi' } });
+    expect(parseHasilLabBody({ ...valid, namaAnalis: '  ' })).toMatchObject({
+      ok: true,
+      data: { namaAnalis: null },
+    });
+    expect(parseHasilLabBody({ ...valid, namaAnalis: 5 })).toEqual({
+      ok: false,
+      error: 'Nama analis tidak valid',
     });
   });
 

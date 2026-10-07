@@ -8,8 +8,10 @@ import {
 } from 'react';
 import {
   TahunSelect,
+  TtdTersimpanSelect,
   useDaftarKaryawan,
 } from '../components/LisensiKaryawanShared.tsx';
+import { SignaturePad } from '../components/SignaturePad.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { SharingPdfPreviewModal } from '../components/ui/SharingPdfPreviewModal.tsx';
@@ -42,6 +44,8 @@ interface HasilLabItem {
   readonly catatan: string | null;
   readonly berkas: string | null;
   readonly berkasNama: string | null;
+  readonly namaAnalis: string | null;
+  readonly ttdAnalis: string | null;
   readonly items: ReadonlyArray<{
     readonly jenis: string;
     readonly parameter: string;
@@ -61,6 +65,8 @@ interface LabForm {
   readonly catatan: string;
   readonly berkas: string | null;
   readonly berkasNama: string | null;
+  readonly namaAnalis: string;
+  readonly ttdAnalis: string | null;
 }
 
 const JENIS_LAIN = '__lain__';
@@ -88,7 +94,11 @@ export function HasilLabKaryawanPage() {
     catatan: '',
     berkas: null,
     berkasNama: null,
+    namaAnalis: '',
+    ttdAnalis: null,
   });
+  const [ttdDariPad, setTtdDariPad] = useState(true);
+  const [padKey, setPadKey] = useState(0);
   const [baris, setBaris] = useState<readonly BarisForm[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -140,7 +150,11 @@ export function HasilLabKaryawanPage() {
       catatan: item?.catatan ?? '',
       berkas: item?.berkas ?? null,
       berkasNama: item?.berkasNama ?? null,
+      namaAnalis: item?.namaAnalis ?? '',
+      ttdAnalis: item?.ttdAnalis ?? null,
     });
+    setTtdDariPad(!item?.ttdAnalis);
+    setPadKey((k) => k + 1);
     setBaris(
       denganKey(
         item
@@ -284,6 +298,8 @@ export function HasilLabKaryawanPage() {
         jabatan: item.jabatan,
         tanggalPeriksa: formatDateShort(item.tanggalPeriksa),
         catatan: item.catatan,
+        namaAnalis: item.namaAnalis,
+        ttdAnalis: item.ttdAnalis,
         kelompok: kelompokPerJenis(item.items),
       });
       setPreview({
@@ -311,6 +327,8 @@ export function HasilLabKaryawanPage() {
         jabatan: form.jabatan,
         tanggalPeriksa: tanggalIso ? formatDateShort(tanggalIso) : '',
         catatan: form.catatan,
+        namaAnalis: form.namaAnalis,
+        ttdAnalis: form.ttdAnalis,
         kelompok: kelompokPerJenis(baris.filter((b) => b.hasil.trim())),
       });
       setPreview({
@@ -745,6 +763,65 @@ export function HasilLabKaryawanPage() {
             >
               + Tambah Jenis
             </button>
+          </div>
+
+          <h4 style={{ margin: '1rem 0 0.4rem' }}>Analis Pemeriksa</h4>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="hasil-lab-analis">Nama Analis</label>
+              <input
+                id="hasil-lab-analis"
+                maxLength={200}
+                value={form.namaAnalis}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, namaAnalis: e.target.value }))
+                }
+              />
+            </div>
+            <div className="form-field form-field--full">
+              <label>Tanda Tangan Analis</label>
+              {!ttdDariPad && form.ttdAnalis ? (
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
+                >
+                  <img
+                    src={form.ttdAnalis}
+                    alt="Tanda tangan analis"
+                    style={{ height: '70px', background: '#fff' }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => {
+                      setForm((f) => ({ ...f, ttdAnalis: null }));
+                      setTtdDariPad(true);
+                      setPadKey((k) => k + 1);
+                    }}
+                  >
+                    Gambar Ulang
+                  </button>
+                </div>
+              ) : (
+                <SignaturePad
+                  key={padKey}
+                  onChange={(dataUrl) =>
+                    setForm((f) => ({ ...f, ttdAnalis: dataUrl }))
+                  }
+                />
+              )}
+            </div>
+            <TtdTersimpanSelect
+              id="hasil-lab-ttd-tersimpan"
+              onPilih={(dataUrl, nama) => {
+                setForm((f) => ({
+                  ...f,
+                  ttdAnalis: dataUrl,
+                  namaAnalis: f.namaAnalis || nama,
+                }));
+                setTtdDariPad(false);
+              }}
+              onError={setFormError}
+            />
           </div>
 
           {formError ? <p className="alert alert--error">{formError}</p> : null}
