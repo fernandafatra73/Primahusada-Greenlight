@@ -215,4 +215,13 @@ describe('hasil lab form helpers', () => {
     expect(pilihanTahun([2024, 2026, 2025], 2026)).toEqual([2026, 2025, 2024]);
     expect(pilihanTahun([], 2026)).toEqual([2026]);
   });
+
+  test('pilihanTahun lists every year from tahunAwal, keeping earlier years that have data', () => {
+    expect(pilihanTahun([], 2026, 2021)).toEqual([
+      2026, 2025, 2024, 2023, 2022, 2021,
+    ]);
+    expect(pilihanTahun([2019], 2023, 2021)).toEqual([
+      2023, 2022, 2021, 2019,
+    ]);
+  });
 });

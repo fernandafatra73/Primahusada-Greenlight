@@ -63,6 +63,9 @@ interface LabForm {
 
 const JENIS_LAIN = '__lain__';
 
+/** Arsip hasil lab karyawan dimulai dari tahun 2021. */
+const TAHUN_AWAL_ARSIP = 2021;
+
 function errorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
 }
@@ -311,7 +314,7 @@ export function HasilLabKaryawanPage() {
         <TahunSelect
           id="hasil-lab-tahun"
           value={tahun}
-          pilihan={pilihanTahun(tahunTersedia, tahunIni)}
+          pilihan={pilihanTahun(tahunTersedia, tahunIni, TAHUN_AWAL_ARSIP)}
           onChange={setTahun}
         />
         <button

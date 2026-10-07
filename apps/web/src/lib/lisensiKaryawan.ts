@@ -147,12 +147,23 @@ export function kelompokPerJenis<T extends { readonly jenis: string }>(
   return [...kelompok].map(([jenis, list]) => ({ jenis, baris: list }));
 }
 
-/** Pilihan tahun di dropdown arsip: tahun yang punya data plus tahun ini, terbaru dulu. */
+/**
+ * Pilihan tahun di dropdown arsip: tahun yang punya data plus tahun ini, terbaru dulu.
+ * Dengan `tahunAwal`, setiap tahun dari `tahunAwal` sampai tahun ini ikut ditampilkan
+ * walau belum ada datanya (arsip yang dimulai dari tahun tertentu).
+ */
 export function pilihanTahun(
   tahunTersedia: ReadonlyArray<number>,
   tahunIni: number,
+  tahunAwal?: number,
 ): number[] {
-  return [...new Set([tahunIni, ...tahunTersedia])].sort((a, b) => b - a);
+  const rentang: number[] = [];
+  if (tahunAwal !== undefined) {
+    for (let t = tahunAwal; t <= tahunIni; t += 1) rentang.push(t);
+  }
+  return [...new Set([tahunIni, ...rentang, ...tahunTersedia])].sort(
+    (a, b) => b - a,
+  );
 }
 
 export const KESIMPULAN_LABEL: Readonly<Record<string, string>> = {
