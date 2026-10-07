@@ -14,6 +14,24 @@ const BLACK = '#1a1a1a';
 const styles = StyleSheet.create({
   page: { padding: 14, fontFamily: 'Helvetica', fontSize: 10, color: BLACK },
   frame: { borderWidth: 1.5, borderColor: BLUE, padding: 18, flexGrow: 1 },
+  // Hasil lab bisa lebih dari satu halaman: bingkai digambar `fixed` supaya muncul di tiap
+  // halaman, dan isi diberi jarak sendiri agar tidak menimpa garis bingkai.
+  pageBerbingkai: {
+    paddingHorizontal: 14 + 18,
+    paddingVertical: 14 + 18,
+    fontFamily: 'Helvetica',
+    fontSize: 10,
+    color: BLACK,
+  },
+  bingkaiTetap: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    right: 14,
+    bottom: 14,
+    borderWidth: 1.5,
+    borderColor: BLUE,
+  },
   title: {
     fontSize: 13,
     fontWeight: 'bold',
@@ -230,8 +248,9 @@ export function HasilLabKaryawanDocument({
 }) {
   return (
     <Document title={`Hasil_Lab_${data.nama}`}>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.frame}>
+      <Page size="A4" style={styles.pageBerbingkai}>
+        <View style={styles.bingkaiTetap} fixed />
+        <View>
           <Kop logoSrc={data.logoSrc} />
           <Text style={[styles.title, { marginBottom: 12 }]}>
             Hasil Pemeriksaan Laboratorium
