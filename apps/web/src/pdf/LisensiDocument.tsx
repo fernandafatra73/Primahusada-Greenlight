@@ -78,6 +78,7 @@ const styles = StyleSheet.create({
   cell: { paddingHorizontal: 4, paddingVertical: 3 },
   colNo: { width: 28, textAlign: 'center' },
   colTtd: { width: 120, alignItems: 'center' },
+  colTtdPadat: { width: 70 },
   ttdSmall: { width: 100, height: 36, objectFit: 'contain' },
   signatureSection: {
     flexDirection: 'row',
@@ -99,14 +100,14 @@ const styles = StyleSheet.create({
     width: '100%',
     textAlign: 'center',
   },
-  trRowPadat: { minHeight: 13 },
-  cellPadat: { paddingVertical: 1.5 },
+  trRowPadat: { minHeight: 12 },
+  cellPadat: { paddingVertical: 1 },
   thRowPadat: { paddingVertical: 2 },
-  ttdPadat: { width: 70, height: 22, objectFit: 'contain' },
+  ttdPadat: { width: 50, height: 16, objectFit: 'contain' },
   sectionTitlePadat: { marginTop: 4, marginBottom: 2 },
-  signatureSectionPadat: { marginTop: 8 },
-  signatureImagePadat: { width: 110, height: 34, objectFit: 'contain' },
-  signatureSpacerPadat: { height: 34 },
+  signatureSectionPadat: { marginTop: 6 },
+  signatureImagePadat: { width: 90, height: 28, objectFit: 'contain' },
+  signatureSpacerPadat: { height: 28 },
   lampiranTitle: { fontSize: 10, fontWeight: 'bold', marginBottom: 8 },
   lampiranImage: { width: '100%', maxHeight: 640, objectFit: 'contain' },
 });
@@ -176,7 +177,13 @@ function Tabel({
               </Text>
             ))}
             {bagian.kolomTtd ? (
-              <View style={[styles.cell, styles.colTtd]}>
+              <View
+                style={[
+                  styles.cell,
+                  styles.colTtd,
+                  padat ? styles.colTtdPadat : {},
+                ]}
+              >
                 {baris.ttd ? (
                   <Image
                     style={padat ? styles.ttdPadat : styles.ttdSmall}
