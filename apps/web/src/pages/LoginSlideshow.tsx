@@ -57,7 +57,12 @@ export function LoginSlideshow() {
               </p>
             ) : null}
 
-            {/* Judul dan isi hanya untuk slide yang fotonya belum ada; foto slide sudah memuat tulisannya sendiri. */}
+            {/* Foto slide biasanya sudah memuat tulisannya sendiri; judul ditempel hanya bila diminta. */}
+            {photo && slide.titleOnPhoto && slide.title !== null ? (
+              <h2 className="login-slide__photo-title">{slide.title}</h2>
+            ) : null}
+
+            {/* Tanpa foto: kartu berwarna berisi judul dan isi slide. */}
             {!photo ? (
               <div className="login-slide__caption login-slide__caption--card">
                 <h2 className="login-slide__title">{slide.title ?? 'Klinik Prima Husada'}</h2>

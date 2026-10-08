@@ -13,6 +13,10 @@ describe('LOGIN_SLIDES', () => {
     expect(LOGIN_SLIDES[2]).toMatchObject({ title: 'Radiologi', items: ['Alat Rontgen', 'Alat USG', 'Ruang Operator'] });
     expect(LOGIN_SLIDES[3]).toMatchObject({ title: 'Lab', items: ['Rayto 7600', 'Fotometer', 'Ruang Laboratorium'] });
   });
+
+  test('only the lab slide puts its title on the photo', () => {
+    expect(LOGIN_SLIDES.filter((s) => s.titleOnPhoto).map((s) => s.id)).toEqual(['laboratorium']);
+  });
 });
 
 describe('slideImageUrl', () => {

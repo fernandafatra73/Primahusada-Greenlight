@@ -70,6 +70,24 @@
   transform: scale(1.1);
 }
 
+/* Judul yang ditempel di atas foto (mis. "LAB"): kiri atas, label biru seperti pada foto kolase. */
+.login-slide__photo-title {
+  position: absolute;
+  top: clamp(2.5rem, 7vh, 4rem);
+  left: clamp(1.5rem, 6vw, 5rem);
+  z-index: 1;
+  margin: 0;
+  padding: 0.35rem 1.6rem;
+  border-left: 6px solid #f1c40f;
+  background: linear-gradient(90deg, #0b3d91 0%, #1d6fc4 100%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 /* Tanpa foto: judul besar dan isi slide di tengah kartu berwarna. */
 .login-slide__caption--card {
   position: absolute;

@@ -10,6 +10,8 @@ export interface LoginSlide {
   readonly id: string;
   /** Judul besar pada kartu pengganti foto; null untuk slide sambutan. */
   readonly title: string | null;
+  /** Judul juga ditempel di atas foto, untuk foto yang tidak memuat tulisan namanya sendiri. */
+  readonly titleOnPhoto?: boolean;
   /** Isi slide, ditampilkan di bawah judul. */
   readonly items: readonly string[];
   readonly durationMs: number;
@@ -27,6 +29,7 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
   {
     id: 'laboratorium',
     title: 'Lab',
+    titleOnPhoto: true,
     items: ['Rayto 7600', 'Fotometer', 'Ruang Laboratorium'],
     durationMs: MINUTE_MS,
   },
