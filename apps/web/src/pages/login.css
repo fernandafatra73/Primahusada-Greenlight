@@ -320,6 +320,35 @@
   to { transform: translate(105vw, 8vh) rotate(10deg); }
 }
 
+/* Pesawat kedua (45-80 s), di landasan bawah selagi pesawat pertama melintas:
+   muncul, mundur pelan ke kanan (pushback, hidung tetap ke kiri), berhenti, lalu melaju
+   ke kiri makin cepat dan naik dengan sudut 20 derajat (badan dan lintasan).
+   Foto aslinya miring 16 derajat: di darat rotate(-16deg) = datar, terbang rotate(4deg) = 20. */
+.takeoff__second {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 24vw;
+  opacity: 0;
+  transform: translate(56vw, 70vh) rotate(-16deg);
+}
+
+.login-slide--active .takeoff__second {
+  animation: takeoff-second 35s linear 45s both;
+}
+
+@keyframes takeoff-second {
+  0% { opacity: 0; transform: translate(56vw, 70vh) rotate(-16deg); }
+  6% { opacity: 1; transform: translate(56vw, 70vh) rotate(-16deg); }
+  9% { opacity: 1; transform: translate(56vw, 70vh) rotate(-16deg); animation-timing-function: ease-in-out; }
+  31% { opacity: 1; transform: translate(67vw, 70vh) rotate(-16deg); }
+  37% { opacity: 1; transform: translate(67vw, 70vh) rotate(-16deg); animation-timing-function: ease-in; }
+  60% { opacity: 1; transform: translate(30vw, 70vh) rotate(-16deg); }
+  68% { opacity: 1; transform: translate(16vw, 64vh) rotate(4deg); }
+  100% { opacity: 1; transform: translate(-46vw, 25vh) rotate(4deg); }
+}
+
 /* Awan di ketinggian jelajah: lapisan belakang di bawah pesawat, lapisan depan menutupi
    pesawat sesaat saat melintas. Muncul menjelang fase 2 dan bergeser pelan (paralaks). */
 .takeoff__clouds {
@@ -386,7 +415,8 @@
   }
 
   .login-slide--active .takeoff__cruise,
-  .login-slide--active .takeoff__clouds {
+  .login-slide--active .takeoff__clouds,
+  .login-slide--active .takeoff__second {
     animation: none;
   }
 

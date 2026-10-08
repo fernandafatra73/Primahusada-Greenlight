@@ -24,7 +24,8 @@ function PlaneSprite() {
 // Husada Airlines (dipotong dari foto yang sama) lepas landas dari kanan bawah ke kiri
 // atas dengan lampu depan menyala, hidungnya pelan-pelan naik sampai sudut 30 derajat.
 // Setelah hilang, pesawat muncul lagi dari kiri ke kanan di ketinggian jelajah,
-// menembus awan (sebagian awan di belakang, sebagian di depan pesawat).
+// menembus awan (sebagian awan di belakang, sebagian di depan pesawat). Sementara itu
+// pesawat kedua di landasan mundur (pushback), lalu lepas landas ke kiri dengan sudut 20°.
 // Animasi diatur di login.css dan dimulai ulang setiap slide aktif.
 export function TakeoffSlide({ title }: TakeoffSlideProps) {
   const [line1, ...rest] = title.split(' ');
@@ -49,6 +50,9 @@ export function TakeoffSlide({ title }: TakeoffSlideProps) {
         <div className="takeoff__mirror">
           <PlaneSprite />
         </div>
+      </div>
+      <div className="takeoff__second">
+        <PlaneSprite />
       </div>
 
       <div className="takeoff__clouds takeoff__clouds--front" aria-hidden>
