@@ -6,11 +6,11 @@ import { isCabinSilent, unlockCabinAudio } from '../lib/cabinSounds.ts';
 import { startLoginMusic, stopLoginMusic } from '../lib/loginMusic.ts';
 import { LoginProfile } from './LoginProfile.tsx';
 import { LoginWelcome } from './LoginWelcome.tsx';
-import { WelcomePhoto } from '../components/WelcomePhoto.tsx';
+import { WelcomePhoto, WELCOME_PHOTO_URL } from '../components/WelcomePhoto.tsx';
 import './login.css';
 
 const CLINIC_ADDRESS = 'Jl. Siliwangi Ruko Palapa II Parung Kuda - Sukabumi';
-const CLINIC_PHONE = '0857-1932-5557';
+const CLINIC_PHONE = 'Telp 0857-1932-5557';
 
 interface LoginPageProps {
   readonly onLogin: (user: AuthUser) => void;
@@ -79,13 +79,24 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <WelcomePhoto className="login-frame__photo" />
         <LoginWelcome onVoiceDone={() => setVoiceFinished(true)} />
 
+        {/* Dengan foto: alamat diletakkan di bawah slogan "Sehat Bersama, Hidup Lebih Baik"
+            pada foto; tanpa foto: di bawah judul. */}
+        {WELCOME_PHOTO_URL ? (
+          <p className="login-frame__address">
+            <span>{CLINIC_ADDRESS}</span>
+            <span>{CLINIC_PHONE}</span>
+          </p>
+        ) : null}
+
         <header className="login-header">
           <img src={logoPrimahusada} alt="" className="login-header__logo" />
           <div className="login-header__text">
             <h1 className="login-header__title">Aplikasi Klinik Prima Husada</h1>
-            <p className="login-header__address">
-              {CLINIC_ADDRESS} &middot; Telp {CLINIC_PHONE}
-            </p>
+            {WELCOME_PHOTO_URL ? null : (
+              <p className="login-header__address">
+                {CLINIC_ADDRESS} &middot; {CLINIC_PHONE}
+              </p>
+            )}
           </div>
           <button
             type="button"
