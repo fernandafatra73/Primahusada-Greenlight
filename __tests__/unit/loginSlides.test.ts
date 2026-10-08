@@ -27,8 +27,8 @@ describe('LOGIN_SLIDES', () => {
     expect(LOGIN_SLIDES.at(-1)).toMatchObject({ id: TAKEOFF_SLIDE_ID, title: 'Menuju Prima Husada 2035', durationMs: 90_000 });
   });
 
-  test('only the lab slide puts its title on the photo', () => {
-    expect(LOGIN_SLIDES.filter((s) => s.titleOnPhoto).map((s) => s.id)).toEqual(['laboratorium']);
+  test('only the lab and HRD slides put their title on the photo', () => {
+    expect(LOGIN_SLIDES.filter((s) => s.titleOnPhoto).map((s) => s.id)).toEqual(['laboratorium', 'hrd']);
   });
 });
 

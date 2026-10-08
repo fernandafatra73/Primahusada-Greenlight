@@ -34,7 +34,8 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
     durationMs: MINUTE_MS,
   },
   { id: 'farmasi', title: 'Farmasi', items: ['Ruang Obat'], durationMs: MINUTE_MS },
-  { id: 'hrd', title: 'HRD', items: ['Ruang HRD', 'Tim Prima Husada'], durationMs: MINUTE_MS },
+  // Papan besar di foto HRD bertuliskan "Poliklinik", jadi labelnya ditempel supaya tidak tertukar.
+  { id: 'hrd', title: 'HRD', titleOnPhoto: true, items: ['Ruang HRD', 'Tim Prima Husada'], durationMs: MINUTE_MS },
   // Slide animasi: pesawat Prima Husada lepas landas, lalu melintas kiri ke kanan
   // menembus awan (lihat TakeoffSlide; urutan waktunya di login.css).
   { id: 'menuju-2035', title: 'Menuju Prima Husada 2035', items: [], durationMs: 1.5 * MINUTE_MS },
