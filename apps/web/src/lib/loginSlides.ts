@@ -35,8 +35,8 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
     title: 'Poliklinik',
     items: ['Ruang Praktek Dokter'],
     durationMs: MINUTE_MS,
-    // Dinding antara jendela dan papan nama.
-    clock: { photoWidth: 1024, photoHeight: 559, x: 480, y: 100, size: 66 },
+    // Dinding antara jendela dan papan nama, di bawah plafon dan di atas bingkai lukisan.
+    clock: { photoWidth: 1024, photoHeight: 559, x: 478, y: 112, size: 58 },
   },
   {
     id: 'radiologi',
