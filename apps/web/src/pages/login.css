@@ -131,7 +131,7 @@
   justify-content: center;
 }
 
-/* Baris tombol kiri bawah: Visi, Misi, Motto · Login · Stop Musik · Play Musik. */
+/* Baris tombol kiri bawah: Visi, Misi, Motto · Login · Musik Hidup/Mati. */
 .login-actions {
   position: fixed;
   left: clamp(1rem, 4vw, 3rem);
@@ -146,11 +146,6 @@
 /* Kolom login tersembunyi sampai tombol Login ditekan. */
 .login-panel--hidden {
   display: none;
-}
-
-.login-actions__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .login-actions .login-actions__btn--login {
@@ -171,7 +166,7 @@
 }
 
 .login-profile__btn:hover,
-.login-actions__btn:hover:not(:disabled) {
+.login-actions__btn:hover {
   background: #1d6fc4;
 }
 

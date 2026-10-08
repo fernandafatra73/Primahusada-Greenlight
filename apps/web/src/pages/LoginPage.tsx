@@ -146,11 +146,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         >
           {showLogin ? 'Tutup Login' : 'Login'}
         </button>
-        <button type="button" className="login-actions__btn" onClick={() => setMusicOn(false)} disabled={!musicOn}>
-          Stop Musik
-        </button>
-        <button type="button" className="login-actions__btn" onClick={() => setMusicOn(true)} disabled={musicOn}>
-          Play Musik
+        <button type="button" className="login-actions__btn" aria-pressed={musicOn} onClick={() => setMusicOn((on) => !on)}>
+          {musicOn ? 'Musik: Hidup' : 'Musik: Mati'}
         </button>
       </div>
     </main>
