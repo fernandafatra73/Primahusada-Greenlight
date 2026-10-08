@@ -4,7 +4,7 @@
 }
 
 /* Foto sambutan klinik (sama dengan foto di Dashboard) memenuhi layar;
-   judul klinik di atas, kartu login di kanan bawah. */
+   kartu login di kanan bawah, tombol-tombol di kiri bawah. */
 .login-frame {
   position: relative;
   width: 100%;
@@ -47,65 +47,6 @@
   white-space: nowrap;
 }
 
-.login-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem clamp(1rem, 4vw, 3rem) 2.5rem;
-  background: linear-gradient(180deg, rgba(6, 30, 70, 0.88) 0%, rgba(6, 30, 70, 0.6) 65%, rgba(6, 30, 70, 0) 100%);
-  color: #ffffff;
-}
-
-.login-header__logo {
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
-  padding: 4px;
-  border-radius: 12px;
-  background: #ffffff;
-}
-
-.login-header__text {
-  flex: 1;
-  min-width: 0;
-}
-
-.login-header__title {
-  margin: 0;
-  font-size: clamp(1.4rem, 3vw, 2.2rem);
-  font-weight: 800;
-  line-height: 1.15;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-}
-
-.login-header__address {
-  margin: 0.25rem 0 0;
-  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
-}
-
-.login-header__music {
-  flex-shrink: 0;
-  padding: 0.4rem 0.9rem;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  border-radius: 999px;
-  background: #0b3d78;
-  color: #ffffff;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.login-header__music:hover {
-  background: #1d6fc4;
-}
-
 .login-panel {
   position: absolute;
   right: clamp(1rem, 4vw, 3rem);
@@ -124,10 +65,6 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-  }
-
-  .login-header {
-    flex-wrap: wrap;
   }
 
   .login-panel {
@@ -194,11 +131,34 @@
   justify-content: center;
 }
 
-.login-profile__btn {
+/* Baris tombol kiri bawah: Visi, Misi, Motto · Login · Stop Musik · Play Musik. */
+.login-actions {
   position: fixed;
   left: clamp(1rem, 4vw, 3rem);
   bottom: 1.25rem;
   z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: calc(100% - 2rem);
+}
+
+/* Kolom login tersembunyi sampai tombol Login ditekan. */
+.login-panel--hidden {
+  display: none;
+}
+
+.login-actions__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.login-actions .login-actions__btn--login {
+  background: #1d6fc4;
+}
+
+.login-profile__btn,
+.login-actions__btn {
   padding: 0.55rem 1.4rem;
   border: 2px solid rgba(255, 255, 255, 0.85);
   border-radius: 999px;
@@ -210,7 +170,8 @@
   cursor: pointer;
 }
 
-.login-profile__btn:hover {
+.login-profile__btn:hover,
+.login-actions__btn:hover:not(:disabled) {
   background: #1d6fc4;
 }
 

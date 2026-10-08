@@ -6,7 +6,7 @@ import { isCabinSilent, unlockCabinAudio } from '../lib/cabinSounds.ts';
 import { startLoginMusic, stopLoginMusic } from '../lib/loginMusic.ts';
 import { LoginProfile } from './LoginProfile.tsx';
 import { LoginWelcome } from './LoginWelcome.tsx';
-import { WelcomePhoto, WELCOME_PHOTO_URL } from '../components/WelcomePhoto.tsx';
+import { WelcomePhoto } from '../components/WelcomePhoto.tsx';
 import './login.css';
 
 const CLINIC_ADDRESS = 'Jl. Siliwangi Ruko Palapa II Parung Kuda - Sukabumi';
@@ -25,6 +25,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Kolom login tersembunyi sampai tombol Login (di sebelah Visi, Misi, Motto) ditekan.
+  const [showLogin, setShowLogin] = useState(false);
   const [musicOn, setMusicOn] = useState(() => !isCabinSilent());
   // Musik baru berjalan setelah ucapan sambutan (dan bel) selesai.
   const [voiceFinished, setVoiceFinished] = useState(false);
@@ -50,6 +52,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       stopLoginMusic();
     };
   }, [musicOn, voiceFinished]);
+
+  useEffect(() => {
+    if (showLogin) passwordRef.current?.focus();
+  }, [showLogin]);
 
   function onEmailKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
     if (event.key === 'Enter') {
@@ -79,36 +85,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <WelcomePhoto className="login-frame__photo" />
         <LoginWelcome onVoiceDone={() => setVoiceFinished(true)} />
 
-        {/* Dengan foto: alamat diletakkan di bawah slogan "Sehat Bersama, Hidup Lebih Baik"
-            pada foto; tanpa foto: di bawah judul. */}
-        {WELCOME_PHOTO_URL ? (
-          <p className="login-frame__address">
-            <span>{CLINIC_ADDRESS}</span>
-            <span>{CLINIC_PHONE}</span>
-          </p>
-        ) : null}
+        {/* Alamat diletakkan di bawah slogan "Sehat Bersama, Hidup Lebih Baik" pada foto. */}
+        <p className="login-frame__address">
+          <span>{CLINIC_ADDRESS}</span>
+          <span>{CLINIC_PHONE}</span>
+        </p>
 
-        <header className="login-header">
-          <img src={logoPrimahusada} alt="" className="login-header__logo" />
-          <div className="login-header__text">
-            <h1 className="login-header__title">Aplikasi Klinik Prima Husada</h1>
-            {WELCOME_PHOTO_URL ? null : (
-              <p className="login-header__address">
-                {CLINIC_ADDRESS} &middot; {CLINIC_PHONE}
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            className="login-header__music"
-            aria-pressed={musicOn}
-            onClick={() => setMusicOn((on) => !on)}
-          >
-            {musicOn ? 'Musik: Hidup' : 'Musik: Mati'}
-          </button>
-        </header>
-
-        <section className="login-panel" aria-labelledby="login-title">
+        <section className={showLogin ? 'login-panel' : 'login-panel login-panel--hidden'} aria-labelledby="login-title">
           <div className="login-panel__brand">
             <img src={logoPrimahusada} alt="Klinik Prima Husada" className="login-panel__logo" />
             <p className="login-panel__eyebrow">Klinik Prima Husada</p>
@@ -153,7 +136,23 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </form>
         </section>
       </div>
-      <LoginProfile />
+      <div className="login-actions">
+        <LoginProfile />
+        <button
+          type="button"
+          className="login-actions__btn login-actions__btn--login"
+          aria-pressed={showLogin}
+          onClick={() => setShowLogin((on) => !on)}
+        >
+          {showLogin ? 'Tutup Login' : 'Login'}
+        </button>
+        <button type="button" className="login-actions__btn" onClick={() => setMusicOn(false)} disabled={!musicOn}>
+          Stop Musik
+        </button>
+        <button type="button" className="login-actions__btn" onClick={() => setMusicOn(true)} disabled={musicOn}>
+          Play Musik
+        </button>
+      </div>
     </main>
   );
 }
