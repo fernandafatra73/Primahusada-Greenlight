@@ -562,23 +562,38 @@
   box-shadow: 0 12px 30px rgba(8, 37, 77, 0.25);
 }
 
-/* Player musik YouTube di Dashboard: kecil tapi terlihat, pojok kanan bawah di atas tombol
-   chat, dan di atas slide Klinik (z-index overlay Klinik 1000-1001) supaya musik tidak putus. */
-.youtube-music {
+/* Pemutar musik Dashboard: pojok kanan bawah di atas tombol chat, dan di atas slide Klinik
+   (z-index overlay Klinik 1000-1001) supaya tombol Stop tetap bisa dipakai di sana. */
+.dashboard-music {
   position: fixed;
   right: 1.25rem;
   bottom: 5.5rem;
   z-index: 1002;
-  width: 240px;
-  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(360px, calc(100vw - 2.5rem));
+  padding: 0.35rem 0.5rem 0.35rem 0.75rem;
   border: 2px solid #ffffff;
-  background: #000000;
+  background: #0b3d78;
+  color: #ffffff;
+  font-size: 0.8rem;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
 }
 
-.youtube-music__frame {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: 0;
+.dashboard-music__note {
+  color: #f1c40f;
+  font-size: 1.1rem;
+}
+
+.dashboard-music__title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dashboard-music .dashboard-music__btn {
+  flex-shrink: 0;
+  padding: 0.25rem 0.7rem;
+  font-weight: 700 !important;
 }

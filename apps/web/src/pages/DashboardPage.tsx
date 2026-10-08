@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { WelcomePhoto } from '../components/WelcomePhoto.tsx';
-import { YouTubeMusicPlayer } from '../components/YouTubeMusicPlayer.tsx';
+import { DashboardMusicPlayer } from '../components/DashboardMusicPlayer.tsx';
 import { KlinikShow } from './KlinikShow.tsx';
 
 // Slide Klinik terbuka sendiri setelah Dashboard tampil selama ini (dan lagi setelah ditutup).
 const KLINIK_AUTO_OPEN_MS = 60_000;
-// Musik latar Dashboard dan slide Klinik: https://www.youtube.com/watch?v=WNSK8HhhXos
-const DASHBOARD_MUSIC_VIDEO_ID = 'WNSK8HhhXos';
 
 export function DashboardPage() {
   const [klinik, setKlinik] = useState(false);
@@ -33,7 +31,7 @@ export function DashboardPage() {
       {klinik && <KlinikShow onClose={closeKlinik} />}
 
       {/* Satu player untuk Dashboard dan slide Klinik, jadi musik tidak terputus saat Klinik dibuka. */}
-      <YouTubeMusicPlayer videoId={DASHBOARD_MUSIC_VIDEO_ID} />
+      <DashboardMusicPlayer />
 
       <WelcomePhoto className="dashboard-photo" />
     </>
