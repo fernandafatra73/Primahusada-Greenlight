@@ -27,6 +27,19 @@ describe('LOGIN_SLIDES', () => {
     expect(LOGIN_SLIDES.at(-1)).toMatchObject({ id: TAKEOFF_SLIDE_ID, title: 'Menuju Prima Husada 2035', durationMs: 90_000 });
   });
 
+  test('poliklinik, lab, farmasi and HRD carry a wall clock that fits inside their photo', () => {
+    const withClock = LOGIN_SLIDES.filter((s) => s.clock);
+    expect(withClock.map((s) => s.id)).toEqual(['poliklinik', 'laboratorium', 'farmasi', 'hrd']);
+    for (const { clock } of withClock) {
+      if (!clock) continue;
+      const r = clock.size / 2;
+      expect(clock.x - r).toBeGreaterThanOrEqual(0);
+      expect(clock.y - r).toBeGreaterThanOrEqual(0);
+      expect(clock.x + r).toBeLessThanOrEqual(clock.photoWidth);
+      expect(clock.y + r).toBeLessThanOrEqual(clock.photoHeight);
+    }
+  });
+
   test('only the lab and HRD slides put their title on the photo', () => {
     expect(LOGIN_SLIDES.filter((s) => s.titleOnPhoto).map((s) => s.id)).toEqual(['laboratorium', 'hrd']);
   });

@@ -15,11 +15,29 @@ export interface LoginSlide {
   /** Isi slide, ditampilkan di bawah judul. */
   readonly items: readonly string[];
   readonly durationMs: number;
+  /** Jam dinding hidup di atas foto: pusat dan diameternya dalam piksel foto aslinya. */
+  readonly clock?: SlideClock;
+}
+
+export interface SlideClock {
+  /** Ukuran foto asli (lebar, tinggi) untuk menghitung posisi jam saat foto diperkecil. */
+  readonly photoWidth: number;
+  readonly photoHeight: number;
+  readonly x: number;
+  readonly y: number;
+  readonly size: number;
 }
 
 export const LOGIN_SLIDES: readonly LoginSlide[] = [
   { id: 'prima-husada', title: null, items: [], durationMs: MINUTE_MS },
-  { id: 'poliklinik', title: 'Poliklinik', items: ['Ruang Praktek Dokter'], durationMs: MINUTE_MS },
+  {
+    id: 'poliklinik',
+    title: 'Poliklinik',
+    items: ['Ruang Praktek Dokter'],
+    durationMs: MINUTE_MS,
+    // Dinding antara jendela dan papan nama.
+    clock: { photoWidth: 1024, photoHeight: 559, x: 480, y: 100, size: 66 },
+  },
   {
     id: 'radiologi',
     title: 'Radiologi',
@@ -32,10 +50,27 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
     titleOnPhoto: true,
     items: ['Rayto 7600', 'Fotometer', 'Ruang Laboratorium'],
     durationMs: MINUTE_MS,
+    // Menimpa jam dinding yang sudah ada di foto, sehingga jam itu ikut berjalan.
+    clock: { photoWidth: 1024, photoHeight: 559, x: 925, y: 54, size: 56 },
   },
-  { id: 'farmasi', title: 'Farmasi', items: ['Ruang Obat'], durationMs: MINUTE_MS },
-  // Papan besar di foto HRD bertuliskan "Poliklinik", jadi labelnya ditempel supaya tidak tertukar.
-  { id: 'hrd', title: 'HRD', titleOnPhoto: true, items: ['Ruang HRD', 'Tim Prima Husada'], durationMs: MINUTE_MS },
+  {
+    id: 'farmasi',
+    title: 'Farmasi',
+    items: ['Ruang Obat'],
+    durationMs: MINUTE_MS,
+    // Dinding putih kanan papan "Apotek / Farmasi".
+    clock: { photoWidth: 1024, photoHeight: 559, x: 915, y: 118, size: 66 },
+  },
+  {
+    id: 'hrd',
+    title: 'HRD',
+    // Papan besar di foto HRD bertuliskan "Poliklinik", jadi labelnya ditempel supaya tidak tertukar.
+    titleOnPhoto: true,
+    items: ['Ruang HRD', 'Tim Prima Husada'],
+    durationMs: MINUTE_MS,
+    // Di atas papan "Komitmen Kami".
+    clock: { photoWidth: 1024, photoHeight: 559, x: 685, y: 113, size: 56 },
+  },
   // Slide animasi: pesawat Prima Husada lepas landas, lalu melintas kiri ke kanan
   // menembus awan (lihat TakeoffSlide; urutan waktunya di login.css).
   { id: 'menuju-2035', title: 'Menuju Prima Husada 2035', items: [], durationMs: 1.5 * MINUTE_MS },

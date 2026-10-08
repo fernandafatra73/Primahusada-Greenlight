@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { WELCOME_PHOTO_URL } from '../components/WelcomePhoto.tsx';
 import { LOGIN_SLIDES, TAKEOFF_SLIDE_ID, nextSlideIndex, slideImageUrl, type LoginSlide } from '../lib/loginSlides.ts';
 import { TakeoffSlide } from './TakeoffSlide.tsx';
@@ -58,7 +58,27 @@ export function LoginSlideshow() {
               // baris tombol, sisa ruangnya diisi versi buram dari foto yang sama.
               <>
                 <img src={photo} alt="" className="login-slide__backdrop" />
-                <img src={photo} alt={slide.title ?? ''} className="login-slide__photo login-slide__photo--whole" />
+                {slide.clock ? (
+                  // Bingkai seukuran foto yang tampil, supaya jam bisa diletakkan di titik dinding foto.
+                  <div
+                    className="login-slide__stage"
+                    style={{ '--ratio': slide.clock.photoWidth / slide.clock.photoHeight } as CSSProperties}
+                  >
+                    <img src={photo} alt={slide.title ?? ''} className="login-slide__stage-img" />
+                    <div
+                      className="login-slide__clock"
+                      style={{
+                        left: `${(slide.clock.x / slide.clock.photoWidth) * 100}%`,
+                        top: `${(slide.clock.y / slide.clock.photoHeight) * 100}%`,
+                        width: `${(slide.clock.size / slide.clock.photoWidth) * 100}%`,
+                      }}
+                    >
+                      <WallClock />
+                    </div>
+                  </div>
+                ) : (
+                  <img src={photo} alt={slide.title ?? ''} className="login-slide__photo login-slide__photo--whole" />
+                )}
               </>
             ) : null}
 
