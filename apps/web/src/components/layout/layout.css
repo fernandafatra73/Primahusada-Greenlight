@@ -572,7 +572,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  max-width: min(480px, calc(100vw - 2.5rem));
+  max-width: min(640px, calc(100vw - 2.5rem));
   padding: 0.35rem 0.5rem 0.35rem 0.75rem;
   border: 2px solid #ffffff;
   background: #0b3d78;
@@ -590,6 +590,12 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.dashboard-music__count {
+  margin-left: 0.4rem;
+  color: #f1c40f;
+  font-size: 0.7rem;
 }
 
 .dashboard-music .dashboard-music__btn {

@@ -17,6 +17,20 @@ export const DASHBOARD_PLAYLIST: readonly DashboardTrack[] = [
   { title: 'Trouver la Sérénité — Jean Angius', url: '/audio/dashboard/08-trouver-la-serenite.mp3' },
 ];
 
+const AUDIO_EXTENSION = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|webm)$/i;
+
+/** True untuk nama file lagu yang bisa diputar browser (dicek dari ekstensinya). */
+export function isAudioFileName(name: string): boolean {
+  return AUDIO_EXTENSION.test(name);
+}
+
+/** Judul lagu dari nama file USB: tanpa ekstensi, garis bawah/strip jadi spasi. */
+export function titleFromFileName(name: string): string {
+  const base = name.split(/[\\/]/).pop() ?? name;
+  const title = base.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return title || base;
+}
+
 /** Lagu berikutnya; setelah lagu terakhir kembali ke lagu pertama. */
 export function nextTrackIndex(index: number, count: number): number {
   if (count <= 0) return 0;

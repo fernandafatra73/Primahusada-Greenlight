@@ -1,5 +1,27 @@
 import { describe, expect, test } from 'vitest';
-import { DASHBOARD_PLAYLIST, nextTrackIndex } from '../../apps/web/src/lib/dashboardPlaylist.ts';
+import {
+  DASHBOARD_PLAYLIST,
+  isAudioFileName,
+  nextTrackIndex,
+  titleFromFileName,
+} from '../../apps/web/src/lib/dashboardPlaylist.ts';
+
+describe('USB songs', () => {
+  test('accepts common audio files and rejects others', () => {
+    expect(isAudioFileName('Lagu Saya.MP3')).toBe(true);
+    expect(isAudioFileName('rekaman.m4a')).toBe(true);
+    expect(isAudioFileName('lagu.flac')).toBe(true);
+    expect(isAudioFileName('foto.jpg')).toBe(false);
+    expect(isAudioFileName('catatan.txt')).toBe(false);
+    expect(isAudioFileName('mp3')).toBe(false);
+  });
+
+  test('turns a file name into a readable title', () => {
+    expect(titleFromFileName('01_Haruskah-Aku__Mengakhiri.mp3')).toBe('01 Haruskah Aku Mengakhiri');
+    expect(titleFromFileName('Musik/Relax Song.wav')).toBe('Relax Song');
+    expect(titleFromFileName('.mp3')).toBe('.mp3');
+  });
+});
 
 describe('DASHBOARD_PLAYLIST', () => {
   test('holds the eight songs, each a distinct mp3 under /audio/dashboard/', () => {
