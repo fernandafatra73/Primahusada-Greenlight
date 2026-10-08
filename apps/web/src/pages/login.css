@@ -3,376 +3,116 @@
   background: #0b3d78;
 }
 
-/* The scene fills the whole monitor; the login card floats over its right side. */
+/* Foto sambutan klinik (sama dengan foto di Dashboard) memenuhi layar;
+   judul klinik di atas, kartu login di kanan bawah. */
 .login-frame {
   position: relative;
   width: 100%;
   height: 100vh;
   min-height: 560px;
   overflow: hidden;
+  background: linear-gradient(135deg, #0b3d78 0%, #1d6fc4 100%);
+}
+
+.login-frame__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem clamp(1rem, 4vw, 3rem) 2.5rem;
+  background: linear-gradient(180deg, rgba(6, 30, 70, 0.88) 0%, rgba(6, 30, 70, 0.6) 65%, rgba(6, 30, 70, 0) 100%);
+  color: #ffffff;
+}
+
+.login-header__logo {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  padding: 4px;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.login-header__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.login-header__title {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.15;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.login-header__address {
+  margin: 0.25rem 0 0;
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.login-header__music {
+  flex-shrink: 0;
+  padding: 0.4rem 0.9rem;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: #0b3d78;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-header__music:hover {
+  background: #1d6fc4;
 }
 
 .login-panel {
   position: absolute;
-  top: 50%;
-  right: clamp(1rem, 5vw, 5rem);
-  width: min(420px, calc(100% - 2rem));
-  transform: translateY(-50%);
-  padding: 2.5rem 2rem;
+  right: clamp(1rem, 4vw, 3rem);
+  bottom: clamp(1rem, 4vh, 2.5rem);
+  z-index: 3;
+  width: min(380px, calc(100% - 2rem));
+  padding: 1.5rem 1.75rem;
   border: 6px solid rgba(255, 255, 255, 0.85);
   border-radius: 20px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(238, 245, 253, 0.96) 100%);
   box-shadow: 0 24px 60px rgba(8, 37, 77, 0.45);
 }
 
-.login-scene {
-  position: absolute;
-  inset: 0;
-}
-
-.login-scene__svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.login-scene__clouds {
-  animation: login-drift 30s ease-in-out infinite alternate;
-}
-
-.login-scene__beacon {
-  animation: login-blink 1.6s ease-in-out infinite;
-}
-
-/* Both aircraft share one 30s cycle on the centre line: take-off first, then landing,
-   which turns right onto the taxiway and parks. */
-.login-scene__takeoff {
-  opacity: 0;
-  animation: login-takeoff 30s linear infinite;
-  animation-delay: -3s;
-}
-
-.login-scene__landing {
-  opacity: 0;
-  animation: login-landing 30s linear infinite;
-  animation-delay: -3s;
-}
-
-.login-scene__thrust {
-  animation: login-blink 0.5s ease-in-out infinite;
-}
-
-.login-scene__flame {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: login-flame 0.14s ease-in-out infinite alternate;
-}
-
-.login-scene__flame--core {
-  animation-duration: 0.11s;
-}
-
-.login-scene__flame--hot {
-  animation-duration: 0.09s;
-}
-
-.login-scene__spark {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: login-spark 0.42s ease-out infinite;
-}
-
-@keyframes login-flame {
-  from { transform: scale(0.72, 0.85); opacity: 0.85; }
-  to { transform: scale(1.18, 1.1); opacity: 1; }
-}
-
-@keyframes login-spark {
-  0% { transform: translate(0, 0) scale(1); opacity: 1; }
-  100% { transform: translate(1.6px, 2.4px) scale(0.2); opacity: 0; }
-}
-
-.login-scene__strobe {
-  animation: login-blink 1.1s steps(2, end) infinite;
-}
-
-.login-scene__landing-light {
-  animation: login-lamp 1.4s ease-in-out infinite;
-}
-
-.login-scene__nav {
-  animation: login-lamp 1s ease-in-out infinite;
-}
-
-/* Lamps stay lit; they only shimmer a little. */
-@keyframes login-lamp {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1; }
-}
-
-
-.login-scene__flag {
-  transform-box: fill-box;
-  transform-origin: left center;
-  animation: login-flag 1.6s ease-in-out infinite alternate;
-}
-
-.login-scene__windsock {
-  transform-box: fill-box;
-  transform-origin: left center;
-  animation: login-flag 3s ease-in-out infinite alternate;
-}
-
-.login-scene__car {
-  animation: login-car-right var(--ls-dur, 16s) linear infinite;
-  animation-delay: var(--ls-delay, 0s);
-}
-
-.login-scene__car--rev {
-  animation-name: login-car-left;
-}
-
-
-/* Scale follows the runway width so the aircraft stays in proportion along the line:
-   scale = 0.013 * half-width at that y. Wheels sit on the centre line (x = 210). */
-@keyframes login-takeoff {
-  0% { opacity: 0; transform: translate(210px, 197px) scale(1.07); }
-  1.333% { opacity: 1; }
-  8.000% { transform: translate(210px, 184px) scale(0.87); }
-  14.000% { transform: translate(210px, 171px) scale(0.67); }
-  18.000% { transform: translate(210px, 159px) scale(0.48); }
-  23.333% { transform: translate(210px, 132px) scale(0.35); }
-  28.667% { opacity: 1; transform: translate(210px, 90px) scale(0.21); }
-  32.000%, 100% { opacity: 0; transform: translate(210px, 58px) scale(0.13); }
-}
-
-/* Head-on approach and roll-out; at the turn the side-view aircraft takes over. */
-@keyframes login-landing {
-  0%, 36.667% { opacity: 0; transform: translate(210px, 66px) scale(0.1); }
-  38.000% { opacity: 1; }
-  44.667% { transform: translate(210px, 100px) scale(0.2); }
-  50.000% { transform: translate(210px, 128px) scale(0.3); }
-  54.000% { transform: translate(210px, 153px) scale(0.38); }
-  58.000% { transform: translate(210px, 172px) scale(0.67); }
-  62.667% { opacity: 1; transform: translate(210px, 197px) scale(1.07); }
-  66.000% { opacity: 1; transform: translate(219px, 199px) scale(0.62, 1.06); }
-  69.333%, 100% { opacity: 0; transform: translate(232px, 200px) scale(0.22, 1.05); }
-}
-
-/* Landing aircraft: turns off the runway, runs along the back lane and pulls into its bay (8 bays). */
-@keyframes login-landing-side-0 {
-  0%, 63.333% { opacity: 0; transform: translate(216px, 199px) scale(0.2, 1); }
-  65.333% { opacity: 1; transform: translate(224px, 199px) scale(0.45, 1); }
-  69.333% { transform: translate(246px, 192px) scale(0.85, 0.95); }
-  72.667% { transform: translate(270px, 176px) scale(0.7); }
-  80.000% { transform: translate(390px, 169px) scale(0.62); }
-  84.667% { transform: translate(460px, 169px) scale(0.62); }
-  92.000%, 100% { opacity: 1; transform: translate(460px, 216px) scale(0.66); }
-}
-
-@keyframes login-landing-side-1 {
-  0%, 63.333% { opacity: 0; transform: translate(216px, 199px) scale(0.2, 1); }
-  65.333% { opacity: 1; transform: translate(224px, 199px) scale(0.45, 1); }
-  69.333% { transform: translate(246px, 192px) scale(0.85, 0.95); }
-  72.667% { transform: translate(270px, 176px) scale(0.7); }
-  80.000% { transform: translate(338px, 169px) scale(0.62); }
-  84.667% { transform: translate(408px, 169px) scale(0.62); }
-  92.000%, 100% { opacity: 1; transform: translate(408px, 216px) scale(0.66); }
-}
-
-@keyframes login-landing-side-2 {
-  0%, 63.333% { opacity: 0; transform: translate(216px, 199px) scale(0.2, 1); }
-  65.333% { opacity: 1; transform: translate(224px, 199px) scale(0.45, 1); }
-  69.333% { transform: translate(246px, 192px) scale(0.85, 0.95); }
-  72.667% { transform: translate(270px, 176px) scale(0.7); }
-  80.000% { transform: translate(286px, 169px) scale(0.62); }
-  84.667% { transform: translate(356px, 169px) scale(0.62); }
-  92.000%, 100% { opacity: 1; transform: translate(356px, 216px) scale(0.66); }
-}
-
-@keyframes login-landing-side-3 {
-  0%, 63.333% { opacity: 0; transform: translate(216px, 199px) scale(0.2, 1); }
-  65.333% { opacity: 1; transform: translate(224px, 199px) scale(0.45, 1); }
-  69.333% { transform: translate(246px, 192px) scale(0.85, 0.95); }
-  72.667% { transform: translate(270px, 176px) scale(0.7); }
-  80.000% { transform: translate(234px, 169px) scale(0.62); }
-  84.667% { transform: translate(304px, 169px) scale(0.62); }
-  92.000%, 100% { opacity: 1; transform: translate(304px, 216px) scale(0.66); }
-}
-
-@keyframes login-landing-side-4 {
-  0%, 63.333% { opacity: 0; transform: translate(216px, 199px) scale(0.2, 1); }
-  65.333% { opacity: 1; transform: translate(224px, 199px) scale(0.45, 1); }
-  69.333% { transform: translate(246px, 192px) scale(0.85, 0.95); }
-  72.667% { transform: translate(270px, 176px) scale(0.7); }
-  80.000% { transform: translate(390px, 169px) scale(0.62); }
-  84.667% { transform: translate(460px, 169px) scale(0.62); }
-  92.000%, 100% { opacity: 1; transform: translate(460px, 194px) scale(0.6); }
-}
-
-@keyframes login-landing-side-5 {
-  0%, 63.333% { opacity: 0; transform: translate(216px, 199px) scale(0.2, 1); }
-  65.333% { opacity: 1; transform: translate(224px, 199px) scale(0.45, 1); }
-  69.333% { transform: translate(246px, 192px) scale(0.85, 0.95); }
-  72.667% { transform: translate(270px, 176px) scale(0.7); }
-  80.000% { transform: translate(338px, 169px) scale(0.62); }
-  84.667% { transform: translate(408px, 169px) scale(0.62); }
-  92.000%, 100% { opacity: 1; transform: translate(408px, 194px) scale(0.6); }
-}
-
-@keyframes login-landing-side-6 {
-  0%, 63.333% { opacity: 0; transform: translate(216px, 199px) scale(0.2, 1); }
-  65.333% { opacity: 1; transform: translate(224px, 199px) scale(0.45, 1); }
-  69.333% { transform: translate(246px, 192px) scale(0.85, 0.95); }
-  72.667% { transform: translate(270px, 176px) scale(0.7); }
-  80.000% { transform: translate(286px, 169px) scale(0.62); }
-  84.667% { transform: translate(356px, 169px) scale(0.62); }
-  92.000%, 100% { opacity: 1; transform: translate(356px, 194px) scale(0.6); }
-}
-
-@keyframes login-landing-side-8 {
-  0%, 63.333% { opacity: 0; transform: translate(216px, 199px) scale(0.2, 1); }
-  65.333% { opacity: 1; transform: translate(224px, 199px) scale(0.45, 1); }
-  69.333% { transform: translate(246px, 192px) scale(0.85, 0.95); }
-  72.667% { transform: translate(270px, 176px) scale(0.7); }
-  80.000% { transform: translate(312px, 169px) scale(0.62); }
-  84.667%, 100% { opacity: 1; transform: translate(382px, 169px) scale(0.62); }
-}
-
-@keyframes login-landing-side-7 {
-  0%, 63.333% { opacity: 0; transform: translate(216px, 199px) scale(0.2, 1); }
-  65.333% { opacity: 1; transform: translate(224px, 199px) scale(0.45, 1); }
-  69.333% { transform: translate(246px, 192px) scale(0.85, 0.95); }
-  72.667% { transform: translate(270px, 176px) scale(0.7); }
-  80.000% { transform: translate(234px, 169px) scale(0.62); }
-  84.667% { transform: translate(304px, 169px) scale(0.62); }
-  92.000%, 100% { opacity: 1; transform: translate(304px, 194px) scale(0.6); }
-}
-
-/* The aircraft on the left taxiway waits, then rolls toward the runway just before take-off. */
-@keyframes login-departing {
-  0% { opacity: 0; transform: translateX(55px); }
-  6.667% { opacity: 0; transform: translateX(0); }
-  8.667%, 88.000% { opacity: 1; transform: translateX(0); }
-  98.000%, 100% { opacity: 0; transform: translateX(55px); }
-}
-
-@keyframes login-flag {
-  from {
-    transform: skewY(-6deg) scaleX(1);
-  }
-  to {
-    transform: skewY(6deg) scaleX(0.85);
-  }
-}
-
-@keyframes login-car-right {
-  from {
-    transform: translateX(-60px);
-  }
-  to {
-    transform: translateX(560px);
-  }
-}
-
-@keyframes login-car-left {
-  from {
-    transform: translateX(560px);
-  }
-  to {
-    transform: translateX(-60px);
-  }
-}
-
-/* Pejalan kaki di trotoar depan melintasi seluruh layar, berselang-seling arah. */
-.login-scene__stroll {
-  animation: login-stroll var(--ls-dur, 45s) linear infinite;
-  animation-delay: var(--ls-delay, 0s);
-}
-
-@keyframes login-stroll {
-  from {
-    transform: translateX(var(--ls-from, 0px));
-  }
-  to {
-    transform: translateX(var(--ls-to, 0px));
-  }
-}
-
-@keyframes login-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.2;
-  }
-}
-
-@keyframes login-drift {
-  to {
-    transform: translateX(40px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-scene__clouds,
-  .login-scene__beacon,
-  .login-scene__takeoff,
-  .login-scene__landing,
-  .login-scene__car,
-  .login-scene__thrust,
-  .login-scene__flame,
-  .login-scene__spark,
-  .login-scene__strobe,
-  .login-scene__landing-light,
-  .login-scene__nav,
-  .login-scene__flag,
-  .login-scene__windsock {
-    animation: none;
-  }
-
-  .login-scene__takeoff {
-    opacity: 1;
-    transform: translate(210px, 190px) scale(1.07);
-  }
-
-  .login-scene__landing {
-    display: none;
-  }
-
-  .login-scene__car {
-    transform: translateX(var(--ls-x, 100px));
-  }
-}
-
 @media (max-width: 760px) {
   .login-frame {
     display: flex;
     flex-direction: column;
-    height: auto;
-    min-height: 100vh;
+    justify-content: flex-end;
   }
 
-  .login-stage {
-    position: relative;
-    inset: auto;
-    height: 38vh;
-    min-height: 220px;
+  .login-header {
+    flex-wrap: wrap;
   }
 
   .login-panel {
     position: relative;
-    top: auto;
     right: auto;
+    bottom: auto;
     width: calc(100% - 2rem);
-    margin: -2rem auto 1rem;
-    transform: none;
+    margin: 0 auto 4.5rem;
   }
 }
-
 
 .login-panel__brand {
   display: flex;
@@ -431,7 +171,7 @@
 
 .login-profile__btn {
   position: fixed;
-  right: clamp(1rem, 5vw, 5rem);
+  left: clamp(1rem, 4vw, 3rem);
   bottom: 1.25rem;
   z-index: 5;
   padding: 0.55rem 1.4rem;
@@ -581,462 +321,3 @@
   margin: 1rem 0 !important;
 }
 
-/* Foto sambutan di atas: muncul setelah semua adegan pesawat selesai, hilang setelah 20 detik. */
-.login-photo {
-  position: absolute;
-  top: 3.6rem;
-  left: 1rem;
-  z-index: 4;
-  width: min(52vw, 720px);
-  margin: 0;
-  overflow: hidden;
-  border: 4px solid rgba(255, 255, 255, 0.92);
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 18px 44px rgba(8, 37, 77, 0.5);
-  animation: login-photo-in 0.9s ease-out;
-}
-
-.login-photo img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.login-photo__fallback {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 1.5rem;
-}
-
-.login-photo__fallback img {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-}
-
-.login-photo__title {
-  margin: 0;
-  color: #0b3d78;
-  font-size: clamp(1.1rem, 2.2vw, 1.8rem);
-  font-weight: 800;
-}
-
-@keyframes login-photo-in {
-  from {
-    opacity: 0;
-    transform: translateY(-24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-photo {
-    animation: none;
-  }
-}
-
-/* Stop / Lanjut: menjeda animasi adegan dan suara sambutan. */
-.login-frame--paused .login-scene *,
-.login-frame--paused .login-arrival *,
-.login-frame--paused .login-welcome {
-  animation-play-state: paused !important;
-}
-
-.login-controls {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  z-index: 6;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.login-controls button {
-  padding: 0.4rem 0.9rem;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  border-radius: 999px;
-  background: #0b3d78;
-  color: #ffffff;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(4, 12, 36, 0.4);
-}
-
-.login-controls button:hover:not(:disabled) {
-  background: #1d6fc4;
-}
-
-.login-controls button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Tampak samping: setelah suara sambutan, tampilan utama berputar menyamping (perspektif)
-   dan digantikan adegan kedatangan penumpang (LoginArrival), lalu kembali pelan-pelan. */
-.login-stage {
-  position: absolute;
-  inset: 0;
-  perspective: 1800px;
-}
-
-.login-scene--away {
-  animation: login-scene-away 71s linear forwards;
-  backface-visibility: hidden;
-}
-
-@keyframes login-scene-away {
-  0% {
-    opacity: 1;
-    transform: rotateY(0deg);
-  }
-  2.535% {
-    opacity: 0;
-    transform: rotateY(-90deg);
-  }
-  89.44% {
-    opacity: 0;
-    transform: rotateY(-90deg);
-  }
-  96.48%,
-  100% {
-    opacity: 1;
-    transform: rotateY(0deg);
-  }
-}
-
-.login-frame--paused .login-scene--away,
-.login-frame--paused .login-arrival {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-scene--away,
-  .login-arrival {
-    animation: none;
-  }
-}
-
-/* Kolom login tersembunyi sampai tombol Login di samping Lanjut ditekan. */
-.login-panel--hidden {
-  display: none;
-}
-
-.login-controls .login-controls__login {
-  background: #1d6fc4;
-}
-
-/* Pesawat yang melintas di langit: kiri ke kanan dan kanan ke kiri. */
-.login-scene__flyer-r {
-  animation: login-fly-r var(--ls-dur, 40s) linear infinite;
-  animation-delay: var(--ls-delay, 0s);
-}
-
-.login-scene__flyer-l {
-  animation: login-fly-l var(--ls-dur, 40s) linear infinite;
-  animation-delay: var(--ls-delay, 0s);
-}
-
-@keyframes login-fly-r {
-  from {
-    transform: translateX(-150px);
-  }
-  to {
-    transform: translateX(580px);
-  }
-}
-
-@keyframes login-fly-l {
-  from {
-    transform: translateX(580px);
-  }
-  to {
-    transform: translateX(-150px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-scene__flyer-r,
-  .login-scene__flyer-l {
-    animation: none;
-    transform: translateX(200px);
-  }
-}
-
-/* Gambar pesawat Prima Husada yang parkir, tampil sesudah foto sambutan. */
-.login-parked {
-  position: absolute;
-  top: 3.6rem;
-  left: 1rem;
-  z-index: 4;
-  width: min(52vw, 720px);
-  margin: 0;
-  overflow: hidden;
-  border: 4px solid rgba(255, 255, 255, 0.92);
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 18px 44px rgba(8, 37, 77, 0.5);
-  animation: login-photo-in 0.9s ease-out;
-}
-
-.login-parked__svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.login-parked__caption {
-  padding: 0.5rem 1rem;
-  background: #0b3d78;
-  color: #ffffff;
-  font-size: 0.95rem;
-  font-weight: 700;
-  text-align: center;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-parked {
-    animation: none;
-  }
-}
-
-/* Bar untuk mempercepat animasi. */
-.login-controls__speed {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.3rem 0.8rem;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  border-radius: 999px;
-  background: #0b3d78;
-  box-shadow: 0 4px 12px rgba(4, 12, 36, 0.4);
-  color: #ffffff;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.login-controls__speed input {
-  width: 110px;
-  accent-color: #f1c40f;
-  cursor: pointer;
-}
-
-.login-controls__speed output {
-  min-width: 2.4rem;
-  text-align: right;
-}
-
-
-/* Mobil berhenti di halte DAMRI, 6 penumpang naik, lalu mobil jalan lagi (siklus 40s). */
-.login-scene__pickup-car {
-  animation: login-pickup-car 40s linear infinite;
-  transform: translateX(600px);
-}
-
-@keyframes login-pickup-car {
-  0% { transform: translateX(600px); }
-  10.000% { transform: translateX(600px); animation-timing-function: ease-out; }
-  25.000% { transform: translateX(262px); }
-  65.000% { transform: translateX(262px); animation-timing-function: ease-in; }
-  82.500% { transform: translateX(-100px); }
-  100% { transform: translateX(-100px); }
-}
-
-.login-scene__pickup-p0 { animation: login-pickup-p0 40s linear infinite; transform: translate(246px, 298px); --swing: 0deg; }
-@keyframes login-pickup-p0 {
-  0% { opacity: 1; transform: translate(246px, 298px); --swing: 0deg; }
-  30.000% { opacity: 1; transform: translate(246px, 298px); --swing: 0deg; }
-  30.125% { --swing: 26deg; }
-  34.500% { opacity: 1; transform: translate(276.0px, 292px); --swing: 26deg; }
-  35.250% { opacity: 0; transform: translate(276.0px, 292px); --swing: 0deg; }
-  85.000% { opacity: 0; transform: translate(246px, 298px); }
-  90.000% { opacity: 1; transform: translate(246px, 298px); }
-  100% { opacity: 1; transform: translate(246px, 298px); --swing: 0deg; }
-}
-
-.login-scene__pickup-p1 { animation: login-pickup-p1 40s linear infinite; transform: translate(256px, 298px); --swing: 0deg; }
-@keyframes login-pickup-p1 {
-  0% { opacity: 1; transform: translate(256px, 298px); --swing: 0deg; }
-  32.500% { opacity: 1; transform: translate(256px, 298px); --swing: 0deg; }
-  32.625% { --swing: 26deg; }
-  37.000% { opacity: 1; transform: translate(276.4px, 292px); --swing: 26deg; }
-  37.750% { opacity: 0; transform: translate(276.4px, 292px); --swing: 0deg; }
-  85.000% { opacity: 0; transform: translate(256px, 298px); }
-  90.000% { opacity: 1; transform: translate(256px, 298px); }
-  100% { opacity: 1; transform: translate(256px, 298px); --swing: 0deg; }
-}
-
-.login-scene__pickup-p2 { animation: login-pickup-p2 40s linear infinite; transform: translate(266px, 298px); --swing: 0deg; }
-@keyframes login-pickup-p2 {
-  0% { opacity: 1; transform: translate(266px, 298px); --swing: 0deg; }
-  35.000% { opacity: 1; transform: translate(266px, 298px); --swing: 0deg; }
-  35.125% { --swing: 26deg; }
-  39.500% { opacity: 1; transform: translate(276.8px, 292px); --swing: 26deg; }
-  40.250% { opacity: 0; transform: translate(276.8px, 292px); --swing: 0deg; }
-  85.000% { opacity: 0; transform: translate(266px, 298px); }
-  90.000% { opacity: 1; transform: translate(266px, 298px); }
-  100% { opacity: 1; transform: translate(266px, 298px); --swing: 0deg; }
-}
-
-.login-scene__pickup-p3 { animation: login-pickup-p3 40s linear infinite; transform: translate(276px, 298px); --swing: 0deg; }
-@keyframes login-pickup-p3 {
-  0% { opacity: 1; transform: translate(276px, 298px); --swing: 0deg; }
-  37.500% { opacity: 1; transform: translate(276px, 298px); --swing: 0deg; }
-  37.625% { --swing: 26deg; }
-  42.000% { opacity: 1; transform: translate(277.2px, 292px); --swing: 26deg; }
-  42.750% { opacity: 0; transform: translate(277.2px, 292px); --swing: 0deg; }
-  85.000% { opacity: 0; transform: translate(276px, 298px); }
-  90.000% { opacity: 1; transform: translate(276px, 298px); }
-  100% { opacity: 1; transform: translate(276px, 298px); --swing: 0deg; }
-}
-
-.login-scene__pickup-p4 { animation: login-pickup-p4 40s linear infinite; transform: translate(286px, 298px); --swing: 0deg; }
-@keyframes login-pickup-p4 {
-  0% { opacity: 1; transform: translate(286px, 298px); --swing: 0deg; }
-  40.000% { opacity: 1; transform: translate(286px, 298px); --swing: 0deg; }
-  40.125% { --swing: 26deg; }
-  44.500% { opacity: 1; transform: translate(277.6px, 292px); --swing: 26deg; }
-  45.250% { opacity: 0; transform: translate(277.6px, 292px); --swing: 0deg; }
-  85.000% { opacity: 0; transform: translate(286px, 298px); }
-  90.000% { opacity: 1; transform: translate(286px, 298px); }
-  100% { opacity: 1; transform: translate(286px, 298px); --swing: 0deg; }
-}
-
-.login-scene__pickup-p5 { animation: login-pickup-p5 40s linear infinite; transform: translate(296px, 298px); --swing: 0deg; }
-@keyframes login-pickup-p5 {
-  0% { opacity: 1; transform: translate(296px, 298px); --swing: 0deg; }
-  42.500% { opacity: 1; transform: translate(296px, 298px); --swing: 0deg; }
-  42.625% { --swing: 26deg; }
-  47.000% { opacity: 1; transform: translate(278.0px, 292px); --swing: 26deg; }
-  47.750% { opacity: 0; transform: translate(278.0px, 292px); --swing: 0deg; }
-  85.000% { opacity: 0; transform: translate(296px, 298px); }
-  90.000% { opacity: 1; transform: translate(296px, 298px); }
-  100% { opacity: 1; transform: translate(296px, 298px); --swing: 0deg; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-scene__stroll,
-  .login-scene__pickup-car,
-  .login-scene__pickup-p0,
-  .login-scene__pickup-p1,
-  .login-scene__pickup-p2,
-  .login-scene__pickup-p3,
-  .login-scene__pickup-p4,
-  .login-scene__pickup-p5 {
-    animation: none;
-  }
-}
-
-/* Orang berjalan: kaki dan tangan berayun bergantian. Sudut ayun dari variabel --swing, sehingga
-   orang yang berhenti (misalnya di lorong bagasi) bisa diam tanpa mengganti elemennya. */
-@property --swing {
-  syntax: '<angle>';
-  inherits: true;
-  initial-value: 26deg;
-}
-
-.person--walking .person__leg-a,
-.person--walking .person__arm-b {
-  transform-box: fill-box;
-  transform-origin: 50% 0;
-  animation: person-swing-a 0.6s ease-in-out infinite alternate;
-}
-
-.person--walking .person__leg-b,
-.person--walking .person__arm-a {
-  transform-box: fill-box;
-  transform-origin: 50% 0;
-  animation: person-swing-b 0.6s ease-in-out infinite alternate;
-}
-
-@keyframes person-swing-a {
-  from {
-    transform: rotate(calc(var(--swing) * -1));
-  }
-  to {
-    transform: rotate(var(--swing));
-  }
-}
-
-@keyframes person-swing-b {
-  from {
-    transform: rotate(var(--swing));
-  }
-  to {
-    transform: rotate(calc(var(--swing) * -1));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .person--walking .person__leg-a,
-  .person--walking .person__leg-b,
-  .person--walking .person__arm-a,
-  .person--walking .person__arm-b {
-    animation: none;
-  }
-}
-
-.login-scene__landing-side {
-  opacity: 0;
-}
-
-.login-scene__landing-side--0 {
-  animation: login-landing-side-0 30s linear forwards;
-}
-
-.login-scene__landing-side--1 {
-  animation: login-landing-side-1 30s linear forwards;
-}
-
-.login-scene__landing-side--2 {
-  animation: login-landing-side-2 30s linear forwards;
-}
-
-.login-scene__landing-side--3 {
-  animation: login-landing-side-3 30s linear forwards;
-}
-
-.login-scene__landing-side--4 {
-  animation: login-landing-side-4 30s linear forwards;
-}
-
-.login-scene__landing-side--5 {
-  animation: login-landing-side-5 30s linear forwards;
-}
-
-.login-scene__landing-side--6 {
-  animation: login-landing-side-6 30s linear forwards;
-}
-
-.login-scene__landing-side--7 {
-  animation: login-landing-side-7 30s linear forwards;
-}
-
-.login-scene__landing-side--8 {
-  animation: login-landing-side-8 30s linear forwards;
-}
-
-.login-scene__departing {
-  opacity: 0;
-  animation: login-departing 30s linear infinite;
-  animation-delay: -3s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-scene__landing-side {
-    animation: none;
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-scene__departing {
-    animation: none;
-    opacity: 1;
-  }
-}
