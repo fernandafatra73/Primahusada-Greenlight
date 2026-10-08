@@ -14,6 +14,18 @@
   background: linear-gradient(135deg, #0b3d78 0%, #1d6fc4 100%);
 }
 
+/* Tombol Klinik di Dashboard: slide yang sama dalam layar penuh, di atas seluruh aplikasi. */
+.login-frame.klinik-show {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: auto;
+}
+
+.klinik-show .login-actions {
+  z-index: 1001;
+}
+
 /* Slide latar (LoginSlideshow): ditumpuk, yang aktif muncul pelan-pelan. */
 .login-slides {
   position: absolute;

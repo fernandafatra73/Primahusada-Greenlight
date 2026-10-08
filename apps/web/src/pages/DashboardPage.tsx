@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { AnimasiShow } from '../components/AnimasiShow.tsx';
+import { KlinikShow } from './KlinikShow.tsx';
 import { baseChartOptions, paletteColors } from '../components/charts/chartTheme.ts';
 import { useListRefresh } from '../context/ListRefreshContext.tsx';
 import { apiGet } from '../lib/api.ts';
@@ -65,6 +66,8 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [animasi, setAnimasi] = useState(false);
   const [grafik, setGrafik] = useState(false);
+  const [klinik, setKlinik] = useState(false);
+  const closeKlinik = useCallback(() => setKlinik(false), []);
 
   const load = useCallback(async () => {
     setError(null);
@@ -106,8 +109,13 @@ export function DashboardPage() {
           >
             Grafik
           </button>
+          <button type="button" className="btn btn--sm btn--secondary" onClick={() => setKlinik(true)}>
+            Klinik
+          </button>
         </div>
       </div>
+
+      {klinik && <KlinikShow onClose={closeKlinik} />}
 
       <WelcomePhoto className="dashboard-photo" />
 
