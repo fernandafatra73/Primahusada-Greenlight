@@ -8,7 +8,7 @@ export interface DashboardTrack {
 
 export const DASHBOARD_PLAYLIST: readonly DashboardTrack[] = [
   { title: 'Relax — Atlas Audio', url: '/audio/dashboard/01-relax.mp3' },
-  { title: 'Relaxing Music — Velario Music', url: '/audio/dashboard/02-relaxing-music.mp3' },
+  { title: 'Relaxing Music — Fernanda Music', url: '/audio/dashboard/02-relaxing-music.mp3' },
   { title: 'Spa Relaxation — Atlas Audio', url: '/audio/dashboard/03-spa-relaxation.mp3' },
   { title: 'Relaxation — Marlowe Music', url: '/audio/dashboard/04-relaxation.mp3' },
   { title: 'Spa Relaxation II — Atlas Audio', url: '/audio/dashboard/05-spa-relaxation-2.mp3' },
