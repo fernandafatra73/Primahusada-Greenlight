@@ -35,7 +35,12 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
   },
   { id: 'farmasi', title: 'Farmasi', items: ['Ruang Obat'], durationMs: MINUTE_MS },
   { id: 'hrd', title: 'HRD', items: ['Ruang HRD', 'Tim Prima Husada'], durationMs: MINUTE_MS },
+  // Slide animasi: pesawat Prima Husada lepas landas (lihat TakeoffSlide).
+  { id: 'menuju-2035', title: 'Menuju Prima Husada 2035', items: [], durationMs: MINUTE_MS },
 ];
+
+/** Slide yang digambar sebagai animasi pesawat lepas landas, bukan foto/kartu biasa. */
+export const TAKEOFF_SLIDE_ID = 'menuju-2035';
 
 const IMAGE_EXTENSION = /\.(jpe?g|png|webp)$/i;
 

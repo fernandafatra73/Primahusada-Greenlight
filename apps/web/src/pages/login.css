@@ -167,6 +167,152 @@
   }
 }
 
+/* ---- Slide 7: pesawat lepas landas "Menuju Prima Husada 2035" (TakeoffSlide) ---- */
+.takeoff {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #9fb4c8;
+}
+
+.takeoff__background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Judul ditempatkan dengan koordinat foto (1024x559, object-fit: cover) di langit kiri atas. */
+.takeoff__title {
+  --frame-h: max(100vh, 560px);
+  --px: max(calc(100vw / 1024), calc(var(--frame-h) / 559));
+  position: absolute;
+  left: calc(50vw + (178 - 512) * var(--px));
+  top: calc(var(--frame-h) / 2 + (158 - 279.5) * var(--px));
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: calc(18 * var(--px)) calc(20 * var(--px));
+  border-left: 6px solid #f1c40f;
+  border-radius: 14px;
+  background: rgba(6, 30, 70, 0.55);
+  backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-size: max(20px, calc(26 * var(--px)));
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+}
+
+.takeoff__title-small {
+  color: #f1c40f;
+  font-size: 0.55em;
+  letter-spacing: 0.3em;
+}
+
+.login-slide--active .takeoff__title {
+  animation: takeoff-title-in 1.5s ease 1s forwards;
+}
+
+@keyframes takeoff-title-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Pesawat: lebar 52vw (rasio potongan 730x216). Posisi awal di luar layar kanan bawah. */
+.takeoff__flight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 52vw;
+  transform: translate(102vw, 64vh) rotate(-12deg) scale(0.75);
+  transform-origin: 50% 50%;
+}
+
+/* Lepas landas pelan dari kanan ke kiri dengan lintasan panjang; makin lama makin cepat
+   (jarak tiap tahap makin jauh) dan hidung naik dari ~4 derajat sampai ~30 derajat
+   (foto aslinya sudah 16 derajat, jadi rotasi -12deg..+14deg). */
+.login-slide--active .takeoff__flight {
+  animation: takeoff-fly 50s linear forwards;
+}
+
+@keyframes takeoff-fly {
+  0% { transform: translate(102vw, 64vh) rotate(-12deg) scale(0.75); }
+  20% { transform: translate(70vw, 58vh) rotate(-8deg) scale(0.82); }
+  45% { transform: translate(40vw, 40vh) rotate(1deg) scale(0.9); }
+  70% { transform: translate(12vw, 16vh) rotate(9deg) scale(0.97); }
+  100% { transform: translate(-75vw, -48vh) rotate(14deg) scale(1.05); }
+}
+
+.takeoff__plane {
+  position: relative;
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.35));
+}
+
+.takeoff__plane-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Lampu depan di hidung pesawat (titik hidung pada potongan: 0,7% / 12,5%). */
+.takeoff__light {
+  position: absolute;
+  left: 1.8%;
+  top: 19%;
+  width: 2.6%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #fff7c2 35%, rgba(255, 236, 140, 0) 70%);
+  box-shadow:
+    0 0 12px 6px rgba(255, 248, 200, 0.9),
+    0 0 40px 18px rgba(255, 240, 170, 0.45);
+  transform: translate(-50%, -50%);
+  animation: takeoff-light 1.4s ease-in-out infinite;
+}
+
+@keyframes takeoff-light {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Sorot lampu ke depan, searah badan pesawat (16 derajat naik pada foto). */
+.takeoff__beam {
+  position: absolute;
+  right: 98%;
+  top: 19%;
+  width: 70%;
+  height: 46%;
+  background: linear-gradient(to left, rgba(255, 250, 215, 0.55) 0%, rgba(255, 250, 215, 0.15) 55%, rgba(255, 250, 215, 0) 100%);
+  clip-path: polygon(0 0, 100% 46%, 100% 54%, 0 100%);
+  filter: blur(3px);
+  transform: translateY(-50%) rotate(16deg);
+  transform-origin: 100% 50%;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-slide--active .takeoff__flight {
+    animation: none;
+    transform: translate(30vw, 30vh) rotate(4deg) scale(0.9);
+  }
+
+  .login-slide--active .takeoff__title {
+    animation: none;
+    opacity: 1;
+  }
+
+  .takeoff__light {
+    animation: none;
+  }
+}
+
 /* Alamat tepat di bawah slogan "Sehat Bersama, Hidup Lebih Baik" pada foto.
    Foto (1536x1024) dipotong dengan object-fit: cover, jadi 1px foto = --px di layar;
    posisi dihitung dari titik tengah layar ke koordinat slogan di foto (x 893, y 412). */

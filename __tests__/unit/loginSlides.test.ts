@@ -1,9 +1,17 @@
 import { describe, expect, test } from 'vitest';
-import { LOGIN_SLIDES, nextSlideIndex, slideImageUrl } from '../../apps/web/src/lib/loginSlides.ts';
+import { LOGIN_SLIDES, TAKEOFF_SLIDE_ID, nextSlideIndex, slideImageUrl } from '../../apps/web/src/lib/loginSlides.ts';
 
 describe('LOGIN_SLIDES', () => {
-  test('six slides in order with the requested durations', () => {
-    expect(LOGIN_SLIDES.map((s) => s.id)).toEqual(['prima-husada', 'poliklinik', 'radiologi', 'laboratorium', 'farmasi', 'hrd']);
+  test('seven slides in order with the requested durations', () => {
+    expect(LOGIN_SLIDES.map((s) => s.id)).toEqual([
+      'prima-husada',
+      'poliklinik',
+      'radiologi',
+      'laboratorium',
+      'farmasi',
+      'hrd',
+      'menuju-2035',
+    ]);
     expect(LOGIN_SLIDES[0]?.durationMs).toBe(60_000);
     expect(LOGIN_SLIDES[1]?.durationMs).toBe(60_000);
     expect(LOGIN_SLIDES[2]?.durationMs).toBe(90_000);
@@ -12,6 +20,10 @@ describe('LOGIN_SLIDES', () => {
   test('radiology and lab slides carry their titles and equipment', () => {
     expect(LOGIN_SLIDES[2]).toMatchObject({ title: 'Radiologi', items: ['Alat Rontgen', 'Alat USG', 'Ruang Operator'] });
     expect(LOGIN_SLIDES[3]).toMatchObject({ title: 'Lab', items: ['Rayto 7600', 'Fotometer', 'Ruang Laboratorium'] });
+  });
+
+  test('the last slide is the takeoff animation with its title', () => {
+    expect(LOGIN_SLIDES.at(-1)).toMatchObject({ id: TAKEOFF_SLIDE_ID, title: 'Menuju Prima Husada 2035' });
   });
 
   test('only the lab slide puts its title on the photo', () => {

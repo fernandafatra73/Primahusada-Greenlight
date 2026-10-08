@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { WELCOME_PHOTO_URL } from '../components/WelcomePhoto.tsx';
-import { LOGIN_SLIDES, nextSlideIndex, slideImageUrl, type LoginSlide } from '../lib/loginSlides.ts';
+import { LOGIN_SLIDES, TAKEOFF_SLIDE_ID, nextSlideIndex, slideImageUrl, type LoginSlide } from '../lib/loginSlides.ts';
+import { TakeoffSlide } from './TakeoffSlide.tsx';
 
 // Foto slide dicari lewat glob supaya aplikasi tetap berjalan bila filenya belum ada.
 const SLIDE_PHOTO_MODULES = import.meta.glob<string>('../../../../src/image/slide-*.*', {
@@ -31,6 +32,17 @@ export function LoginSlideshow() {
   return (
     <div className="login-slides">
       {LOGIN_SLIDES.map((slide, i) => {
+        if (slide.id === TAKEOFF_SLIDE_ID) {
+          return (
+            <section
+              key={slide.id}
+              className={`login-slide login-slide--${slide.id}${i === index ? ' login-slide--active' : ''}`}
+              aria-hidden={i !== index}
+            >
+              <TakeoffSlide title={slide.title ?? ''} />
+            </section>
+          );
+        }
         const photo = photoFor(slide);
         const isWelcome = slide.id === 'prima-husada';
         return (
