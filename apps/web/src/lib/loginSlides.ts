@@ -58,8 +58,8 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
     title: 'Farmasi',
     items: ['Ruang Obat'],
     durationMs: MINUTE_MS,
-    // Dinding putih kanan papan "Apotek / Farmasi".
-    clock: { photoWidth: 1024, photoHeight: 559, x: 915, y: 118, size: 66 },
+    // Dinding putih kanan papan "Apotek / Farmasi", di bawah garis plafon.
+    clock: { photoWidth: 1024, photoHeight: 559, x: 915, y: 165, size: 66 },
   },
   {
     id: 'hrd',
