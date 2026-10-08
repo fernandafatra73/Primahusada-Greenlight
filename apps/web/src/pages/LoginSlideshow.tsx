@@ -39,7 +39,15 @@ export function LoginSlideshow() {
             className={`login-slide login-slide--${slide.id}${i === index ? ' login-slide--active' : ''}`}
             aria-hidden={i !== index}
           >
-            {photo ? <img src={photo} alt="" className="login-slide__photo" /> : null}
+            {photo && isWelcome ? <img src={photo} alt="" className="login-slide__photo" /> : null}
+            {photo && !isWelcome ? (
+              // Foto slide biasanya kolase berlabel: ditampilkan utuh (tidak dipotong) di atas
+              // baris tombol, sisa ruangnya diisi versi buram dari foto yang sama.
+              <>
+                <img src={photo} alt="" className="login-slide__backdrop" />
+                <img src={photo} alt={slide.title ?? ''} className="login-slide__photo login-slide__photo--whole" />
+              </>
+            ) : null}
 
             {isWelcome && photo ? (
               // Alamat diletakkan di bawah slogan "Sehat Bersama, Hidup Lebih Baik" pada foto.
@@ -49,8 +57,9 @@ export function LoginSlideshow() {
               </p>
             ) : null}
 
-            {slide.title !== null || !photo ? (
-              <div className={photo ? 'login-slide__caption' : 'login-slide__caption login-slide__caption--card'}>
+            {/* Judul dan isi hanya untuk slide yang fotonya belum ada; foto slide sudah memuat tulisannya sendiri. */}
+            {!photo ? (
+              <div className="login-slide__caption login-slide__caption--card">
                 <h2 className="login-slide__title">{slide.title ?? 'Klinik Prima Husada'}</h2>
                 {slide.items.length > 0 ? (
                   <ul className="login-slide__items">

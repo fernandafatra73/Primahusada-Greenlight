@@ -52,35 +52,39 @@
   object-fit: cover;
 }
 
-/* Judul di atas foto: kiri atas, latar gelap transparan supaya terbaca. */
-.login-slide__caption {
-  position: absolute;
-  top: clamp(1rem, 4vh, 2.5rem);
-  left: clamp(1rem, 4vw, 3rem);
-  z-index: 1;
-  max-width: min(640px, calc(100% - 2rem));
-  padding: 1rem 1.5rem;
-  border-left: 6px solid #f1c40f;
-  border-radius: 14px;
-  background: rgba(6, 30, 70, 0.72);
-  color: #ffffff;
+/* Foto slide (kolase berlabel) utuh tanpa dipotong, di atas baris tombol kiri bawah. */
+.login-slide__photo--whole {
+  height: calc(100% - 4.75rem);
+  object-fit: contain;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
 }
 
-/* Tanpa foto: judul besar di tengah kartu berwarna. */
+/* Sisa ruang di sekitar foto utuh: foto yang sama, diperbesar dan diburamkan. */
+.login-slide__backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(24px) brightness(0.55);
+  transform: scale(1.1);
+}
+
+/* Tanpa foto: judul besar dan isi slide di tengah kartu berwarna. */
 .login-slide__caption--card {
+  position: absolute;
   top: 50%;
   left: 50%;
+  z-index: 1;
   max-width: calc(100% - 2rem);
-  padding: 0;
-  border: none;
-  background: none;
+  color: #ffffff;
   text-align: center;
   transform: translate(-50%, -60%);
 }
 
 .login-slide__title {
   margin: 0;
-  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-size: clamp(3rem, 9vw, 6.5rem);
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.1;
@@ -88,22 +92,14 @@
   text-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
 }
 
-.login-slide__caption--card .login-slide__title {
-  font-size: clamp(3rem, 9vw, 6.5rem);
-}
-
 .login-slide__items {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.5rem;
-  margin: 0.75rem 0 0;
+  margin: 1.25rem 0 0;
   padding: 0;
   list-style: none;
-}
-
-.login-slide__caption--card .login-slide__items {
-  justify-content: center;
-  margin-top: 1.25rem;
 }
 
 .login-slide__items li {

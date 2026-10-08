@@ -1,13 +1,14 @@
 // Slide latar halaman login: berganti otomatis sesuai durasi masing-masing.
 // Foto tiap slide disimpan di src/image/slide-<id>.(jpg|jpeg|png|webp); slide
-// pertama memakai foto sambutan (selamat-datang.*). Selama fotonya belum ada,
+// pertama memakai foto sambutan (selamat-datang.*). Foto slide ditampilkan utuh
+// apa adanya (biasanya kolase yang sudah berlabel); selama fotonya belum ada,
 // slide tampil sebagai kartu berwarna berisi judul dan daftar isinya.
 
 const MINUTE_MS = 60_000;
 
 export interface LoginSlide {
   readonly id: string;
-  /** Judul besar di atas slide; null untuk slide yang fotonya sudah memuat tulisan sendiri. */
+  /** Judul besar pada kartu pengganti foto; null untuk slide sambutan. */
   readonly title: string | null;
   /** Isi slide, ditampilkan di bawah judul. */
   readonly items: readonly string[];
