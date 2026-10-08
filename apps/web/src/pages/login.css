@@ -14,12 +14,143 @@
   background: linear-gradient(135deg, #0b3d78 0%, #1d6fc4 100%);
 }
 
-.login-frame__photo {
+/* Slide latar (LoginSlideshow): ditumpuk, yang aktif muncul pelan-pelan. */
+.login-slides {
+  position: absolute;
+  inset: 0;
+}
+
+.login-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 1.2s ease,
+    visibility 0s linear 1.2s;
+}
+
+.login-slide--active {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 1.2s ease;
+}
+
+/* Warna kartu selama foto slide belum ada. */
+.login-slide--prima-husada { background: linear-gradient(135deg, #0b3d78 0%, #1d6fc4 100%); }
+.login-slide--poliklinik { background: linear-gradient(135deg, #0f5c22 0%, #2fa84f 100%); }
+.login-slide--radiologi { background: linear-gradient(135deg, #0a1f4d 0%, #2b5fd9 100%); }
+.login-slide--laboratorium { background: linear-gradient(135deg, #5b0f2a 0%, #c0284f 100%); }
+.login-slide--farmasi { background: linear-gradient(135deg, #0d5257 0%, #19a3a3 100%); }
+.login-slide--hrd { background: linear-gradient(135deg, #4a2a7a 0%, #8b5cd6 100%); }
+
+.login-slide__photo {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Judul di atas foto: kiri atas, latar gelap transparan supaya terbaca. */
+.login-slide__caption {
+  position: absolute;
+  top: clamp(1rem, 4vh, 2.5rem);
+  left: clamp(1rem, 4vw, 3rem);
+  z-index: 1;
+  max-width: min(640px, calc(100% - 2rem));
+  padding: 1rem 1.5rem;
+  border-left: 6px solid #f1c40f;
+  border-radius: 14px;
+  background: rgba(6, 30, 70, 0.72);
+  color: #ffffff;
+}
+
+/* Tanpa foto: judul besar di tengah kartu berwarna. */
+.login-slide__caption--card {
+  top: 50%;
+  left: 50%;
+  max-width: calc(100% - 2rem);
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: center;
+  transform: translate(-50%, -60%);
+}
+
+.login-slide__title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+}
+
+.login-slide__caption--card .login-slide__title {
+  font-size: clamp(3rem, 9vw, 6.5rem);
+}
+
+.login-slide__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.login-slide__caption--card .login-slide__items {
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.login-slide__items li {
+  padding: 0.35rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  font-size: clamp(0.9rem, 1.6vw, 1.15rem);
+  font-weight: 600;
+}
+
+.login-slide__address {
+  margin: 0.75rem 0 0;
+  font-size: clamp(0.9rem, 1.6vw, 1.15rem);
+}
+
+/* Titik penanda slide di atas tengah; bisa diklik untuk pindah slide. */
+.login-slides__dots {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  gap: 0.5rem;
+  transform: translateX(-50%);
+}
+
+.login-slides__dot {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.login-slides__dot--active {
+  background: #f1c40f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-slide,
+  .login-slide--active {
+    transition: none;
+  }
 }
 
 /* Alamat tepat di bawah slogan "Sehat Bersama, Hidup Lebih Baik" pada foto.

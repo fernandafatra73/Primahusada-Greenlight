@@ -5,12 +5,9 @@ import type { AuthUser } from '../lib/auth.ts';
 import { isCabinSilent, unlockCabinAudio } from '../lib/cabinSounds.ts';
 import { startLoginMusic, stopLoginMusic } from '../lib/loginMusic.ts';
 import { LoginProfile } from './LoginProfile.tsx';
+import { LoginSlideshow } from './LoginSlideshow.tsx';
 import { LoginWelcome } from './LoginWelcome.tsx';
-import { WelcomePhoto } from '../components/WelcomePhoto.tsx';
 import './login.css';
-
-const CLINIC_ADDRESS = 'Jl. Siliwangi Ruko Palapa II Parung Kuda - Sukabumi';
-const CLINIC_PHONE = 'Telp 0857-1932-5557';
 
 interface LoginPageProps {
   readonly onLogin: (user: AuthUser) => void;
@@ -82,14 +79,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <main className="login-page">
       <div className="login-frame">
-        <WelcomePhoto className="login-frame__photo" />
+        <LoginSlideshow />
         <LoginWelcome onVoiceDone={() => setVoiceFinished(true)} />
-
-        {/* Alamat diletakkan di bawah slogan "Sehat Bersama, Hidup Lebih Baik" pada foto. */}
-        <p className="login-frame__address">
-          <span>{CLINIC_ADDRESS}</span>
-          <span>{CLINIC_PHONE}</span>
-        </p>
 
         <section className={showLogin ? 'login-panel' : 'login-panel login-panel--hidden'} aria-labelledby="login-title">
           <div className="login-panel__brand">
