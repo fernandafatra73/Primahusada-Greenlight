@@ -63,6 +63,19 @@ export function DashboardMusicPlayer() {
       >
         {wantPlaying ? 'Stop Musik' : 'Putar Musik'}
       </button>
+      {/* Lompat ke lagu berikutnya dan langsung memutarnya, juga bila sebelumnya di-Stop. */}
+      <button
+        type="button"
+        className="dashboard-music__btn dashboard-music__btn--next"
+        aria-label="Lagu berikutnya"
+        title="Lagu berikutnya"
+        onClick={() => {
+          setIndex((i) => nextTrackIndex(i, DASHBOARD_PLAYLIST.length));
+          setWantPlaying(true);
+        }}
+      >
+        Lagu Berikutnya ⏭
+      </button>
     </div>
   );
 }

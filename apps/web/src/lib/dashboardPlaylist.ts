@@ -12,6 +12,9 @@ export const DASHBOARD_PLAYLIST: readonly DashboardTrack[] = [
   { title: 'Spa Relaxation — Atlas Audio', url: '/audio/dashboard/03-spa-relaxation.mp3' },
   { title: 'Relaxation — Marlowe Music', url: '/audio/dashboard/04-relaxation.mp3' },
   { title: 'Spa Relaxation II — Atlas Audio', url: '/audio/dashboard/05-spa-relaxation-2.mp3' },
+  { title: 'Angelic Meditation', url: '/audio/dashboard/06-angelic-meditation.mp3' },
+  { title: 'Garden of Memories — Light Music', url: '/audio/dashboard/07-garden-of-memories.mp3' },
+  { title: 'Trouver la Sérénité — Jean Angius', url: '/audio/dashboard/08-trouver-la-serenite.mp3' },
 ];
 
 /** Lagu berikutnya; setelah lagu terakhir kembali ke lagu pertama. */
