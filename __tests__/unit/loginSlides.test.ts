@@ -23,7 +23,8 @@ describe('LOGIN_SLIDES', () => {
   });
 
   test('the last slide is the takeoff animation with its title', () => {
-    expect(LOGIN_SLIDES.at(-1)).toMatchObject({ id: TAKEOFF_SLIDE_ID, title: 'Menuju Prima Husada 2035' });
+    // 90 s: takeoff (0-45 s) and the left-to-right pass through the clouds (48-83 s) both fit.
+    expect(LOGIN_SLIDES.at(-1)).toMatchObject({ id: TAKEOFF_SLIDE_ID, title: 'Menuju Prima Husada 2035', durationMs: 90_000 });
   });
 
   test('only the lab slide puts its title on the photo', () => {

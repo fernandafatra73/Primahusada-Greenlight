@@ -239,7 +239,7 @@
    (jarak tiap tahap makin jauh) dan hidung naik dari ~4 derajat sampai ~30 derajat
    (foto aslinya sudah 16 derajat, jadi rotasi -12deg..+14deg). */
 .login-slide--active .takeoff__flight {
-  animation: takeoff-fly 50s linear forwards;
+  animation: takeoff-fly 45s linear forwards;
 }
 
 @keyframes takeoff-fly {
@@ -268,12 +268,10 @@
   top: 19%;
   width: 2.6%;
   aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ffffff 0%, #fff7c2 35%, rgba(255, 236, 140, 0) 70%);
-  box-shadow:
-    0 0 12px 6px rgba(255, 248, 200, 0.9),
-    0 0 40px 18px rgba(255, 240, 170, 0.45);
-  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #ffffff 0%, #fff7c2 30%, rgba(255, 236, 140, 0) 70%);
+  /* Pendar lewat filter: tema Delphi mematikan box-shadow di semua elemen. */
+  filter: drop-shadow(0 0 6px #fff8c8) drop-shadow(0 0 16px rgba(255, 240, 170, 0.9));
+  transform: translate(-50%, -50%) scale(1.8);
   animation: takeoff-light 1.4s ease-in-out infinite;
 }
 
@@ -297,10 +295,99 @@
   pointer-events: none;
 }
 
+/* Fase 2 (48-83 s): pesawat muncul lagi dari kiri ke kanan di ketinggian jelajah,
+   jauh lebih kecil (jauh di atas; tulisan livery yang tercermin jadi tak terbaca),
+   hidung hampir datar (16 derajat pada foto - 10 = ~6 derajat). */
+.takeoff__cruise {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 17vw;
+  transform: translate(-20vw, 21vh) rotate(10deg);
+}
+
+.takeoff__mirror {
+  transform: scaleX(-1);
+}
+
+.login-slide--active .takeoff__cruise {
+  animation: takeoff-cruise 35s linear 48s both;
+}
+
+@keyframes takeoff-cruise {
+  from { transform: translate(-20vw, 21vh) rotate(10deg); }
+  to { transform: translate(105vw, 8vh) rotate(10deg); }
+}
+
+/* Awan di ketinggian jelajah: lapisan belakang di bawah pesawat, lapisan depan menutupi
+   pesawat sesaat saat melintas. Muncul menjelang fase 2 dan bergeser pelan (paralaks). */
+.takeoff__clouds {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.takeoff__clouds--back {
+  z-index: 1;
+}
+
+.takeoff__clouds--front {
+  z-index: 3;
+}
+
+.login-slide--active .takeoff__clouds--back {
+  animation:
+    takeoff-clouds-in 3s ease 45s both,
+    takeoff-drift-back 45s linear 45s both;
+}
+
+.login-slide--active .takeoff__clouds--front {
+  animation:
+    takeoff-clouds-in 3s ease 45s both,
+    takeoff-drift-front 45s linear 45s both;
+}
+
+@keyframes takeoff-clouds-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes takeoff-drift-back {
+  from { transform: translateX(0); }
+  to { transform: translateX(-6vw); }
+}
+
+@keyframes takeoff-drift-front {
+  from { transform: translateX(0); }
+  to { transform: translateX(-14vw); }
+}
+
+/* Sprite awan dari langit foto itu sendiri (transparan di bagian langit biru). */
+.takeoff__cloud {
+  position: absolute;
+  height: auto;
+  /* Lebih terang dari langit foto supaya awan yang dilewati pesawat jelas terlihat. */
+  filter: brightness(1.25) saturate(0.75);
+}
+
+.takeoff__cloud--b1 { left: 0; top: 7vh; width: 26vw; opacity: 0.85; }
+.takeoff__cloud--b2 { left: 42vw; top: 1vh; width: 34vw; opacity: 0.8; }
+.takeoff__cloud--b3 { left: 80vw; top: 13vh; width: 22vw; opacity: 0.9; }
+.takeoff__cloud--f1 { left: 20vw; top: 11vh; width: 38vw; opacity: 1; }
+.takeoff__cloud--f2 { left: 62vw; top: 6vh; width: 32vw; opacity: 1; }
+.takeoff__cloud--f3 { left: 96vw; top: 2vh; width: 32vw; opacity: 1; }
+
 @media (prefers-reduced-motion: reduce) {
   .login-slide--active .takeoff__flight {
     animation: none;
     transform: translate(30vw, 30vh) rotate(4deg) scale(0.9);
+  }
+
+  .login-slide--active .takeoff__cruise,
+  .login-slide--active .takeoff__clouds {
+    animation: none;
   }
 
   .login-slide--active .takeoff__title {
