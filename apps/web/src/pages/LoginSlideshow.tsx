@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { WELCOME_PHOTO_URL } from '../components/WelcomePhoto.tsx';
 import { LOGIN_SLIDES, TAKEOFF_SLIDE_ID, nextSlideIndex, slideImageUrl, type LoginSlide } from '../lib/loginSlides.ts';
 import { TakeoffSlide } from './TakeoffSlide.tsx';
+import { WallClock } from './WallClock.tsx';
 
 // Foto slide dicari lewat glob supaya aplikasi tetap berjalan bila filenya belum ada.
 const SLIDE_PHOTO_MODULES = import.meta.glob<string>('../../../../src/image/slide-*.*', {
@@ -59,6 +60,13 @@ export function LoginSlideshow() {
                 <img src={photo} alt="" className="login-slide__backdrop" />
                 <img src={photo} alt={slide.title ?? ''} className="login-slide__photo login-slide__photo--whole" />
               </>
+            ) : null}
+
+            {isWelcome && photo ? (
+              // Jam dinding di dinding putih kanan logo, mengikuti waktu komputer.
+              <div className="login-wallclock">
+                <WallClock />
+              </div>
             ) : null}
 
             {isWelcome && photo ? (
