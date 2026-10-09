@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import logoDashboard from '@src/image/logo-dashboard.jpg';
 import { WELCOME_PHOTO_URL } from '../components/WelcomePhoto.tsx';
 import { LOGIN_SLIDES, TAKEOFF_SLIDE_ID, nextSlideIndex, slideImageUrl, type LoginSlide } from '../lib/loginSlides.ts';
 import { TakeoffSlide } from './TakeoffSlide.tsx';
@@ -46,6 +47,8 @@ export function LoginSlideshow() {
         }
         const photo = photoFor(slide);
         const isWelcome = slide.id === 'prima-husada';
+        const { clock, logos } = slide;
+        const frame = clock ?? logos;
         return (
           <section
             key={slide.id}
@@ -58,28 +61,49 @@ export function LoginSlideshow() {
               // baris tombol, sisa ruangnya diisi versi buram dari foto yang sama.
               <>
                 <img src={photo} alt="" className="login-slide__backdrop" />
-                {slide.clock ? (
+                {frame ? (
                   // Bingkai seukuran foto yang tampil, supaya jam bisa diletakkan di titik dinding foto.
                   <div
                     className="login-slide__stage"
-                    style={{ '--ratio': slide.clock.photoWidth / slide.clock.photoHeight } as CSSProperties}
+                    style={{ '--ratio': frame.photoWidth / frame.photoHeight } as CSSProperties}
                   >
                     <img src={photo} alt={slide.title ?? ''} className="login-slide__stage-img" />
-                    <div
-                      className="login-slide__clock"
-                      style={{
-                        left: `${(slide.clock.x / slide.clock.photoWidth) * 100}%`,
-                        top: `${(slide.clock.y / slide.clock.photoHeight) * 100}%`,
-                        width: `${(slide.clock.size / slide.clock.photoWidth) * 100}%`,
-                      }}
-                    >
-                      <WallClock />
-                    </div>
+                    {clock ? (
+                      <div
+                        className="login-slide__clock"
+                        style={{
+                          left: `${(clock.x / clock.photoWidth) * 100}%`,
+                          top: `${(clock.y / clock.photoHeight) * 100}%`,
+                          width: `${(clock.size / clock.photoWidth) * 100}%`,
+                        }}
+                      >
+                        <WallClock />
+                      </div>
+                    ) : null}
+                    {logos?.marks.map((logo) => (
+                      <img
+                        key={`${logo.x}-${logo.y}`}
+                        src={logoDashboard}
+                        alt=""
+                        className="login-slide__logo"
+                        style={{
+                          left: `${(logo.x / frame.photoWidth) * 100}%`,
+                          top: `${(logo.y / frame.photoHeight) * 100}%`,
+                          width: `${(logo.width / frame.photoWidth) * 100}%`,
+                          height: `${(logo.height / frame.photoHeight) * 100}%`,
+                        }}
+                      />
+                    ))}
                   </div>
                 ) : (
                   <img src={photo} alt={slide.title ?? ''} className="login-slide__photo login-slide__photo--whole" />
                 )}
               </>
+            ) : null}
+
+            {isWelcome && photo ? (
+              // Logo baru menutupi lambang palang-hati pada foto, tepat di atas tulisan "Klinik".
+              <img src={logoDashboard} alt="Prima Husada" className="login-welcome-logo" />
             ) : null}
 
             {isWelcome && photo ? (

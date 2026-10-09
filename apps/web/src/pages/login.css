@@ -97,6 +97,13 @@
   filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.35));
 }
 
+/* Logo baru yang menutupi lambang pada papan di foto. */
+.login-slide__logo {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+}
+
 /* Sisa ruang di sekitar foto utuh: foto yang sama, diperbesar dan diburamkan. */
 .login-slide__backdrop {
   position: absolute;
@@ -801,3 +808,16 @@
   margin: 1rem 0 !important;
 }
 
+
+/* Menutupi lambang di foto selamat datang (pusat 893,106; ukuran 190x165 dalam foto 1536x1024). */
+.login-welcome-logo {
+  --frame-h: max(100vh, 560px);
+  --px: max(calc(100vw / 1536), calc(var(--frame-h) / 1024));
+  position: absolute;
+  left: calc(50vw + (893 - 768 - 100) * var(--px));
+  top: calc(var(--frame-h) / 2 + (106 - 512 - 87) * var(--px));
+  z-index: 1;
+  width: calc(200 * var(--px));
+  height: calc(174 * var(--px));
+  object-fit: contain;
+}
