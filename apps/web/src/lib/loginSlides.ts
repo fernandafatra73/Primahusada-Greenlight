@@ -67,7 +67,6 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
     title: 'Radiologi',
     items: ['Alat Rontgen', 'Alat USG', 'Ruang Operator'],
     durationMs: 1.5 * MINUTE_MS,
-    logos: { photoWidth: 1536, photoHeight: 1024, marks: [{ x: 166, y: 52, width: 64, height: 56 }] },
   },
   {
     id: 'laboratorium',
@@ -77,7 +76,6 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
     durationMs: MINUTE_MS,
     // Menimpa jam dinding yang sudah ada di foto, sehingga jam itu ikut berjalan.
     clock: { photoWidth: 1024, photoHeight: 559, x: 925, y: 54, size: 56 },
-    logos: { photoWidth: 1024, photoHeight: 559, marks: [{ x: 758, y: 115, width: 34, height: 30 }] },
   },
   {
     id: 'farmasi',
@@ -86,7 +84,6 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
     durationMs: MINUTE_MS,
     // Dinding putih kanan papan "Apotek / Farmasi", di bawah garis plafon.
     clock: { photoWidth: 1024, photoHeight: 559, x: 915, y: 165, size: 66 },
-    logos: { photoWidth: 1024, photoHeight: 559, marks: [{ x: 566, y: 94, width: 40, height: 35 }] },
   },
   {
     id: 'hrd',
@@ -97,7 +94,6 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
     durationMs: MINUTE_MS,
     // Di atas papan "Komitmen Kami".
     clock: { photoWidth: 1024, photoHeight: 559, x: 685, y: 113, size: 56 },
-    logos: { photoWidth: 1024, photoHeight: 559, marks: [{ x: 291, y: 146, width: 38, height: 33 }] },
   },
   // Slide animasi: pesawat Prima Husada lepas landas, lalu melintas kiri ke kanan
   // menembus awan (lihat TakeoffSlide; urutan waktunya di login.css).
