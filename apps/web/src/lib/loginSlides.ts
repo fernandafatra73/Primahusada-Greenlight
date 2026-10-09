@@ -53,14 +53,6 @@ export const LOGIN_SLIDES: readonly LoginSlide[] = [
     durationMs: MINUTE_MS,
     // Dinding antara jendela dan papan nama, di bawah plafon dan di atas bingkai lukisan.
     clock: { photoWidth: 1024, photoHeight: 559, x: 478, y: 112, size: 58 },
-    logos: {
-      photoWidth: 1024,
-      photoHeight: 559,
-      marks: [
-        { x: 584, y: 148, width: 36, height: 31 },
-        { x: 739, y: 404, width: 38, height: 33 },
-      ],
-    },
   },
   {
     id: 'radiologi',
