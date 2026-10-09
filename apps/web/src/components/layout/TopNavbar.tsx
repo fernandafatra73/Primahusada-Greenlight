@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type JSX } from 'react';
 import { isActivationLocked, isActivationPasswordValid } from '../../config/activation.ts';
-import logoPrimahusada from '@src/image/logo-primahusada.png';
+import logoPrimahusada from '@src/image/logo-dashboard.jpg';
 import {
   DASHBOARD_NAV_ID,
   isViewAllowed,
