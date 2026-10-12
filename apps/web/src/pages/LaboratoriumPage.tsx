@@ -32,6 +32,7 @@ import {
   type ParsedLabData,
 } from '../lib/labKesan.ts';
 import { serializeKlinisData } from '../lib/penunjang.ts';
+import { applyWidalResults, widalParameterNames, type WidalReadResult } from '../lib/widal.ts';
 import '../components/ui/ui.css';
 
 export {
@@ -180,6 +181,8 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
   const [readingFotoHasil, setReadingFotoHasil] = useState(false);
   const [readFotoHasilError, setReadFotoHasilError] = useState<string | null>(null);
   const [fotoHasilPreview, setFotoHasilPreview] = useState<string | null>(null);
+  const [readingWidal, setReadingWidal] = useState(false);
+  const [widalHasil, setWidalHasil] = useState<readonly WidalReadResult[] | null>(null);
   const [jumlahDiffcount, setJumlahDiffcount] = useState<number | null>(null);
   const [analisList, setAnalisList] = useState<PetugasLabItem[]>([]);
   const [analisId, setAnalisId] = useState('');
@@ -315,6 +318,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     setEditAlamat(item.alamat ?? '');
     setFotoHasilPreview(null);
     setReadFotoHasilError(null);
+    setWidalHasil(null);
     setJumlahDiffcount(null);
   }
 
@@ -518,6 +522,40 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
       setReadFotoHasilError(err instanceof Error ? err.message : 'Gagal membaca teks dari foto');
     } finally {
       setReadingFotoHasil(false);
+    }
+  }
+
+  // Foto Widal: ambil foto slide/hasil Widal dengan kamera, AI menentukan
+  // titer kedelapan antigen (Negatif / 1/80 / 1/160 / 1/320 / 1/640) dan
+  // langsung mengisi baris Widal di tabel.
+  function handleFotoWidalFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setReadFotoHasilError(null);
+    setWidalHasil(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') void processFotoWidal(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function processFotoWidal(fotoDataUrl: string) {
+    setFotoHasilPreview(fotoDataUrl);
+    setReadingWidal(true);
+    try {
+      const res = await apiPost<{ results: readonly WidalReadResult[] }>('/api/analisa-lab-ai/read-widal', {
+        fotoDataUrl,
+        parameterNames: widalParameterNames(labRows),
+      });
+      const stamp = Date.now();
+      setLabRows((prev) => applyWidalResults(prev, res.results, (i) => `widal-${stamp}-${i}`));
+      setWidalHasil(res.results);
+    } catch (err) {
+      setReadFotoHasilError(err instanceof Error ? err.message : 'Gagal membaca foto Widal');
+    } finally {
+      setReadingWidal(false);
     }
   }
 
@@ -1025,6 +1063,21 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                   <input id="lab-hasil-foto" type="file" accept="image/*" onChange={handleFotoHasilFileChange} />
+                  <label
+                    className="btn btn--sm btn--primary"
+                    title="Ambil foto slide/hasil Widal — AI menentukan titer 8 antigen (Negatif, 1/80, 1/160, 1/320, 1/640)"
+                    style={{ cursor: readingWidal ? 'wait' : 'pointer', opacity: readingWidal ? 0.6 : 1 }}
+                  >
+                    {readingWidal ? '⏳ Membaca Widal...' : '🧪 Foto Widal'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      disabled={readingWidal}
+                      onChange={handleFotoWidalFileChange}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
                   {fotoHasilPreview && (
                     <>
                       <img
@@ -1072,6 +1125,12 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                   <p className="alert alert--error" style={{ margin: '0.4rem 0 0' }}>
                     {readFotoHasilError}
                   </p>
+                )}
+                {widalHasil && (
+                  <div style={{ marginTop: '0.4rem', fontSize: '0.8rem' }}>
+                    <b>Hasil Widal (AI — periksa ulang):</b>{' '}
+                    {widalHasil.map((r) => `${r.pemeriksaan}: ${r.hasil || 'tidak terbaca'}`).join(' · ')}
+                  </div>
                 )}
               </div>
 

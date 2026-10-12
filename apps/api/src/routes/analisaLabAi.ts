@@ -141,6 +141,48 @@ Aturan:
 - Kembalikan HANYA parameter-parameter yang ada di daftar yang diberikan, dengan nama "pemeriksaan" persis sama seperti di daftar (bukan nama/singkatan yang tertulis di foto).
 - Jawab HANYA sesuai skema JSON yang diberikan.`;
 
+/// Delapan antigen Widal sesuai paket "Widal" bawaan (lihat seed di crud.ts).
+export const DEFAULT_WIDAL_PARAMETERS: readonly string[] = [
+  'Salmonella Typhi O',
+  'Salmonella Paratyphi AO',
+  'Salmonella Paratyphi BO',
+  'Salmonella Paratyphi CO',
+  'Salmonella Typhi H',
+  'Salmonella Paratyphi AH',
+  'Salmonella Paratyphi BH',
+  'Salmonella Paratyphi CH',
+];
+
+export const WIDAL_TITER_VALUES = ['Negatif', '1/80', '1/160', '1/320', '1/640'] as const;
+export type WidalTiter = (typeof WIDAL_TITER_VALUES)[number];
+
+/// Menyeragamkan bacaan AI ke salah satu pilihan titer Widal. Titer di bawah
+/// 1/80 (1/20, 1/40) dianggap Negatif karena nilai rujukannya "Negatif
+/// (< 1/80)". Titer yang tidak dikenal (mis. 1/1280 atau 1/100) dikembalikan
+/// "" supaya petugas mengisinya manual, bukan dibulatkan diam-diam.
+export function normalizeWidalTiter(raw: string): WidalTiter | '' {
+  const text = raw.trim().toLowerCase();
+  if (!text) return '';
+  if (/^\(?\s*-\s*\)?$/.test(text) || /neg/.test(text)) return 'Negatif';
+  const match = /^(?:1\s*[/:]\s*)?(\d+)$/.exec(text.replace(/^titer\s*/, '').replace(/\s+/g, ''));
+  if (!match) return '';
+  const denominator = Number(match[1]);
+  if (denominator < 80) return 'Negatif';
+  const titer = `1/${denominator}`;
+  return WIDAL_TITER_VALUES.find((v) => v === titer) ?? '';
+}
+
+const READ_WIDAL_SYSTEM_PROMPT = `Anda adalah asisten AI yang membaca foto hasil pemeriksaan Widal (slide/kartu aglutinasi Widal atau kertas hasil tulisan tangan/print out) dan menentukan titer untuk tiap antigen Salmonella.
+
+Aturan:
+- Anda akan diberi daftar nama antigen Widal (O dan H untuk S. Typhi dan S. Paratyphi A/B/C).
+- Untuk tiap antigen, isi "hasil" dengan SALAH SATU nilai berikut saja: "Negatif", "1/80", "1/160", "1/320", "1/640".
+- Kalau foto berupa slide aglutinasi: aglutinasi (gumpalan/butiran) tampak pada pengenceran tertinggi itulah titernya; kalau tidak ada aglutinasi atau aglutinasi hanya di bawah 1/80, isi "Negatif".
+- Kalau foto berupa tulisan/print out, salin titer yang tertulis untuk antigen itu (mis. "1/160"); tulisan "-", "neg", atau titer di bawah 1/80 berarti "Negatif".
+- Kalau antigen itu tidak ditemukan atau tidak terbaca jelas di foto, isi "hasil" dengan string kosong "" — JANGAN mengarang nilai yang tidak ada di foto.
+- Kembalikan HANYA antigen yang ada di daftar, dengan nama "pemeriksaan" persis sama seperti di daftar.
+- Jawab HANYA sesuai skema JSON yang diberikan.`;
+
 export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Querystring: { page?: string; limit?: string; q?: string } }>('/api/analisa-lab-ai', async (req) => {
     const { page, limit, skip } = parsePagination(req.query);
@@ -385,6 +427,85 @@ export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<
       return { results };
     } catch (err) {
       req.log.error(err, 'Gagal memanggil AI vision untuk membaca foto hasil lab');
+      return reply.status(502).send({
+        error: err instanceof Error ? `Gagal menghubungi layanan AI: ${err.message}` : 'Gagal menghubungi layanan AI',
+      });
+    }
+  });
+
+  app.post<{
+    Body: { fotoDataUrl?: string; parameterNames?: unknown };
+  }>('/api/analisa-lab-ai/read-widal', async (req, reply) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return reply.status(503).send({
+        error: 'Fitur analisa AI belum dikonfigurasi. Admin perlu mengatur GEMINI_API_KEY di server.',
+      });
+    }
+
+    const { fotoDataUrl } = req.body;
+    if (!fotoDataUrl?.trim()) return badRequest(reply, 'fotoDataUrl wajib diisi');
+    const parsedImage = parseImageDataUrl(fotoDataUrl);
+    if (!parsedImage) {
+      return badRequest(reply, 'Format foto tidak didukung. Gunakan JPEG, PNG, GIF, atau WEBP.');
+    }
+    const requestedNames = sanitizeParameterNames(req.body.parameterNames);
+    const parameterNames = requestedNames.length > 0 ? requestedNames : DEFAULT_WIDAL_PARAMETERS;
+
+    const promptText = [
+      'Daftar antigen Widal yang harus ditentukan titernya:',
+      ...parameterNames.map((name, index) => `${index + 1}. ${name}`),
+      'Baca foto di atas dan kembalikan titer tiap antigen di daftar sesuai skema JSON.',
+    ].join('\n');
+
+    try {
+      const client = new GoogleGenAI({ apiKey });
+      const response = await generateContentWithFallback(client, {
+        model: 'gemini-3.6-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [{ inlineData: { mimeType: parsedImage.mediaType, data: parsedImage.data } }, { text: promptText }],
+          },
+        ],
+        config: {
+          systemInstruction: READ_WIDAL_SYSTEM_PROMPT,
+          responseMimeType: 'application/json',
+          responseSchema: READ_FOTO_RESPONSE_SCHEMA,
+          httpOptions: { timeout: 45_000 },
+        },
+      });
+
+      const finishReason = response.candidates?.[0]?.finishReason;
+      if (finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {
+        return reply.status(502).send({ error: 'AI menolak membaca foto ini. Silakan isi hasil Widal secara manual.' });
+      }
+
+      const text = response.text;
+      if (!text) return reply.status(502).send({ error: 'AI tidak mengembalikan hasil bacaan yang valid.' });
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        return reply.status(502).send({ error: 'AI mengembalikan format hasil yang tidak valid.' });
+      }
+
+      const results = Array.isArray(parsed)
+        ? parsed
+            .filter(
+              (p): p is { pemeriksaan: string; hasil: string } =>
+                Boolean(p) &&
+                typeof p === 'object' &&
+                typeof (p as { pemeriksaan?: unknown }).pemeriksaan === 'string' &&
+                typeof (p as { hasil?: unknown }).hasil === 'string',
+            )
+            .map((p) => ({ pemeriksaan: p.pemeriksaan, hasil: normalizeWidalTiter(p.hasil) }))
+        : [];
+
+      return { results };
+    } catch (err) {
+      req.log.error(err, 'Gagal memanggil AI vision untuk membaca foto Widal');
       return reply.status(502).send({
         error: err instanceof Error ? `Gagal menghubungi layanan AI: ${err.message}` : 'Gagal menghubungi layanan AI',
       });
