@@ -153,34 +153,123 @@ export const DEFAULT_WIDAL_PARAMETERS: readonly string[] = [
   'Salmonella Paratyphi CH',
 ];
 
-export const WIDAL_TITER_VALUES = ['Negatif', '1/80', '1/160', '1/320', '1/640'] as const;
+export const WIDAL_TITER_VALUES = ['(-) Negatif', '1/80', '1/160', '1/320', '1/640'] as const;
 export type WidalTiter = (typeof WIDAL_TITER_VALUES)[number];
 
-/// Menyeragamkan bacaan AI ke salah satu pilihan titer Widal. Titer di bawah
-/// 1/80 (1/20, 1/40) dianggap Negatif karena nilai rujukannya "Negatif
-/// (< 1/80)". Titer yang tidak dikenal (mis. 1/1280 atau 1/100) dikembalikan
-/// "" supaya petugas mengisinya manual, bukan dibulatkan diam-diam.
-export function normalizeWidalTiter(raw: string): WidalTiter | '' {
-  const text = raw.trim().toLowerCase();
-  if (!text) return '';
-  if (/^\(?\s*-\s*\)?$/.test(text) || /neg/.test(text)) return 'Negatif';
-  const match = /^(?:1\s*[/:]\s*)?(\d+)$/.exec(text.replace(/^titer\s*/, '').replace(/\s+/g, ''));
-  if (!match) return '';
-  const denominator = Number(match[1]);
-  if (denominator < 80) return 'Negatif';
-  const titer = `1/${denominator}`;
-  return WIDAL_TITER_VALUES.find((v) => v === titer) ?? '';
+/// Label antigen yang tercetak di papan Widal: H, AH, BH, CH di kolom kiri dan
+/// O, AO, BO, CO di kolom kanan, masing-masing dengan dua lingkaran.
+export const WIDAL_BOARD_LABELS = ['H', 'AH', 'BH', 'CH', 'O', 'AO', 'BO', 'CO'] as const;
+export type WidalBoardLabel = (typeof WIDAL_BOARD_LABELS)[number];
+
+/// Batas persentase penggumpalan ke titer sesuai ketentuan lab klinik:
+/// tidak ada aglutinasi (0%) = (-) Negatif, di bawah 15% = 1/80, 15–<25% = 1/160,
+/// 25–60% = 1/320, di atas 60% = 1/640.
+export function widalTiterFromPersen(persen: number): WidalTiter {
+  if (!Number.isFinite(persen) || persen <= 0) return '(-) Negatif';
+  if (persen < 15) return '1/80';
+  if (persen < 25) return '1/160';
+  if (persen <= 60) return '1/320';
+  return '1/640';
 }
 
-const READ_WIDAL_SYSTEM_PROMPT = `Anda adalah asisten AI yang membaca foto hasil pemeriksaan Widal (slide/kartu aglutinasi Widal atau kertas hasil tulisan tangan/print out) dan menentukan titer untuk tiap antigen Salmonella.
+/// Mencocokkan nama pemeriksaan di tabel (mis. "Salmonella Paratyphi AO" atau
+/// "Widal - S. Typhi H") ke label di papan. null kalau antigennya tidak jelas
+/// (mis. "S. Paratyphi A" tanpa O/H).
+export function widalBoardLabel(pemeriksaan: string): WidalBoardLabel | null {
+  const text = pemeriksaan.toLowerCase();
+  const para = /paratyphi\s*-?\s*([abc])\s*-?\s*([oh])\b/.exec(text);
+  if (para) return `${para[1]!.toUpperCase()}${para[2]!.toUpperCase()}` as WidalBoardLabel;
+  if (/paratyphi/.test(text)) return null;
+  const typhi = /typhi\s*-?\s*([oh])\b/.exec(text);
+  if (typhi) return typhi[1]!.toUpperCase() as WidalBoardLabel;
+  return null;
+}
+
+function isWidalBoardLabel(value: string): value is WidalBoardLabel {
+  return (WIDAL_BOARD_LABELS as readonly string[]).includes(value);
+}
+
+export interface WidalBoardReading {
+  readonly label: WidalBoardLabel;
+  readonly terbaca: boolean;
+  readonly aglutinasiPersen: number;
+}
+
+export interface WidalResult {
+  readonly pemeriksaan: string;
+  readonly hasil: WidalTiter | '';
+  readonly aglutinasiPersen: number | null;
+}
+
+/// Mengambil bacaan per label papan dari jawaban AI; entri yang rusak atau
+/// labelnya tidak dikenal dibuang.
+export function parseWidalBoardReadings(value: unknown): WidalBoardReading[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item): WidalBoardReading[] => {
+    if (!item || typeof item !== 'object') return [];
+    const { label, terbaca, aglutinasiPersen } = item as Record<string, unknown>;
+    if (typeof label !== 'string') return [];
+    const normalized = label.trim().toUpperCase();
+    if (!isWidalBoardLabel(normalized)) return [];
+    const persen = typeof aglutinasiPersen === 'number' && Number.isFinite(aglutinasiPersen) ? aglutinasiPersen : NaN;
+    const readable = terbaca === true && !Number.isNaN(persen);
+    return [{ label: normalized, terbaca: readable, aglutinasiPersen: readable ? Math.min(100, Math.max(0, persen)) : 0 }];
+  });
+}
+
+/// Menerjemahkan bacaan papan ke nama pemeriksaan yang diminta. Antigen yang
+/// tidak terbaca atau namanya tidak cocok dengan label papan diberi hasil ""
+/// supaya petugas mengisinya manual.
+export function widalResultsFromReadings(
+  parameterNames: readonly string[],
+  readings: readonly WidalBoardReading[],
+): WidalResult[] {
+  return parameterNames.map((pemeriksaan) => {
+    const label = widalBoardLabel(pemeriksaan);
+    const reading = label ? readings.find((r) => r.label === label) : undefined;
+    if (!reading || !reading.terbaca) return { pemeriksaan, hasil: '', aglutinasiPersen: null };
+    return {
+      pemeriksaan,
+      hasil: widalTiterFromPersen(reading.aglutinasiPersen),
+      aglutinasiPersen: Math.round(reading.aglutinasiPersen),
+    };
+  });
+}
+
+const READ_WIDAL_RESPONSE_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      label: {
+        type: Type.STRING,
+        description: 'Label antigen yang tercetak di papan: salah satu dari H, AH, BH, CH, O, AO, BO, CO.',
+      },
+      terbaca: {
+        type: Type.BOOLEAN,
+        description: 'false kalau lingkaran antigen ini tidak tampak/tidak terbaca jelas di foto.',
+      },
+      aglutinasiPersen: {
+        type: Type.NUMBER,
+        description:
+          'Perkiraan persentase luas lingkaran yang mengalami penggumpalan (aglutinasi), 0–100. Ambil dari lingkaran yang gumpalannya paling banyak di antara dua lingkaran antigen ini. 0 kalau tidak ada aglutinasi.',
+      },
+    },
+    required: ['label', 'terbaca', 'aglutinasiPersen'],
+  },
+};
+
+const READ_WIDAL_SYSTEM_PROMPT = `Anda adalah asisten AI yang membaca foto papan (slide) pemeriksaan Widal dan memperkirakan seberapa banyak penggumpalan (aglutinasi) pada tiap antigen.
+
+Tata letak papan:
+- Kolom kiri berisi label H, AH, BH, CH (atas ke bawah); kolom kanan berisi label O, AO, BO, CO (atas ke bawah).
+- Setiap label diikuti DUA lingkaran di sebelah kanannya. Kedua lingkaran itu milik label tersebut.
 
 Aturan:
-- Anda akan diberi daftar nama antigen Widal (O dan H untuk S. Typhi dan S. Paratyphi A/B/C).
-- Untuk tiap antigen, isi "hasil" dengan SALAH SATU nilai berikut saja: "Negatif", "1/80", "1/160", "1/320", "1/640".
-- Kalau foto berupa slide aglutinasi: aglutinasi (gumpalan/butiran) tampak pada pengenceran tertinggi itulah titernya; kalau tidak ada aglutinasi atau aglutinasi hanya di bawah 1/80, isi "Negatif".
-- Kalau foto berupa tulisan/print out, salin titer yang tertulis untuk antigen itu (mis. "1/160"); tulisan "-", "neg", atau titer di bawah 1/80 berarti "Negatif".
-- Kalau antigen itu tidak ditemukan atau tidak terbaca jelas di foto, isi "hasil" dengan string kosong "" — JANGAN mengarang nilai yang tidak ada di foto.
-- Kembalikan HANYA antigen yang ada di daftar, dengan nama "pemeriksaan" persis sama seperti di daftar.
+- Untuk tiap dari 8 label, lihat kedua lingkarannya. Aglutinasi tampak sebagai butiran/gumpalan/bintik-bintik di dalam lingkaran (cairannya jadi tidak rata/berpasir). Cairan yang halus dan merata berarti tidak ada aglutinasi.
+- Isi "aglutinasiPersen" dengan perkiraan persentase luas lingkaran yang menggumpal (0–100), diambil dari lingkaran yang gumpalannya PALING BANYAK di antara keduanya. Isi 0 kalau tidak ada aglutinasi sama sekali.
+- Kalau lingkaran kosong (belum ditetesi), tidak tampak, terpotong, atau terlalu buram untuk dinilai, isi "terbaca": false — JANGAN menebak.
+- Kembalikan tepat 8 entri, satu untuk tiap label H, AH, BH, CH, O, AO, BO, CO.
 - Jawab HANYA sesuai skema JSON yang diberikan.`;
 
 export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<void> {
@@ -452,11 +541,9 @@ export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<
     const requestedNames = sanitizeParameterNames(req.body.parameterNames);
     const parameterNames = requestedNames.length > 0 ? requestedNames : DEFAULT_WIDAL_PARAMETERS;
 
-    const promptText = [
-      'Daftar antigen Widal yang harus ditentukan titernya:',
-      ...parameterNames.map((name, index) => `${index + 1}. ${name}`),
-      'Baca foto di atas dan kembalikan titer tiap antigen di daftar sesuai skema JSON.',
-    ].join('\n');
+    // AI hanya menaksir persen aglutinasi per label papan; konversi ke titer
+    // dilakukan di widalTiterFromPersen supaya batasnya pasti dan bisa dites.
+    const promptText = `Nilai aglutinasi untuk 8 label papan (${WIDAL_BOARD_LABELS.join(', ')}) pada foto di atas sesuai skema JSON.`;
 
     try {
       const client = new GoogleGenAI({ apiKey });
@@ -471,7 +558,7 @@ export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<
         config: {
           systemInstruction: READ_WIDAL_SYSTEM_PROMPT,
           responseMimeType: 'application/json',
-          responseSchema: READ_FOTO_RESPONSE_SCHEMA,
+          responseSchema: READ_WIDAL_RESPONSE_SCHEMA,
           httpOptions: { timeout: 45_000 },
         },
       });
@@ -491,19 +578,7 @@ export async function registerAnalisaLabAiRoutes(app: FastifyInstance): Promise<
         return reply.status(502).send({ error: 'AI mengembalikan format hasil yang tidak valid.' });
       }
 
-      const results = Array.isArray(parsed)
-        ? parsed
-            .filter(
-              (p): p is { pemeriksaan: string; hasil: string } =>
-                Boolean(p) &&
-                typeof p === 'object' &&
-                typeof (p as { pemeriksaan?: unknown }).pemeriksaan === 'string' &&
-                typeof (p as { hasil?: unknown }).hasil === 'string',
-            )
-            .map((p) => ({ pemeriksaan: p.pemeriksaan, hasil: normalizeWidalTiter(p.hasil) }))
-        : [];
-
-      return { results };
+      return { results: widalResultsFromReadings(parameterNames, parseWidalBoardReadings(parsed)) };
     } catch (err) {
       req.log.error(err, 'Gagal memanggil AI vision untuk membaca foto Widal');
       return reply.status(502).send({

@@ -32,7 +32,7 @@ import {
   type ParsedLabData,
 } from '../lib/labKesan.ts';
 import { serializeKlinisData } from '../lib/penunjang.ts';
-import { applyWidalResults, widalParameterNames, type WidalReadResult } from '../lib/widal.ts';
+import { applyWidalResults, formatWidalRingkasan, widalParameterNames, type WidalReadResult } from '../lib/widal.ts';
 import '../components/ui/ui.css';
 
 export {
@@ -525,9 +525,10 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     }
   }
 
-  // Foto Widal: ambil foto slide/hasil Widal dengan kamera, AI menentukan
-  // titer kedelapan antigen (Negatif / 1/80 / 1/160 / 1/320 / 1/640) dan
-  // langsung mengisi baris Widal di tabel.
+  // Foto Widal: ambil foto papan Widal dengan kamera, AI menaksir
+  // persen aglutinasi tiap antigen di papan, server mengubahnya ke titer
+  // ((-) Negatif / 1/80 / 1/160 / 1/320 / 1/640) dan langsung mengisi baris Widal
+  // di tabel.
   function handleFotoWidalFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1065,7 +1066,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                   <input id="lab-hasil-foto" type="file" accept="image/*" onChange={handleFotoHasilFileChange} />
                   <label
                     className="btn btn--sm btn--primary"
-                    title="Ambil foto slide/hasil Widal — AI menentukan titer 8 antigen (Negatif, 1/80, 1/160, 1/320, 1/640)"
+                    title="Ambil foto papan Widal — AI menentukan persen aglutinasi 8 antigen di papan → (-) Negatif, 1/80, 1/160, 1/320, 1/640"
                     style={{ cursor: readingWidal ? 'wait' : 'pointer', opacity: readingWidal ? 0.6 : 1 }}
                   >
                     {readingWidal ? '⏳ Membaca Widal...' : '🧪 Foto Widal'}
@@ -1129,7 +1130,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                 {widalHasil && (
                   <div style={{ marginTop: '0.4rem', fontSize: '0.8rem' }}>
                     <b>Hasil Widal (AI — periksa ulang):</b>{' '}
-                    {widalHasil.map((r) => `${r.pemeriksaan}: ${r.hasil || 'tidak terbaca'}`).join(' · ')}
+                    {widalHasil.map(formatWidalRingkasan).join(' · ')}
                   </div>
                 )}
               </div>

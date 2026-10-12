@@ -15,6 +15,15 @@ export const DEFAULT_WIDAL_PARAMETERS: readonly string[] = [
 export interface WidalReadResult {
   readonly pemeriksaan: string;
   readonly hasil: string;
+  /** Persen aglutinasi yang ditaksir AI; null kalau antigen tidak terbaca. */
+  readonly aglutinasiPersen?: number | null;
+}
+
+/// Satu potong ringkasan, mis. "Salmonella Typhi O: 1/160 (20%)".
+export function formatWidalRingkasan(result: WidalReadResult): string {
+  if (!result.hasil) return `${result.pemeriksaan}: tidak terbaca`;
+  const persen = typeof result.aglutinasiPersen === 'number' ? ` (${result.aglutinasiPersen}%)` : '';
+  return `${result.pemeriksaan}: ${result.hasil}${persen}`;
 }
 
 export function isWidalRow(row: LabTableRow): boolean {
