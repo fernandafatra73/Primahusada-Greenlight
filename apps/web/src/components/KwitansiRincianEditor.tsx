@@ -16,6 +16,15 @@ const PILIHAN_RINCIAN: readonly string[] = [
   'Ekstremitas Bawah',
 ];
 
+/** Kategori layanan yang bisa langsung dipilih saat menambah baris. */
+const PILIHAN_KATEGORI: readonly string[] = [
+  'Radiologi',
+  'Laboratorium',
+  'Farmasi',
+  'Dokter Umum',
+  'Dokter Spesialis',
+];
+
 const DAFTAR_PILIHAN_ID = 'kwitansi-rincian-pilihan';
 
 export interface RincianBaris {
@@ -94,13 +103,13 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
     }
   }
 
-  async function tambahBaris() {
+  async function tambahBaris(nama = 'Rincian baru') {
     setSibuk(true);
     try {
       const res = await apiPost<{ item: RincianBaris }>('/api/kwitansi-rincian', {
         jenis,
         nomor,
-        nama: 'Rincian baru',
+        nama,
         harga: 0,
       });
       const sesudah = [...items, res.item];
@@ -152,14 +161,32 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
         }}
       >
         <strong style={{ fontSize: '0.92rem' }}>Rincian Kwitansi</strong>
-        <button
-          type="button"
-          className="btn btn--sm btn--secondary"
-          onClick={() => void tambahBaris()}
-          disabled={sibuk || loading}
-        >
-          + Tambah Baris
-        </button>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) void tambahBaris(e.target.value);
+            }}
+            disabled={sibuk || loading}
+            aria-label="Tambah baris dari pilihan"
+            style={{ padding: '0.2rem 0.4rem' }}
+          >
+            <option value="">Pilih layanan…</option>
+            {PILIHAN_KATEGORI.map((nama) => (
+              <option key={nama} value={nama}>
+                {nama}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="btn btn--sm btn--secondary"
+            onClick={() => void tambahBaris()}
+            disabled={sibuk || loading}
+          >
+            + Tambah Baris
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -238,7 +265,7 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
       )}
 
       <datalist id={DAFTAR_PILIHAN_ID}>
-        {PILIHAN_RINCIAN.map((nama) => (
+        {[...PILIHAN_KATEGORI, ...PILIHAN_RINCIAN].map((nama) => (
           <option key={nama} value={nama} />
         ))}
       </datalist>
