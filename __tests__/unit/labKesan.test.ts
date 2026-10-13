@@ -3,6 +3,7 @@ import {
   DEFAULT_LAB_TABLE_ROWS,
   PAKET_PEMERIKSAAN_LAB,
   applyLabPackage,
+  addIndeksEritrositRows,
   groupLabRowsForPdf,
   isDefaultUntouchedRows,
   lookupLabReference,
@@ -274,3 +275,34 @@ describe('chunkLabRowsForPdf pagination', () => {
 });
 
 
+
+describe('addIndeksEritrositRows (+3Hema)', () => {
+  const makeId = (i: number): string => `hema-${i}`;
+
+  test('inserts MCV, MCH, MCHC right after the last Hematologi row', () => {
+    const result = addIndeksEritrositRows(DEFAULT_LAB_TABLE_ROWS, makeId);
+    const names = result.map((r) => r.pemeriksaan);
+    expect(names.slice(3, 7)).toEqual(['Nilai Hematokrit', 'MCV', 'MCH', 'MCHC']);
+    expect(names[7]).toBe('Asam Urat');
+    expect(result[4]).toEqual({
+      id: 'hema-0',
+      klasifikasi: 'Hematologi',
+      pemeriksaan: 'MCV',
+      hasil: '',
+      nilaiRujukan: '80 - 100 fL',
+    });
+  });
+
+  test('appends at the end when there is no Hematologi row', () => {
+    const rows = [{ id: 'x', klasifikasi: 'Kimia Darah', pemeriksaan: 'Asam Urat', hasil: '5', nilaiRujukan: '' }];
+    const result = addIndeksEritrositRows(rows, makeId);
+    expect(result.map((r) => r.pemeriksaan)).toEqual(['Asam Urat', 'MCV', 'MCH', 'MCHC']);
+  });
+
+  test('does not duplicate rows that already exist', () => {
+    const rows = [{ id: 'a', klasifikasi: 'Hematologi', pemeriksaan: 'mcv', hasil: '88', nilaiRujukan: '' }];
+    const once = addIndeksEritrositRows(rows, makeId);
+    expect(once.map((r) => r.pemeriksaan)).toEqual(['mcv', 'MCH', 'MCHC']);
+    expect(addIndeksEritrositRows(once, makeId)).toEqual(once);
+  });
+});

@@ -22,6 +22,7 @@ import {
   DEFAULT_LAB_TABLE_ROWS,
   PAKET_PEMERIKSAAN_LAB,
   applyLabPackage,
+  addIndeksEritrositRows,
   lookupLabReference,
   groupLabRowsForPdf,
   parseLabKesan,
@@ -474,6 +475,11 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
       updated.splice(lastIndex + 1, 0, newRow);
       return updated;
     });
+  }
+
+  function handleAddIndeksEritrosit() {
+    const stamp = Date.now();
+    setLabRows((prev) => addIndeksEritrositRows(prev, (i) => `hema-${stamp}-${i}`));
   }
 
   function handleRemoveRow(index: number) {
@@ -1156,16 +1162,27 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                           })),
                         }))
                     ).map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className="btn btn--secondary btn--sm"
-                        onClick={() => applyPaketFromDB(p)}
-                        title={`Terapkan paket: ${p.nama}`}
-                        style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #38bdf8', fontWeight: 700 }}
-                      >
-                        ⚡ {p.nama}
-                      </button>
+                      <Fragment key={p.id}>
+                        <button
+                          type="button"
+                          className="btn btn--secondary btn--sm"
+                          onClick={() => applyPaketFromDB(p)}
+                          title={`Terapkan paket: ${p.nama}`}
+                          style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #38bdf8', fontWeight: 700 }}
+                        >
+                          ⚡ {p.nama}
+                        </button>
+                        {p.nama.trim().toLowerCase() === 'kimia darah' && (
+                          <button
+                            type="button"
+                            className="btn btn--secondary btn--sm"
+                            onClick={handleAddIndeksEritrosit}
+                            title="Tambah baris MCV, MCH, MCHC ke klasifikasi Hematologi"
+                          >
+                            +3Hema(MCV,MCH,MCHC)
+                          </button>
+                        )}
+                      </Fragment>
                     ))}
                     <button
                       type="button"

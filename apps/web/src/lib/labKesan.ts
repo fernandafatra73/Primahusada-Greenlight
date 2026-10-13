@@ -304,6 +304,39 @@ export function applyLabPackage(
   return [...currentRows, ...filteredRowsToAdd];
 }
 
+export const INDEKS_ERITROSIT_ITEMS: readonly { pemeriksaan: string; nilaiRujukan: string }[] = [
+  { pemeriksaan: 'MCV', nilaiRujukan: '80 - 100 fL' },
+  { pemeriksaan: 'MCH', nilaiRujukan: '27 - 34 pg' },
+  { pemeriksaan: 'MCHC', nilaiRujukan: '32 - 36 g/dL' },
+];
+
+// Tombol "+3Hema": menambah baris MCV, MCH, MCHC ke klasifikasi Hematologi.
+// Disisipkan setelah baris Hematologi terakhir supaya grouping cetak PDF
+// (groupLabRowsForPdf) tetap berurutan; baris yang sudah ada tidak digandakan.
+export function addIndeksEritrositRows(
+  currentRows: readonly LabTableRow[],
+  makeId: (index: number) => string,
+): LabTableRow[] {
+  const existingNames = new Set(currentRows.map((r) => r.pemeriksaan.trim().toLowerCase()));
+  const rowsToAdd: LabTableRow[] = INDEKS_ERITROSIT_ITEMS.filter(
+    (it) => !existingNames.has(it.pemeriksaan.toLowerCase()),
+  ).map((it, idx) => ({
+    id: makeId(idx),
+    klasifikasi: 'Hematologi',
+    pemeriksaan: it.pemeriksaan,
+    hasil: '',
+    nilaiRujukan: it.nilaiRujukan,
+  }));
+  if (rowsToAdd.length === 0) return Array.from(currentRows);
+
+  let lastIndex = -1;
+  currentRows.forEach((row, i) => {
+    if ((row.klasifikasi || '').trim().toLowerCase() === 'hematologi') lastIndex = i;
+  });
+  if (lastIndex === -1) return [...currentRows, ...rowsToAdd];
+  return [...currentRows.slice(0, lastIndex + 1), ...rowsToAdd, ...currentRows.slice(lastIndex + 1)];
+}
+
 export function lookupLabReference(
   pemeriksaanName: string,
   dbPaketList: readonly { nama: string; items: readonly { pemeriksaan: string; nilaiRujukan: string }[] }[] = [],
