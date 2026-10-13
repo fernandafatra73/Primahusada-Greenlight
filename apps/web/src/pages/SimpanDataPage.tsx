@@ -34,6 +34,22 @@ const KATEGORI_OPTIONS = [
 
 const MAX_UPLOAD_BYTES = 512 * 1024 * 1024;
 
+type JenisPratinjau = 'gambar' | 'video' | 'audio' | 'pdf' | 'teks';
+
+const PRATINJAU_BY_EXTENSION: Readonly<Record<string, JenisPratinjau>> = {
+  jpg: 'gambar', jpeg: 'gambar', png: 'gambar', gif: 'gambar', webp: 'gambar', bmp: 'gambar',
+  mp4: 'video', webm: 'video', mov: 'video',
+  mp3: 'audio', wav: 'audio', ogg: 'audio',
+  pdf: 'pdf',
+  txt: 'teks', csv: 'teks',
+};
+
+/** Jenis pratinjau yang bisa dirender browser; null untuk Excel, Word, aplikasi, dll. (hanya unduh). */
+function jenisPratinjau(namaBerkas: string): JenisPratinjau | null {
+  const ext = namaBerkas.split('.').pop()?.toLowerCase() ?? '';
+  return PRATINJAU_BY_EXTENSION[ext] ?? null;
+}
+
 function kategoriLabel(value: string): string {
   return KATEGORI_OPTIONS.find((o) => o.value === value)?.label ?? value;
 }
@@ -68,6 +84,27 @@ async function uploadBerkas(file: File, nama: string, kategori: string, keterang
   }
 }
 
+function PratinjauBerkas({ item }: { readonly item: SimpanDataItem }) {
+  const jenis = jenisPratinjau(item.berkasNama);
+  switch (jenis) {
+    case 'gambar':
+      return <img src={item.berkas} alt={item.nama} style={{ maxWidth: '100%', maxHeight: '75vh', display: 'block', margin: '0 auto' }} />;
+    case 'video':
+      return <video src={item.berkas} controls style={{ width: '100%', maxHeight: '75vh' }} />;
+    case 'audio':
+      return <audio src={item.berkas} controls style={{ width: '100%' }} />;
+    case 'pdf':
+    case 'teks':
+      return <iframe src={item.berkas} title={item.nama} style={{ width: '100%', height: '75vh', border: 0 }} />;
+    case null:
+      return <p>Jenis berkas ini tidak bisa dilihat di sini. Silakan unduh.</p>;
+    default: {
+      const exhaustiveCheck: never = jenis;
+      return exhaustiveCheck;
+    }
+  }
+}
+
 export function SimpanDataPage() {
   const [kategori, setKategori] = useState('');
   const { search, setSearch } = useListSearch();
@@ -78,6 +115,7 @@ export function SimpanDataPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [deleting, setDeleting] = useState<SimpanDataItem | null>(null);
+  const [viewing, setViewing] = useState<SimpanDataItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [nama, setNama] = useState('');
@@ -172,7 +210,7 @@ export function SimpanDataPage() {
             <th style={{ textAlign: 'right' }}>Ukuran</th>
             <th>Tanggal</th>
             <th>Keterangan</th>
-            <th style={{ width: '170px', textAlign: 'center' }}>Aksi</th>
+            <th style={{ width: '220px', textAlign: 'center' }}>Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -194,6 +232,20 @@ export function SimpanDataPage() {
                 <td>{item.keterangan ?? '-'}</td>
                 <td style={{ textAlign: 'center' }}>
                   <div style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn btn--sm btn--ghost"
+                      onClick={() => setViewing(item)}
+                      disabled={jenisPratinjau(item.berkasNama) === null}
+                      title={
+                        jenisPratinjau(item.berkasNama) === null
+                          ? 'Jenis berkas ini tidak bisa dilihat di sini, silakan unduh'
+                          : 'Lihat berkas'
+                      }
+                      style={{ border: '1px solid var(--color-border)' }}
+                    >
+                      Lihat
+                    </button>
                     <a
                       className="btn btn--sm btn--ghost"
                       href={item.berkas}
@@ -266,6 +318,12 @@ export function SimpanDataPage() {
               loading={submitting}
             />
           </form>
+        </Modal>
+      )}
+
+      {viewing && (
+        <Modal open={true} title={viewing.nama} size="xl" onClose={() => setViewing(null)}>
+          <PratinjauBerkas item={viewing} />
         </Modal>
       )}
 
