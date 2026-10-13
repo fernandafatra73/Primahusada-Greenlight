@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { apiDelete, apiPatch, apiPost } from '../lib/api.ts';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatRupiah } from '../lib/format.ts';
 import './ui/ui.css';
 
@@ -16,14 +16,19 @@ const PILIHAN_RINCIAN: readonly string[] = [
   'Ekstremitas Bawah',
 ];
 
-/** Kategori layanan yang bisa langsung dipilih saat menambah baris. */
-const PILIHAN_KATEGORI: readonly string[] = [
-  'Radiologi',
-  'Laboratorium',
-  'Farmasi',
-  'Dokter Umum',
-  'Dokter Spesialis',
-];
+/** Kategori layanan; memilihnya menampilkan daftar pemeriksaan/item beserta harga dari data master. */
+const PILIHAN_KATEGORI = [
+  { id: 'radiologi', label: 'Radiologi' },
+  { id: 'laboratorium', label: 'Laboratorium' },
+  { id: 'farmasi', label: 'Farmasi' },
+  { id: 'dokter-umum', label: 'Dokter Umum' },
+  { id: 'dokter-spesialis', label: 'Dokter Spesialis' },
+] as const;
+
+interface PilihanItem {
+  readonly nama: string;
+  readonly harga: string;
+}
 
 const DAFTAR_PILIHAN_ID = 'kwitansi-rincian-pilihan';
 
@@ -48,6 +53,10 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sibuk, setSibuk] = useState(false);
+  const [kategori, setKategori] = useState<string>('');
+  const [pilihan, setPilihan] = useState<readonly PilihanItem[]>([]);
+  const [cari, setCari] = useState('');
+  const [memuatPilihan, setMemuatPilihan] = useState(false);
 
   const kabarkan = useCallback(
     (daftar: readonly RincianBaris[]) => {
@@ -103,14 +112,41 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
     }
   }
 
-  async function tambahBaris(nama = 'Rincian baru') {
+  async function pilihKategori(id: string) {
+    setKategori(id);
+    setCari('');
+    setPilihan([]);
+    if (!id) return;
+    setMemuatPilihan(true);
+    try {
+      const res = await apiGet<{ items: PilihanItem[] }>(
+        `/api/kwitansi-rincian/pilihan?kategori=${id}`,
+      );
+      setPilihan(res.items);
+      setError(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal memuat daftar pilihan');
+    } finally {
+      setMemuatPilihan(false);
+    }
+  }
+
+  async function pilihItem(nilai: string) {
+    setCari(nilai);
+    const item = pilihan.find((p) => p.nama === nilai);
+    if (!item) return;
+    await tambahBaris(item.nama, Number(item.harga));
+    setCari('');
+  }
+
+  async function tambahBaris(nama = 'Rincian baru', harga = 0) {
     setSibuk(true);
     try {
       const res = await apiPost<{ item: RincianBaris }>('/api/kwitansi-rincian', {
         jenis,
         nomor,
         nama,
-        harga: 0,
+        harga,
       });
       const sesudah = [...items, res.item];
       setItems(sesudah);
@@ -163,18 +199,16 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
         <strong style={{ fontSize: '0.92rem' }}>Rincian Kwitansi</strong>
         <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
           <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) void tambahBaris(e.target.value);
-            }}
+            value={kategori}
+            onChange={(e) => void pilihKategori(e.target.value)}
             disabled={sibuk || loading}
-            aria-label="Tambah baris dari pilihan"
+            aria-label="Kategori layanan"
             style={{ padding: '0.2rem 0.4rem' }}
           >
-            <option value="">Pilih layanan…</option>
-            {PILIHAN_KATEGORI.map((nama) => (
-              <option key={nama} value={nama}>
-                {nama}
+            <option value="">Pilih kategori…</option>
+            {PILIHAN_KATEGORI.map((k) => (
+              <option key={k.id} value={k.id}>
+                {k.label}
               </option>
             ))}
           </select>
@@ -188,6 +222,32 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
           </button>
         </div>
       </div>
+
+      {kategori && (
+        <div style={{ marginBottom: '0.5rem' }}>
+          <input
+            list="kwitansi-rincian-master"
+            value={cari}
+            onChange={(e) => void pilihItem(e.target.value)}
+            disabled={sibuk || loading || memuatPilihan}
+            placeholder={memuatPilihan ? 'Memuat daftar…' : 'Cari dan pilih pemeriksaan / item…'}
+            aria-label="Pilih pemeriksaan atau item"
+            style={{ width: '100%', padding: '0.3rem 0.5rem' }}
+          />
+          <datalist id="kwitansi-rincian-master">
+            {pilihan.map((p) => (
+              <option key={p.nama} value={p.nama}>
+                {formatRupiah(Number(p.harga))}
+              </option>
+            ))}
+          </datalist>
+          {!memuatPilihan && pilihan.length === 0 && (
+            <p style={{ margin: '0.3rem 0 0', fontSize: '0.78rem', color: '#64748b' }}>
+              Belum ada data untuk kategori ini.
+            </p>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="alert alert--error" style={{ marginBottom: '0.5rem' }}>
@@ -265,7 +325,7 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
       )}
 
       <datalist id={DAFTAR_PILIHAN_ID}>
-        {[...PILIHAN_KATEGORI, ...PILIHAN_RINCIAN].map((nama) => (
+        {PILIHAN_RINCIAN.map((nama) => (
           <option key={nama} value={nama} />
         ))}
       </datalist>

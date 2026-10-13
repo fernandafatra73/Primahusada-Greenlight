@@ -52,3 +52,23 @@ export function validasiRincian(nama: unknown, harga: unknown): string | null {
   }
   return null;
 }
+
+export const KATEGORI_PILIHAN = [
+  'radiologi',
+  'laboratorium',
+  'farmasi',
+  'dokter-umum',
+  'dokter-spesialis',
+] as const;
+
+export type KategoriPilihan = (typeof KATEGORI_PILIHAN)[number];
+
+export function isKategoriPilihan(value: unknown): value is KategoriPilihan {
+  return typeof value === 'string' && (KATEGORI_PILIHAN as readonly string[]).includes(value);
+}
+
+/** Dokter tanpa spesialisasi (atau bertuliskan "umum") dihitung dokter umum. */
+export function isDokterUmum(spesialisasi: string | null | undefined): boolean {
+  const s = spesialisasi?.trim().toLowerCase() ?? '';
+  return s === '' || s.includes('umum');
+}

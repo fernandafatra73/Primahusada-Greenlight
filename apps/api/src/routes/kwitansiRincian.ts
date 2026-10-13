@@ -11,8 +11,11 @@
 
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { serializeDecimal } from '../lib/serialize.js';
 import { KwitansiJenis } from '../generated/prisma/client.js';
 import {
+  isDokterUmum,
+  isKategoriPilihan,
   normalizeNamaRincian,
   parseHarga,
   validasiRincian,
@@ -42,6 +45,65 @@ export async function registerKwitansiRincianRoutes(app: FastifyInstance): Promi
         orderBy: [{ urutan: 'asc' }, { createdAt: 'asc' }],
       });
       return { items };
+    },
+  );
+
+  /** Daftar pemeriksaan/item beserta harganya dari data master, untuk dipilih
+   * saat menambah baris rincian. Dokter tidak punya tarif di data master,
+   * jadi harganya 0 dan diisi manual. */
+  app.get<{ Querystring: { kategori?: string } }>(
+    '/api/kwitansi-rincian/pilihan',
+    async (req, reply) => {
+      const kategori = req.query.kategori;
+      if (!isKategoriPilihan(kategori)) return badRequest(reply, 'kategori tidak valid');
+
+      if (kategori === 'radiologi') {
+        const rows = await prisma.hargaLayanan.findMany({
+          include: { jenisPemeriksaan: true },
+          orderBy: { jenisPemeriksaan: { nama: 'asc' } },
+        });
+        return { items: rows.map((r) => ({ nama: r.jenisPemeriksaan.nama, harga: (serializeDecimal(r.harga) ?? '0') })) };
+      }
+
+      if (kategori === 'laboratorium') {
+        const paket = await prisma.paketLab.findMany({
+          orderBy: { urutan: 'asc' },
+          include: { items: { orderBy: { urutan: 'asc' } } },
+        });
+        const dilihat = new Set<string>();
+        const items: { nama: string; harga: string }[] = [];
+        for (const p of paket) {
+          if (!dilihat.has(p.nama)) {
+            dilihat.add(p.nama);
+            items.push({ nama: p.nama, harga: (serializeDecimal(p.harga) ?? '0') });
+          }
+        }
+        for (const p of paket) {
+          for (const it of p.items) {
+            if (Number(it.harga) > 0 && !dilihat.has(it.pemeriksaan)) {
+              dilihat.add(it.pemeriksaan);
+              items.push({ nama: it.pemeriksaan, harga: (serializeDecimal(it.harga) ?? '0') });
+            }
+          }
+        }
+        return { items };
+      }
+
+      if (kategori === 'farmasi') {
+        const rows = await prisma.farmasiBhp.findMany({ orderBy: { nama: 'asc' } });
+        return { items: rows.map((r) => ({ nama: r.nama, harga: serializeDecimal(r.hargaJual) ?? '0' })) };
+      }
+
+      const umum = kategori === 'dokter-umum';
+      const dokter = await prisma.dokter.findMany({ orderBy: { nama: 'asc' } });
+      const label = umum ? 'Dokter Umum' : 'Dokter Spesialis';
+      const items = dokter
+        .filter((d) => isDokterUmum(d.spesialisasi) === umum)
+        .map((d) => ({
+          nama: umum || !d.spesialisasi?.trim() ? `${label} - ${d.nama}` : `${label} ${d.spesialisasi.trim()} - ${d.nama}`,
+          harga: '0',
+        }));
+      return { items: [{ nama: label, harga: '0' }, ...items] };
     },
   );
 
