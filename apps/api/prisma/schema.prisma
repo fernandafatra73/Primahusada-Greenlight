@@ -969,6 +969,22 @@ model Transfer {
   updatedAt      DateTime @updatedAt
 }
 
+/// Arsip berkas bebas (Excel, Word, foto, video, aplikasi, program) di Mega Data > Simpan Data.
+/// Isi berkas ada di disk (uploads/simpan-data/), kolom `berkas` hanya menyimpan path-nya.
+model SimpanData {
+  id         String   @id @default(cuid())
+  nama       String
+  kategori   String
+  keterangan String?
+  berkas     String
+  berkasNama String
+  ukuran     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([kategori])
+}
+
 model PasienPemeriksaan {
   id                 String           @id @default(cuid())
   pasienId           String

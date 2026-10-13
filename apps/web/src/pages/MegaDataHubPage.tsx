@@ -20,6 +20,7 @@ import { KoranPage } from './KoranPage.tsx';
 import { CaturPage } from './CaturPage.tsx';
 import { GaplekPage } from './GaplekPage.tsx';
 import { KoneksiPhPage } from './KoneksiPhPage.tsx';
+import { SimpanDataPage } from './SimpanDataPage.tsx';
 
 const MEGA_DATA_TABS = [
   { id: 'fatra', label: 'Fatra' },
@@ -43,6 +44,7 @@ const MEGA_DATA_TABS = [
   { id: 'kalkulator', label: 'Kalkulator' },
   { id: 'ai-gemini', label: 'AI Gemini' },
   { id: 'expertise', label: 'Expertise' },
+  { id: 'simpan-data', label: 'Simpan Data' },
 ] as const;
 
 type MegaDataTabId = (typeof MEGA_DATA_TABS)[number]['id'];
@@ -91,6 +93,8 @@ function renderTabContent(tabId: MegaDataTabId) {
       return <AiGeminiPage />;
     case 'expertise':
       return <ExpertisePage />;
+    case 'simpan-data':
+      return <SimpanDataPage />;
     default: {
       const exhaustiveCheck: never = tabId;
       return exhaustiveCheck;
