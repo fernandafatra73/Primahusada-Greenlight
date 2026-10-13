@@ -1323,3 +1323,12 @@ model LisensiHasilLabItem {
 
   @@index([hasilLabId])
 }
+
+/// Nama dan foto pejabat tiap posisi di Pengaturan > Struktur Organisasi.
+/// Daftar posisi yang sah ada di `apps/api/src/lib/strukturOrganisasi.ts`.
+model StrukturOrganisasi {
+  jabatan   String   @id
+  nama      String   @default("")
+  foto      String?
+  updatedAt DateTime @updatedAt
+}

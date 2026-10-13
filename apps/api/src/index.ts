@@ -25,6 +25,7 @@ import { registerKwitansiRincianRoutes } from './routes/kwitansiRincian.js';
 import { registerRad2Routes } from './routes/rad2.js';
 import { registerFotoPasienAnalisaRoutes, registerTabelAiRoutes } from './routes/tabelAi.js';
 import { registerSimpanDataRoutes } from './routes/simpanData.js';
+import { registerStrukturOrganisasiRoutes } from './routes/strukturOrganisasi.js';
 import { registerTransferRoutes } from './routes/transfer.js';
 import { startCandlePatternJob } from './lib/candlePatternJob.js';
 import { startDailyTradingPivotJob } from './lib/dailyTradingPivotJob.js';
@@ -71,6 +72,7 @@ await registerRad2Routes(app);
 await registerTabelAiRoutes(app);
 await registerFotoPasienAnalisaRoutes(app);
 await registerSimpanDataRoutes(app);
+await registerStrukturOrganisasiRoutes(app);
 await registerTransferRoutes(app);
 
 if (hasWebDist) {
