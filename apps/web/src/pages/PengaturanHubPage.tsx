@@ -4,6 +4,7 @@ import { AutotextPage } from './AutotextPage.tsx';
 import { FotoDashboardPage } from './FotoDashboardPage.tsx';
 import { BackupDatabasePage } from './BackupDatabasePage.tsx';
 import { HakAksesPage } from './HakAksesPage.tsx';
+import { StrukturOrganisasiPage } from './StrukturOrganisasiPage.tsx';
 import { isViewAllowedForRole, type StaffRole } from '../config/navigation.ts';
 
 const PENGATURAN_TABS = [
@@ -12,6 +13,7 @@ const PENGATURAN_TABS = [
   { id: 'foto-dashboard', label: 'Foto untuk Dashboard' },
   { id: 'backup-database', label: 'Backup & Restore Database' },
   { id: 'hak-akses', label: 'Hak Akses' },
+  { id: 'struktur-organisasi', label: 'Struktur Organisasi' },
 ] as const;
 
 type PengaturanTabId = (typeof PENGATURAN_TABS)[number]['id'];
@@ -28,6 +30,8 @@ function renderTabContent(tabId: PengaturanTabId) {
       return <BackupDatabasePage />;
     case 'hak-akses':
       return <HakAksesPage />;
+    case 'struktur-organisasi':
+      return <StrukturOrganisasiPage />;
     default: {
       const exhaustiveCheck: never = tabId;
       return exhaustiveCheck;
@@ -46,7 +50,9 @@ interface PengaturanHubPageProps {
  * sendiri — lihat MANAGEMENT_ONLY_NAV_IDS di config/navigation.ts. */
 export function PengaturanHubPage({ role }: PengaturanHubPageProps) {
   const [activeTab, setActiveTab] = useState<PengaturanTabId>('logo-perusahaan');
-  const visibleTabs = PENGATURAN_TABS.filter((tab) => isViewAllowedForRole(tab.id, role));
+  const visibleTabs = PENGATURAN_TABS.filter(
+    (tab) => tab.id === 'struktur-organisasi' || isViewAllowedForRole(tab.id, role),
+  );
 
   return (
     <div className="page-frame page-frame--slate">
