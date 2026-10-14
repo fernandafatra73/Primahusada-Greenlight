@@ -1179,7 +1179,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                             onClick={handleAddIndeksEritrosit}
                             title="Tambah baris MCV, MCH, MCHC ke klasifikasi Hematologi"
                           >
-                            +3Hema(MCV,MCH,MCHC)
+                            +Hema
                           </button>
                         )}
                       </Fragment>

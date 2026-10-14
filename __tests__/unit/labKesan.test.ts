@@ -276,7 +276,7 @@ describe('chunkLabRowsForPdf pagination', () => {
 
 
 
-describe('addIndeksEritrositRows (+3Hema)', () => {
+describe('addIndeksEritrositRows (+Hema)', () => {
   const makeId = (i: number): string => `hema-${i}`;
 
   test('inserts MCV, MCH, MCHC right after the last Hematologi row', () => {

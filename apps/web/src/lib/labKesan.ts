@@ -310,7 +310,7 @@ export const INDEKS_ERITROSIT_ITEMS: readonly { pemeriksaan: string; nilaiRujuka
   { pemeriksaan: 'MCHC', nilaiRujukan: '32 - 36 g/dL' },
 ];
 
-// Tombol "+3Hema": menambah baris MCV, MCH, MCHC ke klasifikasi Hematologi.
+// Tombol "+Hema": menambah baris MCV, MCH, MCHC ke klasifikasi Hematologi.
 // Disisipkan setelah baris Hematologi terakhir supaya grouping cetak PDF
 // (groupLabRowsForPdf) tetap berurutan; baris yang sudah ada tidak digandakan.
 export function addIndeksEritrositRows(
