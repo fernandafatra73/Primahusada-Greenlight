@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { GoogleGenAI, Type } from '@google/genai';
 import {
@@ -51,10 +52,22 @@ import {
   usgListWhere,
 } from '../lib/searchWhere.js';
 import { syncPasienDuplikat } from '../lib/pasienDuplikat.js';
+import { LOGBOOK_RADIOLOGI_FILENAME, writeLogbookRadiologiExcel } from '../lib/logbookExcel.js';
 import { computeUmur, serializeDecimal } from '../lib/serialize.js';
 import { deleteStoredImage, readStoredImageAsDataUrl, saveImageDataUrl } from '../lib/fileStorage.js';
 
 type ListQuery = { page?: string; limit?: string; q?: string };
+
+/// File Excel logbook hanya salinan; kegagalan menulisnya (mis. file sedang dibuka
+/// di Excel) tidak boleh menggagalkan registrasi — cukup dicatat, dan file akan
+/// ditulis ulang lengkap pada perubahan berikutnya.
+async function refreshLogbookExcel(req: FastifyRequest): Promise<void> {
+  try {
+    await writeLogbookRadiologiExcel(prisma);
+  } catch (err: unknown) {
+    req.log.warn({ err }, 'Gagal menulis file Excel logbook pasien radiologi');
+  }
+}
 type StaffListQuery = ListQuery & { role?: string };
 type StaffRoleInput = 'ADMIN' | 'KARYAWAN' | 'CEO';
 type DepartemenInput = 'PENDAFTARAN' | 'RADIOLOGI' | 'LABORATORIUM' | 'KEUANGAN' | 'FARMASI';
@@ -1364,6 +1377,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
         tanggal: b.tanggal ? new Date(b.tanggal) : new Date(),
       },
     });
+    await refreshLogbookExcel(req);
     return reply.status(201).send({
       item: {
         id: item.id,
@@ -1401,6 +1415,7 @@ export async function registerCrudRoutes(app: FastifyInstance) {
         tanggal: req.body.tanggal ? new Date(req.body.tanggal) : existing.tanggal,
       },
     });
+    await refreshLogbookExcel(req);
     return {
       item: {
         id: item.id,
@@ -1414,8 +1429,18 @@ export async function registerCrudRoutes(app: FastifyInstance) {
     };
   });
 
+  /** Unduh file Excel logbook; ditulis ulang dulu supaya selalu ada dan terbaru. */
+  app.get('/api/logbook-pasien/excel', async (_req, reply) => {
+    const filePath = await writeLogbookRadiologiExcel(prisma);
+    return reply
+      .header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .header('Content-Disposition', `attachment; filename="${LOGBOOK_RADIOLOGI_FILENAME}"`)
+      .send(readFileSync(filePath));
+  });
+
   app.delete<{ Params: { id: string } }>('/api/kondisi-alat/:id', async (req) => {
     await prisma.kondisiAlat.delete({ where: { id: req.params.id } });
+    await refreshLogbookExcel(req);
     return { ok: true };
   });
 
@@ -3170,6 +3195,9 @@ export async function registerCrudRoutes(app: FastifyInstance) {
     });
 
     await syncPasienDuplikat(prisma, item.id);
+    if (item.asalModul === 'RADIOLOGI') {
+      await refreshLogbookExcel(req);
+    }
     return reply.status(201).send({ item: mapPasien(item) });
   });
 

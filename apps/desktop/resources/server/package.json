@@ -11,6 +11,7 @@
     "@prisma/adapter-libsql": "^7.9.0",
     "@prisma/client": "^7.0.1",
     "dotenv": "^16.6.1",
-    "fastify": "^5.6.1"
+    "fastify": "^5.6.1",
+    "xlsx": "^0.18.5"
   }
 }

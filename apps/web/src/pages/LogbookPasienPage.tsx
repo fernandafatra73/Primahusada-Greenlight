@@ -497,6 +497,15 @@ export function LogbookPasienPage() {
             >
               🖨️ {exportingPdf ? 'Memproses...' : 'Export PDF'}
             </button>
+            {/* Ditulis ulang otomatis oleh API setiap ada registrasi radiologi baru. */}
+            <a
+              className="btn btn--sm btn--secondary"
+              href="/api/logbook-pasien/excel"
+              download
+              title="File Excel logbook yang diperbarui otomatis setiap pasien radiologi didaftarkan"
+            >
+              📁 File Logbook
+            </a>
           </div>
         }
         error={error}
