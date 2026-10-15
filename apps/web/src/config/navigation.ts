@@ -154,6 +154,7 @@ export const MAIN_NAV_ITEMS: readonly NavItem[] = [
   { id: 'koneksi', label: 'Koneksi', shortLabel: 'Koneksi' },
   { id: 'lisensi', label: 'Lisensi', shortLabel: 'Lisensi' },
   { id: 'hitungan', label: 'Hitungan', shortLabel: 'Hitungan' },
+  { id: 'hitungan-2', label: 'Hitungan 2', shortLabel: 'Hitungan 2' },
   { id: 'global-warm', label: 'Global Warm', shortLabel: 'Global Warm' },
   { id: 'daftar-akun', label: 'Daftar Akun', shortLabel: 'Daftar Akun' },
   { id: 'expertise', label: 'Expertise', shortLabel: 'Expertise' },

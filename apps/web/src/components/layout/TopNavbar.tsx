@@ -65,7 +65,16 @@ const NAVBAR_SPECS: readonly NavbarSpec[] = [
   { type: 'link', id: 'rad2', label: 'Rad2', icon: IconStethoscope },
   { type: 'link', id: 'koneksi', label: 'Koneksi', icon: IconShare },
   { type: 'link', id: 'lisensi', label: 'Lisensi', icon: IconDocument },
-  { type: 'link', id: 'hitungan', label: 'Hitungan', icon: IconCurrency },
+  {
+    type: 'group',
+    groupId: 'hitungan',
+    label: 'Hitungan',
+    icon: IconCurrency,
+    items: [
+      { id: 'hitungan', label: 'Sewa' },
+      { id: 'hitungan-2', label: 'Hitungan 2' },
+    ],
+  },
 ];
 
 const ACTIVATION_MENU_KEY = 'aktivasi';
