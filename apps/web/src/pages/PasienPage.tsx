@@ -1855,18 +1855,6 @@ export function PasienPage() {
           tone: 'green' as const,
           iconKind: 'check' as const,
         },
-        {
-          label: 'Omzet',
-          value: formatRupiah(summary.totalOmzet),
-          tone: 'slate' as const,
-          iconKind: 'currency' as const,
-        },
-        {
-          label: 'Komisi',
-          value: formatRupiah(summary.totalSharing),
-          tone: 'violet' as const,
-          iconKind: 'percent' as const,
-        },
       ]
     : undefined;
 
@@ -1928,19 +1916,32 @@ export function PasienPage() {
             >
               📅 7 Hari Terakhir
             </button>
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => {
-                resetForm();
-                setAddOpen(true);
-              }}
-            >
-              + Registrasi Radiologi
-            </button>
           </div>
         }
         metrics={metrics}
+        metricsExtra={
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => {
+              resetForm();
+              setAddOpen(true);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              height: '100%',
+              minHeight: '4.5rem',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              borderRadius: 'var(--radius-card)',
+            }}
+          >
+            + Registrasi Radiologi
+          </button>
+        }
         tabs={HASIL_TABS.map((t) => ({ id: t.id, label: t.label }))}
         activeTab={hasilTab}
         onTabChange={setHasilTab}
