@@ -153,6 +153,7 @@ export const MAIN_NAV_ITEMS: readonly NavItem[] = [
   { id: 'rad2', label: 'Rad2', shortLabel: 'Rad2' },
   { id: 'koneksi', label: 'Koneksi', shortLabel: 'Koneksi' },
   { id: 'lisensi', label: 'Lisensi', shortLabel: 'Lisensi' },
+  { id: 'hitungan', label: 'Hitungan', shortLabel: 'Hitungan' },
   { id: 'global-warm', label: 'Global Warm', shortLabel: 'Global Warm' },
   { id: 'daftar-akun', label: 'Daftar Akun', shortLabel: 'Daftar Akun' },
   { id: 'expertise', label: 'Expertise', shortLabel: 'Expertise' },

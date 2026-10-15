@@ -1332,3 +1332,19 @@ model StrukturOrganisasi {
   foto      String?
   updatedAt DateTime @updatedAt
 }
+
+/// Hitungan biaya kontrakan per bulan — isi tombol "Hitungan" di navbar (sebelah Lisensi).
+/// Jumlah tidak disimpan; selalu dihitung sebagai sewa - listrik - air - pinjam.
+model HitunganKontrakan {
+  id        String   @id @default(cuid())
+  bulan     Int
+  tahun     Int
+  sewa      Decimal  @default(0)
+  listrik   Decimal  @default(0)
+  air       Decimal  @default(0)
+  pinjam    Decimal  @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tahun, bulan])
+}
