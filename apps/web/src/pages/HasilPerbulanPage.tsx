@@ -88,6 +88,19 @@ const emptyEditForm = {
   modalAwalTahun: '0', kasAwalTahun: '0', akumulasiPenyusutanAwalTahun: '0',
 };
 
+/** Nilai laporan keuangan acuan (Januari) yang diisikan tombol Otomatis. */
+const JUMLAH_PASIEN_OTOMATIS = '76';
+const nilaiOtomatis: EditForm = {
+  harga: '110000',
+  biayaSewaTempat: '1300000', biayaListrikAir: '400000',
+  gajiFernanda: '2200000', gajiChalimatusadiah: '1200000', gajiRiki: '900000', gajiAgung: '900000',
+  gajiKaryawan1: '0', gajiKaryawan2: '0',
+  bahanRoentgen: '912000', peralatanRoentgen: '0', penyusutanManual: '0', perbaikanAlat: '0',
+  hargaPeralatan: '85000000', tarifPenyusutanTahunanPersen: '10',
+  piutangUsaha: '0', perlengkapan: '912000', utangUsaha: '0',
+  modalAwalTahun: '90000000', kasAwalTahun: '4088000', akumulasiPenyusutanAwalTahun: '0',
+};
+
 type EditForm = typeof emptyEditForm;
 type EditKey = keyof EditForm;
 
@@ -193,6 +206,22 @@ export function HasilPerbulanPage({ modul = 'RADIOLOGI' }: HasilPerbulanPageProp
     setEditJumlahPasien(String(item.jumlahPasien));
     setError(null);
     setIsEditing(true);
+  }
+
+  // Hanya mengisi form; belum tersimpan sampai Simpan ditekan. Saldo awal tahun
+  // hanya diisi di Januari karena itu satu-satunya bulan yang memakainya.
+  function handleOtomatis() {
+    setEditForm((f) =>
+      bulanKe === 1
+        ? nilaiOtomatis
+        : {
+            ...nilaiOtomatis,
+            modalAwalTahun: f.modalAwalTahun,
+            kasAwalTahun: f.kasAwalTahun,
+            akumulasiPenyusutanAwalTahun: f.akumulasiPenyusutanAwalTahun,
+          },
+    );
+    setEditJumlahPasien(JUMLAH_PASIEN_OTOMATIS);
   }
 
   async function handleSimpan() {
@@ -409,6 +438,15 @@ export function HasilPerbulanPage({ modul = 'RADIOLOGI' }: HasilPerbulanPageProp
                 disabled={saving}
               >
                 💾 {saving ? 'Menyimpan...' : 'Simpan'}
+              </button>
+              <button
+                type="button"
+                className="btn btn--sm btn--secondary"
+                onClick={handleOtomatis}
+                disabled={saving}
+                title="Isi semua kolom dengan nilai acuan laporan keuangan (belum tersimpan sebelum Simpan)"
+              >
+                ⚙️ Otomatis
               </button>
               <button
                 type="button"
