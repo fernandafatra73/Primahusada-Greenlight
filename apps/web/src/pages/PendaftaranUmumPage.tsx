@@ -585,6 +585,16 @@ export function PendaftaranUmumPage() {
           iconKind: 'clock',
         },
       ]}
+      metricsExtra={
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={openCreate}
+          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', alignSelf: 'center' }}
+        >
+          + Tambah Pendaftaran
+        </button>
+      }
       searchPlaceholder="Cari nama pasien, no registrasi..."
       searchValue={search}
       onSearchChange={setSearch}
@@ -648,16 +658,6 @@ export function PendaftaranUmumPage() {
       loading={loading}
       pagination={pagination}
       onPageChange={setPage}
-      action={
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={openCreate}
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-        >
-          + Tambah Pendaftaran
-        </button>
-      }
     >
       <div style={{ overflowX: 'auto' }}>
         <table className="data-table">
