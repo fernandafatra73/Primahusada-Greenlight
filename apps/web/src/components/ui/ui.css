@@ -1029,6 +1029,11 @@
   }
 }
 
+.metric-cards-row__extra {
+  display: flex;
+  align-items: center;
+}
+
 .metric-card {
   display: flex;
   align-items: center;

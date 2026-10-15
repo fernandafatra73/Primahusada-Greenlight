@@ -9,6 +9,7 @@ interface ListPageShellProps {
   readonly subtitle?: string;
   readonly action?: ReactNode;
   readonly metrics?: readonly MetricCardItem[];
+  readonly metricsExtra?: ReactNode;
   readonly tabs?: readonly FilterTab[];
   readonly activeTab?: string;
   readonly onTabChange?: (tabId: string) => void;
@@ -30,6 +31,7 @@ export function ListPageShell({
   subtitle,
   action,
   metrics,
+  metricsExtra,
   tabs,
   activeTab,
   onTabChange,
@@ -62,7 +64,7 @@ export function ListPageShell({
         {action}
       </header>
 
-      {metrics && metrics.length > 0 && <MetricCardsRow items={[...metrics]} />}
+      {metrics && metrics.length > 0 && <MetricCardsRow items={[...metrics]} extra={metricsExtra} />}
 
       <section className="data-card">
         {hasFilters && (

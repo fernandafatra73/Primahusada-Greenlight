@@ -902,6 +902,34 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
           iconKind: 'document',
         },
       ]}
+      metricsExtra={
+        <button
+          type="button"
+          className="btn btn--primary btn--sm"
+          onClick={() => {
+                          setRegNama('');
+            setRegTanggalLahir('');
+            setRegUmurManual('');
+            setRegNoTelepon('');
+            setRegAlamat('');
+            setRegKlinis('');
+            setRegPengirimId('');
+                          setRegSharingAmount('0');
+            setRegSharingMode('custom');
+            setRegHargaManual('0');
+            setRegHargaMode('custom');
+            setRegAdmin('');
+            setRegAnalisId('');
+            setRegLabRows([]);
+            setRegError(null);
+            setRegModalOpen(true);
+            void loadRegistrationMasters();
+          }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}
+        >
+          + Registrasi Pasien Lab
+        </button>
+      }
       searchPlaceholder="Cari nama pasien, reg code, alamat..."
       searchValue={search}
       onSearchChange={setSearch}
@@ -994,32 +1022,6 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}
           >
             PJ
-          </button>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={() => {
-                            setRegNama('');
-              setRegTanggalLahir('');
-              setRegUmurManual('');
-              setRegNoTelepon('');
-              setRegAlamat('');
-              setRegKlinis('');
-              setRegPengirimId('');
-                            setRegSharingAmount('0');
-              setRegSharingMode('custom');
-              setRegHargaManual('0');
-              setRegHargaMode('custom');
-              setRegAdmin('');
-              setRegAnalisId('');
-              setRegLabRows([]);
-              setRegError(null);
-              setRegModalOpen(true);
-              void loadRegistrationMasters();
-            }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}
-          >
-            + Registrasi Pasien Lab
           </button>
         </div>
       }

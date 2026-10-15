@@ -14,9 +14,11 @@ export interface MetricCardItem {
 
 interface MetricCardsRowProps {
   readonly items: MetricCardItem[];
+  /** Sel tambahan (mis. tombol aksi) tepat di kanan kartu terakhir. */
+  readonly extra?: ReactNode;
 }
 
-export function MetricCardsRow({ items }: MetricCardsRowProps) {
+export function MetricCardsRow({ items, extra }: MetricCardsRowProps) {
   return (
     <div className="metric-cards-row">
       {items.map((item) => {
@@ -34,6 +36,7 @@ export function MetricCardsRow({ items }: MetricCardsRowProps) {
           </article>
         );
       })}
+      {extra && <div className="metric-cards-row__extra">{extra}</div>}
     </div>
   );
 }
