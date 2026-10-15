@@ -111,7 +111,7 @@ export function CetakAmplopLabModal({ open, onClose, pasien }: CetakAmplopLabMod
         <head>
           <title>Klinik Prima Husada — Amplop Laboratorium</title>
           <style>
-            @page { margin: 2cm 0 0 0.5cm; }
+            @page { margin: 2cm 0 0 1.5cm; }
             body {
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               color: #0f172a;
