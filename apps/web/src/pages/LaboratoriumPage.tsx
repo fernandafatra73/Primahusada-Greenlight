@@ -29,9 +29,17 @@ import {
   serializeLabKesan,
   isLabResultAbnormal,
   formatAbnormalResult,
+  isDefaultUntouchedRows,
   type LabTableRow,
   type ParsedLabData,
 } from '../lib/labKesan.ts';
+import {
+  buildRowsFromHasilLab2,
+  loadHasilLab2Paket,
+  saveHasilLab2Paket,
+  type HasilLab2Item,
+  type HasilLab2Paket,
+} from '../lib/hasilLab2.ts';
 import { serializeKlinisData } from '../lib/penunjang.ts';
 import { applyWidalResults, formatWidalRingkasan, widalParameterNames, type WidalReadResult } from '../lib/widal.ts';
 import '../components/ui/ui.css';
@@ -253,6 +261,13 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
   const [paketError, setPaketError] = useState<string | null>(null);
   const [deletePaketTarget, setDeletePaketTarget] = useState<PaketLabData | null>(null);
   const [deletePaketLoading, setDeletePaketLoading] = useState(false);
+
+  // Hasil Lab2: paket pemeriksaan siap pakai (tersimpan di browser ini)
+  const [lab2Target, setLab2Target] = useState<LabPasienItem | null>(null);
+  const [lab2Paket, setLab2Paket] = useState<HasilLab2Paket[]>(() => loadHasilLab2Paket());
+  const [lab2Adding, setLab2Adding] = useState(false);
+  const [lab2Nama, setLab2Nama] = useState('');
+  const [lab2Picked, setLab2Picked] = useState<ReadonlySet<string>>(new Set());
 
   const editTotalHarga = useMemo(
     () =>
@@ -785,6 +800,63 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     });
   }
 
+  function lab2Key(item: HasilLab2Item): string {
+    return `${item.groupId}::${item.pemeriksaan}`;
+  }
+
+  function updateLab2Paket(next: HasilLab2Paket[]) {
+    setLab2Paket(next);
+    saveHasilLab2Paket(next);
+  }
+
+  function openLab2Add() {
+    setLab2Nama('');
+    setLab2Picked(new Set());
+    setLab2Adding(true);
+  }
+
+  function toggleLab2Picked(item: HasilLab2Item) {
+    const key = lab2Key(item);
+    setLab2Picked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function handleSaveLab2Paket(e: React.FormEvent) {
+    e.preventDefault();
+    const nama = lab2Nama.trim();
+    if (!nama || lab2Picked.size === 0) return;
+    const items: HasilLab2Item[] = [];
+    for (const group of PAKET_PEMERIKSAAN_LAB) {
+      for (const it of group.items) {
+        const ref = { groupId: group.id, pemeriksaan: it.pemeriksaan };
+        if (lab2Picked.has(lab2Key(ref))) items.push(ref);
+      }
+    }
+    updateLab2Paket([...lab2Paket, { id: `paket-${Date.now()}`, nama, items }]);
+    setLab2Adding(false);
+  }
+
+  function handlePakaiLab2(paket: HasilLab2Paket) {
+    if (!lab2Target) return;
+    const item = lab2Target;
+    setLab2Target(null);
+    openEdit(item);
+    const stamp = Date.now();
+    const paketRows = buildRowsFromHasilLab2(paket, (i) => `lab2-${paket.id}-${stamp}-${i}`);
+    const saved = parseLabKesan(item.kesan).rows;
+    // Hasil yang sudah tersimpan tidak boleh hilang: paket hanya menambah baris yang belum ada.
+    if (saved.length === 0 || isDefaultUntouchedRows(saved)) {
+      setLabRows(paketRows);
+      return;
+    }
+    const existing = new Set(saved.map((r) => r.pemeriksaan.trim().toLowerCase()));
+    setLabRows([...saved, ...paketRows.filter((r) => !existing.has(r.pemeriksaan.trim().toLowerCase()))]);
+  }
+
   const waitingCount = items.filter((i) => i.hasilStatus === 'MENUNGGU_HASIL').length;
   const doneCount = items.filter((i) => i.hasilStatus === 'SELESAI').length;
 
@@ -1003,6 +1075,14 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                     <button
                       type="button"
                       className="btn btn--secondary btn--sm"
+                      onClick={() => setLab2Target(item)}
+                      title="Isi hasil lab dari paket pemeriksaan"
+                    >
+                      ⚡ Hasil Lab2
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--secondary btn--sm"
                       onClick={() => void openQuickEdit(item)}
                       title="Edit Cepat"
                     >
@@ -1048,6 +1128,86 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
           )}
         </tbody>
       </table>
+
+      {lab2Target && (
+        <Modal
+          title={`Hasil Lab2 — ${lab2Target.nama} (${lab2Target.regCode})`}
+          open={true}
+          onClose={() => { setLab2Target(null); setLab2Adding(false); }}
+        >
+          {lab2Adding ? (
+            <form onSubmit={handleSaveLab2Paket}>
+              <div className="form-field">
+                <label htmlFor="lab2-nama">Nama Paket</label>
+                <input id="lab2-nama" value={lab2Nama} onChange={(e) => setLab2Nama(e.target.value)} required />
+              </div>
+              <div style={{ maxHeight: '45vh', overflowY: 'auto', margin: '0.75rem 0' }}>
+                {PAKET_PEMERIKSAAN_LAB.map((group) => (
+                  <fieldset key={group.id} style={{ border: '1px solid var(--color-border)', borderRadius: 6, marginBottom: '0.5rem' }}>
+                    <legend>{group.label}</legend>
+                    {group.items.map((it) => {
+                      const ref = { groupId: group.id, pemeriksaan: it.pemeriksaan };
+                      return (
+                        <label key={lab2Key(ref)} style={{ display: 'inline-flex', gap: '0.3rem', marginRight: '1rem' }}>
+                          <input
+                            type="checkbox"
+                            checked={lab2Picked.has(lab2Key(ref))}
+                            onChange={() => toggleLab2Picked(ref)}
+                          />
+                          {it.pemeriksaan}
+                        </label>
+                      );
+                    })}
+                  </fieldset>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={() => setLab2Adding(false)}>
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn--primary btn--sm"
+                  disabled={!lab2Nama.trim() || lab2Picked.size === 0}
+                >
+                  Simpan Paket
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+              {lab2Paket.map((paket) => (
+                <div
+                  key={paket.id}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--color-border)', borderRadius: 6, padding: '0.5rem 0.75rem' }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <strong>{paket.nama}</strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      {paket.items.map((it) => it.pemeriksaan).join(', ')}
+                    </div>
+                  </div>
+                  <button type="button" className="btn btn--primary btn--sm" onClick={() => handlePakaiLab2(paket)}>
+                    Pakai
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    style={{ border: '1px solid var(--color-border)', color: '#ef4444' }}
+                    title="Hapus paket"
+                    onClick={() => updateLab2Paket(lab2Paket.filter((p) => p.id !== paket.id))}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))}
+              <button type="button" className="btn btn--secondary btn--sm" onClick={openLab2Add}>
+                + Tambah Paket
+              </button>
+            </div>
+          )}
+        </Modal>
+      )}
 
       {/* Edit Modal: form only, no preview */}
       {selected && (
