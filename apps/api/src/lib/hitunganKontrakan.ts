@@ -7,6 +7,7 @@ export interface HitunganKontrakanBody {
   listrik?: number;
   air?: number;
   pinjam?: number;
+  pinjam2?: number;
 }
 
 export interface HitunganKontrakanData {
@@ -16,6 +17,7 @@ export interface HitunganKontrakanData {
   readonly listrik: number;
   readonly air: number;
   readonly pinjam: number;
+  readonly pinjam2: number;
 }
 
 export type HitunganKontrakanParse =
@@ -26,7 +28,8 @@ const NOMINAL_FIELDS = [
   ['sewa', 'Sewa'],
   ['listrik', 'Listrik'],
   ['air', 'Air'],
-  ['pinjam', 'Pinjam'],
+  ['pinjam', 'Pinjaman 1'],
+  ['pinjam2', 'Pinjaman 2'],
 ] as const;
 
 /**
@@ -46,7 +49,13 @@ export function parseHitunganKontrakanBody(
     return { ok: false, error: 'Tahun tidak valid' };
   }
 
-  const nominal: Record<(typeof NOMINAL_FIELDS)[number][0], number> = { sewa: 0, listrik: 0, air: 0, pinjam: 0 };
+  const nominal: Record<(typeof NOMINAL_FIELDS)[number][0], number> = {
+    sewa: 0,
+    listrik: 0,
+    air: 0,
+    pinjam: 0,
+    pinjam2: 0,
+  };
   for (const [key, label] of NOMINAL_FIELDS) {
     const value = Number(body[key] ?? existing[key] ?? 0);
     if (!Number.isFinite(value) || value < 0) {

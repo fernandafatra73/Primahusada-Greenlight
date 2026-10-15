@@ -14,6 +14,7 @@ interface HitunganKontrakanDto {
   readonly listrik: string | null;
   readonly air: string | null;
   readonly pinjam: string | null;
+  readonly pinjam2: string | null;
 }
 
 function serialize(item: HitunganKontrakan): HitunganKontrakanDto {
@@ -25,6 +26,7 @@ function serialize(item: HitunganKontrakan): HitunganKontrakanDto {
     listrik: serializeDecimal(item.listrik),
     air: serializeDecimal(item.air),
     pinjam: serializeDecimal(item.pinjam),
+    pinjam2: serializeDecimal(item.pinjam2),
   };
 }
 
@@ -56,6 +58,7 @@ export async function registerHitunganKontrakanRoutes(app: FastifyInstance): Pro
         listrik: toNumber(existing.listrik),
         air: toNumber(existing.air),
         pinjam: toNumber(existing.pinjam),
+        pinjam2: toNumber(existing.pinjam2),
       });
       if (!parsed.ok) return reply.status(400).send({ error: parsed.error });
 

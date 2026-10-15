@@ -3,7 +3,13 @@ import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { handleFormFieldNavKeyDown } from '../lib/formFieldNav.ts';
 import { formatRupiah } from '../lib/format.ts';
-import { jumlahKontrakan, NAMA_BULAN, namaBulan, rekapTahunan } from '../lib/hitunganKontrakan.ts';
+import {
+  isianBulanBerikutnya,
+  jumlahKontrakan,
+  NAMA_BULAN,
+  namaBulan,
+  rekapTahunan,
+} from '../lib/hitunganKontrakan.ts';
 
 interface KontrakanItem {
   readonly id: string;
@@ -13,6 +19,7 @@ interface KontrakanItem {
   readonly listrik: string;
   readonly air: string;
   readonly pinjam: string;
+  readonly pinjam2: string;
 }
 
 interface KontrakanForm {
@@ -22,24 +29,29 @@ interface KontrakanForm {
   readonly listrik: string;
   readonly air: string;
   readonly pinjam: string;
+  readonly pinjam2: string;
 }
 
 const NOMINAL_FIELDS = [
   ['sewa', 'Sewa Kontrakan (Rp)'],
   ['listrik', 'Listrik (Rp)'],
   ['air', 'Air (Rp)'],
-  ['pinjam', 'Pinjam (Rp)'],
+  ['pinjam', 'Pinjaman 1 (Rp)'],
+  ['pinjam2', 'Pinjaman 2 (Rp)'],
 ] as const;
 
-function emptyForm(): KontrakanForm {
+/** Form kosong; kalau sudah ada data, langsung bulan berikutnya dengan Sewa = Jumlah bulan terakhir. */
+function emptyForm(items: readonly KontrakanItem[] = []): KontrakanForm {
   const now = new Date();
+  const lanjut = isianBulanBerikutnya(items);
   return {
-    bulan: String(now.getMonth() + 1),
-    tahun: String(now.getFullYear()),
-    sewa: '0',
+    bulan: String(lanjut?.bulan ?? now.getMonth() + 1),
+    tahun: String(lanjut?.tahun ?? now.getFullYear()),
+    sewa: String(lanjut?.sewa ?? 0),
     listrik: '0',
     air: '0',
     pinjam: '0',
+    pinjam2: '0',
   };
 }
 
@@ -54,21 +66,24 @@ export function HitunganPage() {
   const [deleteTarget, setDeleteTarget] = useState<KontrakanItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(async () => {
+  /** Muat ulang daftar; hasilnya dikembalikan supaya form baru bisa diisi dari data terakhir. */
+  const load = useCallback(async (): Promise<readonly KontrakanItem[]> => {
     setLoading(true);
     setError(null);
     try {
       const res = await apiGet<{ items: KontrakanItem[] }>('/api/hitungan-kontrakan');
       setItems(res.items);
+      return res.items;
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal memuat data hitungan');
+      return [];
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void load();
+    void load().then((list) => setForm(emptyForm(list)));
   }, [load]);
 
   const rekap = useMemo(() => rekapTahunan(items), [items]);
@@ -82,12 +97,13 @@ export function HitunganPage() {
       listrik: item.listrik,
       air: item.air,
       pinjam: item.pinjam,
+      pinjam2: item.pinjam2,
     });
   }
 
   function cancelEdit(): void {
     setEditingId(null);
-    setForm(emptyForm());
+    setForm(emptyForm(items));
   }
 
   async function handleSubmit(event: FormEvent): Promise<void> {
@@ -101,6 +117,7 @@ export function HitunganPage() {
       listrik: Number(form.listrik) || 0,
       air: Number(form.air) || 0,
       pinjam: Number(form.pinjam) || 0,
+      pinjam2: Number(form.pinjam2) || 0,
     };
     try {
       if (editingId) {
@@ -108,8 +125,9 @@ export function HitunganPage() {
       } else {
         await apiPost('/api/hitungan-kontrakan', body);
       }
-      cancelEdit();
-      await load();
+      setEditingId(null);
+      const list = await load();
+      setForm(emptyForm(list));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan data hitungan');
     } finally {
@@ -123,9 +141,11 @@ export function HitunganPage() {
     setError(null);
     try {
       await apiDelete(`/api/hitungan-kontrakan/${deleteTarget.id}`);
-      if (editingId === deleteTarget.id) cancelEdit();
+      const sedangDiubah = editingId !== null && editingId !== deleteTarget.id;
+      if (!sedangDiubah) setEditingId(null);
       setDeleteTarget(null);
-      await load();
+      const list = await load();
+      if (!sedangDiubah) setForm(emptyForm(list));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal menghapus data hitungan');
     } finally {
@@ -206,7 +226,8 @@ export function HitunganPage() {
             <th style={{ textAlign: 'right' }}>Sewa</th>
             <th style={{ textAlign: 'right' }}>Listrik</th>
             <th style={{ textAlign: 'right' }}>Air</th>
-            <th style={{ textAlign: 'right' }}>Pinjam</th>
+            <th style={{ textAlign: 'right' }}>Pinjaman 1</th>
+            <th style={{ textAlign: 'right' }}>Pinjaman 2</th>
             <th style={{ textAlign: 'right' }}>Jumlah</th>
             <th style={{ width: '140px' }}>Aksi</th>
           </tr>
@@ -214,7 +235,7 @@ export function HitunganPage() {
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={9} style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>
+              <td colSpan={10} style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>
                 {loading ? 'Memuat...' : 'Belum ada data hitungan kontrakan.'}
               </td>
             </tr>
@@ -230,6 +251,7 @@ export function HitunganPage() {
                     <td style={{ textAlign: 'right' }}>{formatRupiah(item.listrik)}</td>
                     <td style={{ textAlign: 'right' }}>{formatRupiah(item.air)}</td>
                     <td style={{ textAlign: 'right' }}>{formatRupiah(item.pinjam)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatRupiah(item.pinjam2)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatRupiah(jumlahKontrakan(item))}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.35rem' }}>
@@ -251,6 +273,7 @@ export function HitunganPage() {
                   <td style={{ textAlign: 'right' }}>{formatRupiah(total.listrik)}</td>
                   <td style={{ textAlign: 'right' }}>{formatRupiah(total.air)}</td>
                   <td style={{ textAlign: 'right' }}>{formatRupiah(total.pinjam)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatRupiah(total.pinjam2)}</td>
                   <td style={{ textAlign: 'right' }}>{formatRupiah(total.jumlah)}</td>
                   <td />
                 </tr>

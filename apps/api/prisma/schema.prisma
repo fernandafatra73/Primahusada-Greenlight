@@ -1334,7 +1334,8 @@ model StrukturOrganisasi {
 }
 
 /// Hitungan biaya kontrakan per bulan — isi tombol "Hitungan" di navbar (sebelah Lisensi).
-/// Jumlah tidak disimpan; selalu dihitung sebagai sewa - listrik - air - pinjam.
+/// Jumlah tidak disimpan; selalu dihitung sebagai sewa - listrik - air - pinjam - pinjam2.
+/// `pinjam` tampil sebagai "Pinjaman 1", `pinjam2` sebagai "Pinjaman 2".
 model HitunganKontrakan {
   id        String   @id @default(cuid())
   bulan     Int
@@ -1343,6 +1344,7 @@ model HitunganKontrakan {
   listrik   Decimal  @default(0)
   air       Decimal  @default(0)
   pinjam    Decimal  @default(0)
+  pinjam2   Decimal  @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

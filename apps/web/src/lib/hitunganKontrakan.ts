@@ -20,6 +20,7 @@ export interface NominalKontrakan {
   readonly listrik: string | number;
   readonly air: string | number;
   readonly pinjam: string | number;
+  readonly pinjam2: string | number;
 }
 
 function toAngka(value: string | number): number {
@@ -27,9 +28,11 @@ function toAngka(value: string | number): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Jumlah = Sewa − Listrik − Air − Pinjam; nilai kosong/tidak valid dihitung 0. */
+/** Jumlah = Sewa − Listrik − Air − Pinjaman 1 − Pinjaman 2; nilai kosong/tidak valid dihitung 0. */
 export function jumlahKontrakan(item: NominalKontrakan): number {
-  return toAngka(item.sewa) - toAngka(item.listrik) - toAngka(item.air) - toAngka(item.pinjam);
+  return (
+    toAngka(item.sewa) - toAngka(item.listrik) - toAngka(item.air) - toAngka(item.pinjam) - toAngka(item.pinjam2)
+  );
 }
 
 export interface TotalKontrakan {
@@ -37,6 +40,7 @@ export interface TotalKontrakan {
   readonly listrik: number;
   readonly air: number;
   readonly pinjam: number;
+  readonly pinjam2: number;
   readonly jumlah: number;
 }
 
@@ -67,11 +71,37 @@ export function rekapTahunan<T extends NominalKontrakan & { readonly tahun: numb
           listrik: acc.listrik + toAngka(item.listrik),
           air: acc.air + toAngka(item.air),
           pinjam: acc.pinjam + toAngka(item.pinjam),
+          pinjam2: acc.pinjam2 + toAngka(item.pinjam2),
           jumlah: acc.jumlah + jumlahKontrakan(item),
         }),
-        { sewa: 0, listrik: 0, air: 0, pinjam: 0, jumlah: 0 },
+        { sewa: 0, listrik: 0, air: 0, pinjam: 0, pinjam2: 0, jumlah: 0 },
       ),
     }));
+}
+
+export interface IsianBulanBerikutnya {
+  readonly bulan: number;
+  readonly tahun: number;
+  readonly sewa: number;
+}
+
+/**
+ * Isian awal untuk bulan baru: bulan sesudah data terakhir (Desember → Januari
+ * tahun berikutnya), dengan Sewa = Jumlah bulan terakhir. Null kalau belum ada data.
+ */
+export function isianBulanBerikutnya<T extends NominalKontrakan & { readonly bulan: number; readonly tahun: number }>(
+  items: ReadonlyArray<T>,
+): IsianBulanBerikutnya | null {
+  let terakhir: T | null = null;
+  for (const item of items) {
+    if (!terakhir || item.tahun * 12 + item.bulan > terakhir.tahun * 12 + terakhir.bulan) terakhir = item;
+  }
+  if (!terakhir) return null;
+  return {
+    bulan: terakhir.bulan === 12 ? 1 : terakhir.bulan + 1,
+    tahun: terakhir.bulan === 12 ? terakhir.tahun + 1 : terakhir.tahun,
+    sewa: jumlahKontrakan(terakhir),
+  };
 }
 
 export function namaBulan(bulan: number): string {
