@@ -21,7 +21,6 @@ import { SimpanDataPage } from './SimpanDataPage.tsx';
 
 const MEGA_DATA_TABS = [
   { id: 'fatra', label: 'Fatra' },
-  { id: 'musik-ph', label: 'Musik-PH' },
   { id: 'bernyanyi', label: 'Bernyanyi' },
   { id: 'jam', label: 'Jam' },
   { id: 'dirimu', label: 'Dirimu' },
@@ -46,9 +45,14 @@ type MegaDataTabId = (typeof MEGA_DATA_TABS)[number]['id'];
 function renderTabContent(tabId: MegaDataTabId) {
   switch (tabId) {
     case 'fatra':
-      return <FatraPage />;
-    case 'musik-ph':
-      return <MusikPage />;
+      return (
+        <>
+          <FatraPage />
+          <div style={{ marginTop: '1.5rem' }}>
+            <MusikPage />
+          </div>
+        </>
+      );
     case 'bernyanyi':
       return <KaraokePage />;
     case 'jam':
