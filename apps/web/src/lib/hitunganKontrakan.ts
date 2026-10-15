@@ -50,8 +50,13 @@ export interface RekapTahunan<T> {
   readonly total: TotalKontrakan;
 }
 
-/** Kelompokkan baris per tahun (urut tahun naik) beserta total tahunannya. */
-export function rekapTahunan<T extends NominalKontrakan & { readonly tahun: number }>(
+/**
+ * Kelompokkan baris per tahun (urut tahun lalu bulan naik) beserta total tahunannya.
+ * Sewa adalah saldo berjalan (Sewa bulan ini = Jumlah bulan lalu), jadi Sewa tidak
+ * dijumlahkan: total Sewa = Sewa bulan pertama tahun itu, pengurangnya dijumlahkan,
+ * dan total Jumlah = Sewa awal dikurangi semua pengurang tersebut.
+ */
+export function rekapTahunan<T extends NominalKontrakan & { readonly tahun: number; readonly bulan: number }>(
   items: ReadonlyArray<T>,
 ): RekapTahunan<T>[] {
   const byTahun = new Map<number, T[]>();
@@ -62,21 +67,24 @@ export function rekapTahunan<T extends NominalKontrakan & { readonly tahun: numb
   }
   return [...byTahun.entries()]
     .sort(([a], [b]) => a - b)
-    .map(([tahun, list]) => ({
-      tahun,
-      items: list,
-      total: list.reduce<TotalKontrakan>(
+    .map(([tahun, unsorted]) => {
+      const list = [...unsorted].sort((a, b) => a.bulan - b.bulan);
+      const pengurang = list.reduce(
         (acc, item) => ({
-          sewa: acc.sewa + toAngka(item.sewa),
           listrik: acc.listrik + toAngka(item.listrik),
           air: acc.air + toAngka(item.air),
           pinjam: acc.pinjam + toAngka(item.pinjam),
           pinjam2: acc.pinjam2 + toAngka(item.pinjam2),
-          jumlah: acc.jumlah + jumlahKontrakan(item),
         }),
-        { sewa: 0, listrik: 0, air: 0, pinjam: 0, pinjam2: 0, jumlah: 0 },
-      ),
-    }));
+        { listrik: 0, air: 0, pinjam: 0, pinjam2: 0 },
+      );
+      const sewa = list[0] ? toAngka(list[0].sewa) : 0;
+      return {
+        tahun,
+        items: list,
+        total: { sewa, ...pengurang, jumlah: jumlahKontrakan({ sewa, ...pengurang }) },
+      };
+    });
 }
 
 export interface IsianBulanBerikutnya {

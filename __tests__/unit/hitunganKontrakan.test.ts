@@ -58,33 +58,52 @@ describe('namaBulan', () => {
 describe('rekapTahunan', () => {
   const row = (
     id: string,
+    bulan: number,
     tahun: number,
     sewa: string,
     listrik = '0',
     air = '0',
     pinjam = '0',
     pinjam2 = '0',
-  ): { id: string; tahun: number; sewa: string; listrik: string; air: string; pinjam: string; pinjam2: string } => ({
-    id,
-    tahun,
-    sewa,
-    listrik,
-    air,
-    pinjam,
-    pinjam2,
-  });
+  ): {
+    id: string;
+    bulan: number;
+    tahun: number;
+    sewa: string;
+    listrik: string;
+    air: string;
+    pinjam: string;
+    pinjam2: string;
+  } => ({ id, bulan, tahun, sewa, listrik, air, pinjam, pinjam2 });
 
-  test('groups rows per year in ascending order with yearly totals', () => {
+  test('groups rows per year, sorted by month, with yearly totals', () => {
     const rekap = rekapTahunan([
-      row('a', 2026, '1000', '100', '50', '25', '15'),
-      row('b', 2025, '500', '50'),
-      row('c', 2026, '1000', '200'),
+      row('c', 2, 2026, '875', '200'),
+      row('b', 12, 2025, '500', '50'),
+      row('a', 1, 2026, '1000', '50', '50', '15', '10'),
     ]);
     expect(rekap.map((r) => r.tahun)).toEqual([2025, 2026]);
     expect(rekap[0]?.items.map((i) => i.id)).toEqual(['b']);
     expect(rekap[0]?.total).toEqual({ sewa: 500, listrik: 50, air: 0, pinjam: 0, pinjam2: 0, jumlah: 450 });
     expect(rekap[1]?.items.map((i) => i.id)).toEqual(['a', 'c']);
-    expect(rekap[1]?.total).toEqual({ sewa: 2000, listrik: 300, air: 50, pinjam: 25, pinjam2: 15, jumlah: 1610 });
+  });
+
+  test('yearly total takes Sewa from the first month and subtracts every deduction', () => {
+    // Saldo berjalan: Sewa tiap bulan = Jumlah bulan sebelumnya.
+    const rekap = rekapTahunan([
+      row('jul', 7, 2026, '17000000', '0', '100000'),
+      row('agu', 8, 2026, '16900000', '0', '100000', '5000000'),
+      row('sep', 9, 2026, '11800000', '0', '1000000'),
+      row('okt', 10, 2026, '10800000', '0', '100000'),
+    ]);
+    expect(rekap[0]?.total).toEqual({
+      sewa: 17000000,
+      listrik: 0,
+      air: 1300000,
+      pinjam: 5000000,
+      pinjam2: 0,
+      jumlah: 10700000,
+    });
   });
 
   test('returns an empty list for no rows', () => {
