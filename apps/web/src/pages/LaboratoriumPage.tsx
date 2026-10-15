@@ -925,7 +925,17 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
             setRegModalOpen(true);
             void loadRegistrationMasters();
           }}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+            minHeight: '4.5rem',
+            fontSize: '1.05rem',
+            fontWeight: 600,
+            borderRadius: 'var(--radius-card)',
+          }}
         >
           + Registrasi Pasien Lab
         </button>

@@ -1031,7 +1031,7 @@
 
 .metric-cards-row__extra {
   display: flex;
-  align-items: center;
+  align-items: stretch;
 }
 
 .metric-card {
