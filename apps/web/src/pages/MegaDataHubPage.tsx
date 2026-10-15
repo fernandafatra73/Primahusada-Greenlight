@@ -5,9 +5,6 @@ import { TempletPage } from './TempletPage.tsx';
 import { TransferPage } from './TransferPage.tsx';
 import { DaftarTelponPage } from './DaftarTelponPage.tsx';
 import { KalenderPage } from './KalenderPage.tsx';
-import { WhatsAppPage } from './WhatsAppPage.tsx';
-import { TelegramPage } from './TelegramPage.tsx';
-import { KalkulatorPage } from './KalkulatorPage.tsx';
 import { AiGeminiPage } from './AiGeminiPage.tsx';
 import { ExpertisePage } from './ExpertisePage.tsx';
 import { SiaranTvPage } from './SiaranTvPage.tsx';
@@ -39,9 +36,6 @@ const MEGA_DATA_TABS = [
   { id: 'transfer', label: 'Transfer' },
   { id: 'daftar-telpon', label: 'Daftar Telpon' },
   { id: 'kalender', label: 'Kalender' },
-  { id: 'whatsapp', label: 'WhatsApp' },
-  { id: 'telegram', label: 'Telegram' },
-  { id: 'kalkulator', label: 'Kalkulator' },
   { id: 'ai-gemini', label: 'AI Gemini' },
   { id: 'expertise', label: 'Expertise' },
   { id: 'simpan-data', label: 'Simpan Data' },
@@ -83,12 +77,6 @@ function renderTabContent(tabId: MegaDataTabId) {
       return <DaftarTelponPage />;
     case 'kalender':
       return <KalenderPage />;
-    case 'whatsapp':
-      return <WhatsAppPage />;
-    case 'telegram':
-      return <TelegramPage />;
-    case 'kalkulator':
-      return <KalkulatorPage />;
     case 'ai-gemini':
       return <AiGeminiPage />;
     case 'expertise':
