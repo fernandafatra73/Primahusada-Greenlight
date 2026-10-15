@@ -590,7 +590,18 @@ export function PendaftaranUmumPage() {
           type="button"
           className="btn btn--primary"
           onClick={openCreate}
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', alignSelf: 'center' }}
+          style={{
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+            minHeight: '4.5rem',
+            fontSize: '1.05rem',
+            fontWeight: 600,
+            borderRadius: 'var(--radius-card)',
+          }}
         >
           + Tambah Pendaftaran
         </button>
