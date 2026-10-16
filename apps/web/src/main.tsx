@@ -2,7 +2,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import './index.css';
-import './styles/vb6.css';
 
 const root = document.getElementById('root');
 if (!root) {
