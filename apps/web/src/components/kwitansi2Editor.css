@@ -1,0 +1,329 @@
+/* Blangko Kwitansi2 yang bisa diketik langsung; warna mengikuti KwitansiPendaftaranUmumDocument. */
+.k2-wrap {
+  --k2-navy: #0b3d78;
+  --k2-blue: #1d5fae;
+  --k2-sky: #7cc4f2;
+  --k2-pale: #e6f1fc;
+  --k2-line: #2a64b0;
+  --k2-text: #1a2b44;
+}
+
+.k2-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.k2-hint {
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.k2-paper {
+  position: relative;
+  max-width: 980px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 2px solid var(--k2-blue);
+  background: #fff;
+  color: var(--k2-text);
+  font-size: 15px;
+}
+
+.k2-swoosh {
+  position: absolute;
+  pointer-events: none;
+}
+
+.k2-swoosh--top {
+  top: -40px;
+  right: -60px;
+  width: 520px;
+  height: 90px;
+  border-radius: 0 0 0 100% !important;
+  background: linear-gradient(170deg, var(--k2-blue) 35%, var(--k2-sky) 36%, var(--k2-sky) 55%, transparent 56%);
+}
+
+.k2-swoosh--bottom {
+  bottom: -40px;
+  left: -60px;
+  width: 520px;
+  height: 90px;
+  border-radius: 0 100% 0 0 !important;
+  background: linear-gradient(-10deg, var(--k2-blue) 35%, var(--k2-sky) 36%, var(--k2-sky) 55%, transparent 56%);
+}
+
+.k2-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 28px 12px;
+  border-bottom: 2px solid var(--k2-blue);
+}
+
+.k2-logo {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.k2-brand {
+  flex: 1;
+}
+
+.k2-brand__small {
+  font-size: 20px;
+  color: var(--k2-blue);
+  letter-spacing: 2px;
+}
+
+.k2-brand__name {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--k2-navy);
+  line-height: 1.05;
+}
+
+.k2-brand__tagline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 6px;
+  font-style: italic;
+  color: var(--k2-blue);
+}
+
+.k2-brand__bar {
+  display: inline-block;
+  width: 52px;
+  height: 2px;
+  background: #1aa39a;
+}
+
+.k2-brand__contact {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--k2-navy);
+}
+
+.k2-title {
+  width: 260px;
+  text-align: center;
+}
+
+.k2-title__badge {
+  padding: 8px 0;
+  border-radius: 12px !important;
+  background: var(--k2-blue);
+  color: #fff;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 3px;
+}
+
+.k2-title__no {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+.k2-body {
+  position: relative;
+  padding: 14px 28px 60px;
+}
+
+.k2-info {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.k2-info > span {
+  width: 150px;
+  flex-shrink: 0;
+}
+
+/* Spesifisitas (0,4,1) + !important supaya menang atas input global tema Delphi (0,3,1). */
+.k2-wrap .k2-paper input.k2-field:not([type='checkbox']),
+.k2-wrap .k2-paper input.k2-cell:not([type='checkbox']) {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 4px !important;
+  border: none !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--k2-text);
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.k2-wrap .k2-paper input.k2-field:not([type='checkbox']) {
+  border-bottom: 1px dotted #5b6b80 !important;
+}
+
+.k2-wrap .k2-paper input.k2-field:not([type='checkbox']):focus,
+.k2-wrap .k2-paper input.k2-cell:not([type='checkbox']):focus {
+  background: #fffbe6 !important;
+  outline: 1px solid var(--k2-sky);
+}
+
+.k2-wrap .k2-paper input.k2-field--bold:not([type='checkbox']) {
+  font-weight: 700;
+}
+
+.k2-wrap .k2-paper input.k2-field--inline:not([type='checkbox']) {
+  flex: none;
+  width: 170px;
+}
+
+.k2-wrap .k2-paper input.k2-field--center:not([type='checkbox']),
+.k2-wrap .k2-paper input.k2-cell--center:not([type='checkbox']) {
+  text-align: center;
+}
+
+.k2-wrap .k2-paper input.k2-cell--right:not([type='checkbox']) {
+  text-align: right;
+}
+
+.k2-wrap .k2-paper input.k2-cell:not([type='checkbox']) {
+  width: 100%;
+}
+
+.k2-table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  border: 1.5px solid var(--k2-line);
+}
+
+.k2-table th {
+  padding: 6px;
+  background: var(--k2-pale);
+  color: var(--k2-navy);
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid var(--k2-line);
+}
+
+.k2-table td {
+  padding: 2px 4px;
+  border: 1px solid var(--k2-line);
+  vertical-align: middle;
+}
+
+.k2-col-no {
+  width: 7%;
+  text-align: center;
+}
+
+.k2-col-jumlah {
+  width: 15%;
+}
+
+.k2-col-harga {
+  width: 22%;
+}
+
+.k2-subtotal {
+  font-size: 11px;
+  color: #475569;
+  text-align: right;
+}
+
+.k2-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+}
+
+.k2-add {
+  margin-right: auto;
+  margin-top: 4px;
+  align-self: flex-start;
+  padding: 2px 10px;
+  border: 1px dashed var(--k2-line);
+  border-radius: 4px !important;
+  background: #fff;
+  color: var(--k2-blue);
+  cursor: pointer;
+}
+
+.k2-total__label,
+.k2-total__value {
+  padding: 8px;
+  border: 1.5px solid var(--k2-line);
+  border-top: none;
+  color: var(--k2-navy);
+  font-weight: 700;
+}
+
+.k2-total__label {
+  width: 15%;
+  background: var(--k2-pale);
+  text-align: center;
+}
+
+.k2-total__value {
+  width: 22%;
+  border-left: none;
+  text-align: right;
+  font-size: 17px;
+}
+
+.k2-bottom {
+  display: flex;
+  gap: 20px;
+  margin-top: 14px;
+}
+
+.k2-bottom__left {
+  flex: 1.8;
+}
+
+.k2-terbilang {
+  padding: 12px;
+  border-radius: 8px !important;
+  background: var(--k2-pale);
+}
+
+.k2-terbilang em {
+  color: var(--k2-blue);
+}
+
+.k2-thanks {
+  margin-top: 12px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--k2-blue);
+}
+
+.k2-thanks--bold {
+  margin-top: 0;
+  font-weight: 700;
+  color: var(--k2-navy);
+}
+
+.k2-sign {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 14px;
+}
+
+.k2-sign label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.k2-sign__name {
+  margin-top: 52px;
+  font-weight: 700;
+}
