@@ -288,11 +288,33 @@ label {
 .app-navbar__credit,
 .app-navbar__user,
 .app-navbar__user-credit,
-.app-navbar__link,
 .app-navbar__category {
   color: #000 !important;
   font-size: 12px !important;
   font-weight: 400 !important;
+}
+
+/* Tombol menu: lebar tetap yang sama supaya deretan simetris (86px masih memuat "Laboratorium"
+   dan 13 tombol admin tetap satu baris di 1440px), teks putih di atas latar biru. */
+.app-navbar__nav > .app-navbar__link,
+.app-navbar__nav > .app-navbar__category {
+  box-sizing: border-box;
+  flex: 0 0 86px;
+}
+
+.app-navbar__link {
+  box-sizing: border-box;
+  justify-content: center;
+  width: 100%;
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+}
+
+.app-navbar__link .app-navbar__caret {
+  color: #fff !important;
 }
 
 .app-navbar__link:hover,
