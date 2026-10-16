@@ -16,6 +16,10 @@ import { formatRupiah } from '../lib/format.ts';
 import { PendaftaranReportDocument } from '../pdf/PendaftaranReportDocument.tsx';
 import { PendaftaranKopSuratDocument } from '../pdf/PendaftaranKopSuratDocument.tsx';
 import { KwitansiReportDocument, type KwitansiReportData } from '../pdf/KwitansiReportDocument.tsx';
+import {
+  KwitansiPendaftaranUmumDocument,
+  type KwitansiPendaftaranUmumData,
+} from '../pdf/KwitansiPendaftaranUmumDocument.tsx';
 import { KwitansiRincianEditor } from '../components/KwitansiRincianEditor.tsx';
 import { loadLogoDataUrl } from '../pdf/loadLogoDataUrl.ts';
 import { angkaKeKata, terbilangRupiah } from '../lib/terbilang.ts';
@@ -205,6 +209,8 @@ export function PendaftaranUmumPage() {
   const [previewItem, setPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [kopSuratPreviewItem, setKopSuratPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [kwitansiPreviewItem, setKwitansiPreviewItem] = useState<PendaftaranUmumItem | null>(null);
+  /** Kwitansi = format lama, Kwitansi2 = blangko A5 lanskap bergaya formulir. */
+  const [kwitansiVersi, setKwitansiVersi] = useState<1 | 2>(1);
   /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
   const [kwitansiRincian, setKwitansiRincian] = useState<readonly { nama: string; harga: number }[] | null>(null);
   const [amplopPreviewItem, setAmplopPreviewItem] = useState<PendaftaranUmumItem | null>(null);
@@ -556,13 +562,39 @@ export function PendaftaranUmumPage() {
     };
   }
 
+  function buildKwitansi2Data(item: PendaftaranUmumItem): KwitansiPendaftaranUmumData {
+    const rincian = kwitansiRincian ?? rincianBawaan(item);
+    const total = rincian.reduce((jumlah, r) => jumlah + r.harga, 0);
+    const tanggalMasuk = new Date(item.tanggalMasuk);
+    return {
+      logoSrc,
+      noKwitansi: item.noRegistrasi,
+      sudahTerimaDari: item.umur ? `${item.namaPasien}, ${item.umur}` : item.namaPasien,
+      untukPembayaran: rincian.map((r) => r.nama).join(', ') || '-',
+      tanggal: tanggalMasuk.toLocaleDateString('id-ID'),
+      // Rincian kwitansi tidak menyimpan kuantitas; tiap baris dihitung satu layanan.
+      items: rincian.map((r) => ({ nama: r.nama, jumlah: 1, hargaFormatted: formatRupiah(r.harga) })),
+      totalFormatted: formatRupiah(total),
+      terbilang: terbilangRupiah(total),
+      tanggalTtd: tanggalMasuk.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      penerimaNama: item.petugasKasir || '',
+    };
+  }
+
+  function renderKwitansiDocument(item: PendaftaranUmumItem) {
+    return kwitansiVersi === 2 ? (
+      <KwitansiPendaftaranUmumDocument data={buildKwitansi2Data(item)} />
+    ) : (
+      <KwitansiReportDocument data={buildKwitansiData(item)} />
+    );
+  }
+
   async function handleDownloadKwitansi(item: PendaftaranUmumItem) {
-    const data = buildKwitansiData(item);
-    const blob = await pdf(<KwitansiReportDocument data={data} />).toBlob();
+    const blob = await pdf(renderKwitansiDocument(item)).toBlob();
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `Kwitansi_${item.noRegistrasi}.pdf`;
+    anchor.download = `${kwitansiVersi === 2 ? 'Kwitansi2' : 'Kwitansi'}_${item.noRegistrasi}.pdf`;
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -862,10 +894,24 @@ export function PendaftaranUmumPage() {
                       <button
                         type="button"
                         className="btn btn--xs btn--primary"
-                        onClick={() => setKwitansiPreviewItem(item)}
+                        onClick={() => {
+                          setKwitansiVersi(1);
+                          setKwitansiPreviewItem(item);
+                        }}
                         title="Pratinjau & cetak kwitansi biaya pendaftaran"
                       >
                         🧾 Kwitansi
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--xs btn--primary"
+                        onClick={() => {
+                          setKwitansiVersi(2);
+                          setKwitansiPreviewItem(item);
+                        }}
+                        title="Pratinjau & cetak kwitansi bergaya blangko (A5 lanskap)"
+                      >
+                        🧾 Kwitansi2
                       </button>
                       <TableRowActions
                         onEdit={() => openEdit(item)}
@@ -1274,7 +1320,7 @@ export function PendaftaranUmumPage() {
 
       {kwitansiPreviewItem && (
         <Modal
-          title={`Pratinjau Kwitansi — ${kwitansiPreviewItem.noRegistrasi}`}
+          title={`Pratinjau ${kwitansiVersi === 2 ? 'Kwitansi2' : 'Kwitansi'} — ${kwitansiPreviewItem.noRegistrasi}`}
           open={true}
           onClose={() => {
             setKwitansiPreviewItem(null);
@@ -1300,7 +1346,7 @@ export function PendaftaranUmumPage() {
           </div>
           <div style={{ width: '100%', height: 'calc(100vh - 14rem)', minHeight: '600px' }}>
             <PDFViewer width="100%" height="100%" className="pdf-viewer">
-              <KwitansiReportDocument data={buildKwitansiData(kwitansiPreviewItem)} />
+              {renderKwitansiDocument(kwitansiPreviewItem)}
             </PDFViewer>
           </div>
         </Modal>
