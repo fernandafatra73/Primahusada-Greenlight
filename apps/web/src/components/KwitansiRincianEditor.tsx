@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
 import { formatRupiah } from '../lib/format.ts';
+import { hitungRincianKwitansi } from '../lib/kwitansiRows.ts';
 import './ui/ui.css';
 
 export type KwitansiJenis = 'PENDAFTARAN_UMUM' | 'RADIOLOGI' | 'LABORATORIUM' | 'FARMASI';
@@ -45,10 +46,19 @@ interface KwitansiRincianEditorProps {
    * disunting. */
   readonly bawaan: readonly { readonly nama: string; readonly harga: number }[];
   /** Dipanggil setiap rincian berubah, supaya pratinjau ikut menyesuaikan. */
-  readonly onChange: (items: readonly { nama: string; harga: number }[]) => void;
+  readonly onChange: (items: readonly { nama: string; harga: number; jumlah?: number }[]) => void;
+  /** Tampilkan kolom Jumlah (harga = harga satuan). Jumlah tidak disimpan ke
+   * server; hanya berlaku selama editor ini terbuka. */
+  readonly tampilkanJumlah?: boolean;
 }
 
-export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: KwitansiRincianEditorProps) {
+export function KwitansiRincianEditor({
+  jenis,
+  nomor,
+  bawaan,
+  onChange,
+  tampilkanJumlah = false,
+}: KwitansiRincianEditorProps) {
   const [items, setItems] = useState<readonly RincianBaris[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,10 +67,21 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
   const [pilihan, setPilihan] = useState<readonly PilihanItem[]>([]);
   const [cari, setCari] = useState('');
   const [memuatPilihan, setMemuatPilihan] = useState(false);
+  /** Jumlah per id baris, sebagai teks input; kosong berarti 1. */
+  const [jumlahPerBaris, setJumlahPerBaris] = useState<Readonly<Record<string, string>>>({});
+  // Ref supaya `kabarkan` membaca jumlah terbaru tanpa menjadi dependensi efek inisialisasi.
+  const jumlahRef = useRef(jumlahPerBaris);
+  jumlahRef.current = jumlahPerBaris;
 
   const kabarkan = useCallback(
     (daftar: readonly RincianBaris[]) => {
-      onChange(daftar.map((b) => ({ nama: b.nama, harga: Number(b.harga) })));
+      onChange(
+        daftar.map((b) => {
+          const teks = jumlahRef.current[b.id];
+          const dasar = { nama: b.nama, harga: Number(b.harga) };
+          return teks ? { ...dasar, jumlah: Number(teks) } : dasar;
+        }),
+      );
     },
     [onChange],
   );
@@ -174,7 +195,11 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
     }
   }
 
-  const total = items.reduce((jumlah, b) => jumlah + Number(b.harga), 0);
+  const total = tampilkanJumlah
+    ? hitungRincianKwitansi(
+        items.map((b) => ({ nama: b.nama, harga: Number(b.harga), jumlah: Number(jumlahPerBaris[b.id] || 1) })),
+      ).total
+    : items.reduce((jumlah, b) => jumlah + Number(b.harga), 0);
 
   return (
     <div
@@ -266,7 +291,8 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
           <thead>
             <tr>
               <th>Nama Rincian</th>
-              <th style={{ width: '9rem' }}>Harga</th>
+              {tampilkanJumlah && <th style={{ width: '5rem' }}>Jumlah</th>}
+              <th style={{ width: '9rem' }}>{tampilkanJumlah ? 'Harga Satuan' : 'Harga'}</th>
               <th style={{ width: '3rem' }} />
             </tr>
           </thead>
@@ -287,6 +313,23 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
                     style={{ width: '100%', padding: '0.2rem 0.4rem' }}
                   />
                 </td>
+                {tampilkanJumlah && (
+                  <td>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={jumlahPerBaris[baris.id] ?? '1'}
+                      onChange={(e) => {
+                        const teks = e.target.value;
+                        setJumlahPerBaris((prev) => ({ ...prev, [baris.id]: teks }));
+                      }}
+                      onBlur={() => kabarkan(items)}
+                      aria-label={`Jumlah ${baris.nama}`}
+                      style={{ width: '100%', padding: '0.2rem 0.4rem', textAlign: 'center' }}
+                    />
+                  </td>
+                )}
                 <td>
                   <input
                     value={baris.harga}
@@ -316,7 +359,9 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
               </tr>
             ))}
             <tr>
-              <td style={{ fontWeight: 700, textAlign: 'right' }}>Total</td>
+              <td colSpan={tampilkanJumlah ? 2 : 1} style={{ fontWeight: 700, textAlign: 'right' }}>
+                Total
+              </td>
               <td style={{ fontWeight: 700, textAlign: 'right' }}>{formatRupiah(total)}</td>
               <td />
             </tr>
@@ -333,6 +378,7 @@ export function KwitansiRincianEditor({ jenis, nomor, bawaan, onChange }: Kwitan
       <p style={{ margin: '0.45rem 0 0', fontSize: '0.78rem', color: '#64748b' }}>
         Nama rincian bisa dipilih dari daftar atau diketik sendiri. Perubahan tersimpan otomatis
         dan ikut saat kwitansi dicetak ulang.
+        {tampilkanJumlah && ' Jumlah hanya untuk cetakan ini dan kembali ke 1 saat pratinjau ditutup.'}
       </p>
     </div>
   );

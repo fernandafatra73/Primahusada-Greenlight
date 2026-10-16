@@ -20,6 +20,7 @@ import {
   KwitansiPendaftaranUmumDocument,
   type KwitansiPendaftaranUmumData,
 } from '../pdf/KwitansiPendaftaranUmumDocument.tsx';
+import { hitungRincianKwitansi } from '../lib/kwitansiRows.ts';
 import { KwitansiRincianEditor } from '../components/KwitansiRincianEditor.tsx';
 import { loadLogoDataUrl } from '../pdf/loadLogoDataUrl.ts';
 import { angkaKeKata, terbilangRupiah } from '../lib/terbilang.ts';
@@ -212,7 +213,9 @@ export function PendaftaranUmumPage() {
   /** Kwitansi = format lama, Kwitansi2 = blangko A5 lanskap bergaya formulir. */
   const [kwitansiVersi, setKwitansiVersi] = useState<1 | 2>(1);
   /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
-  const [kwitansiRincian, setKwitansiRincian] = useState<readonly { nama: string; harga: number }[] | null>(null);
+  const [kwitansiRincian, setKwitansiRincian] = useState<
+    readonly { nama: string; harga: number; jumlah?: number }[] | null
+  >(null);
   const [amplopPreviewItem, setAmplopPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [labelPreviewItem, setLabelPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [logoSrc, setLogoSrc] = useState('');
@@ -563,17 +566,16 @@ export function PendaftaranUmumPage() {
   }
 
   function buildKwitansi2Data(item: PendaftaranUmumItem): KwitansiPendaftaranUmumData {
-    const rincian = kwitansiRincian ?? rincianBawaan(item);
-    const total = rincian.reduce((jumlah, r) => jumlah + r.harga, 0);
+    // Jumlah hanya diisi di editor Kwitansi2 dan tidak disimpan; harga = harga satuan.
+    const { baris, total } = hitungRincianKwitansi(kwitansiRincian ?? rincianBawaan(item));
     const tanggalMasuk = new Date(item.tanggalMasuk);
     return {
       logoSrc,
       noKwitansi: item.noRegistrasi,
       sudahTerimaDari: item.umur ? `${item.namaPasien}, ${item.umur}` : item.namaPasien,
-      untukPembayaran: rincian.map((r) => r.nama).join(', ') || '-',
+      untukPembayaran: baris.map((r) => r.nama).join(', ') || '-',
       tanggal: tanggalMasuk.toLocaleDateString('id-ID'),
-      // Rincian kwitansi tidak menyimpan kuantitas; tiap baris dihitung satu layanan.
-      items: rincian.map((r) => ({ nama: r.nama, jumlah: 1, hargaFormatted: formatRupiah(r.harga) })),
+      items: baris.map((r) => ({ nama: r.nama, jumlah: r.jumlah, hargaFormatted: formatRupiah(r.subtotal) })),
       totalFormatted: formatRupiah(total),
       terbilang: terbilangRupiah(total),
       tanggalTtd: tanggalMasuk.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -1333,6 +1335,7 @@ export function PendaftaranUmumPage() {
             nomor={kwitansiPreviewItem.noRegistrasi}
             bawaan={rincianBawaan(kwitansiPreviewItem)}
             onChange={setKwitansiRincian}
+            tampilkanJumlah={kwitansiVersi === 2}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
             <button
