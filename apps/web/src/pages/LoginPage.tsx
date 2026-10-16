@@ -3,6 +3,13 @@ import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { apiPost } from '../lib/api.ts';
 import type { AuthUser } from '../lib/auth.ts';
 import { isCabinSilent, unlockCabinAudio } from '../lib/cabinSounds.ts';
+import {
+  LOGIN_PRESETS,
+  findLoginPreset,
+  toggleLoginPanel,
+  type LoginPanelState,
+  type LoginPresetId,
+} from '../lib/loginPresets.ts';
 import { startLoginMusic, stopLoginMusic } from '../lib/loginMusic.ts';
 import { LoginProfile } from './LoginProfile.tsx';
 import { LoginSlideshow } from './LoginSlideshow.tsx';
@@ -22,8 +29,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  // Kolom login tersembunyi sampai tombol Login (di sebelah Visi, Misi, Motto) ditekan.
-  const [showLogin, setShowLogin] = useState(false);
+  // Kolom login tersembunyi sampai salah satu tombol Login (di sebelah Visi, Misi, Motto) ditekan.
+  const [panel, setPanel] = useState<LoginPanelState>({ open: false, preset: 'umum' });
+  const showLogin = panel.open;
   const [musicOn, setMusicOn] = useState(() => !isCabinSilent());
   // Musik baru berjalan setelah ucapan sambutan (dan bel) selesai.
   const [voiceFinished, setVoiceFinished] = useState(false);
@@ -52,7 +60,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   useEffect(() => {
     if (showLogin) passwordRef.current?.focus();
-  }, [showLogin]);
+  }, [showLogin, panel.preset]);
+
+  function onPresetClick(id: LoginPresetId): void {
+    const next = toggleLoginPanel(panel, id);
+    if (next.open && next.preset !== panel.preset) {
+      setEmail(findLoginPreset(id).email);
+      setPassword('');
+      setError(null);
+    }
+    setPanel(next);
+  }
 
   function onEmailKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
     if (event.key === 'Enter') {
@@ -90,7 +108,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
           <div className="login-panel__divider" aria-hidden />
 
-          <h2 id="login-title" className="login-panel__title">Masuk ke sistem</h2>
+          <h2 id="login-title" className="login-panel__title">{findLoginPreset(panel.preset).title}</h2>
 
           <form className="login-form" onSubmit={(event) => void onSubmit(event)}>
             <div className="form-field">
@@ -129,14 +147,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       </div>
       <div className="login-actions">
         <LoginProfile />
-        <button
-          type="button"
-          className="login-actions__btn login-actions__btn--login"
-          aria-pressed={showLogin}
-          onClick={() => setShowLogin((on) => !on)}
-        >
-          {showLogin ? 'Tutup Login' : 'Login'}
-        </button>
+        {LOGIN_PRESETS.map((preset) => {
+          const active = panel.open && panel.preset === preset.id;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              className="login-actions__btn login-actions__btn--login"
+              aria-pressed={active}
+              onClick={() => onPresetClick(preset.id)}
+            >
+              {active ? `Tutup ${preset.label}` : preset.label}
+            </button>
+          );
+        })}
         <button type="button" className="login-actions__btn" aria-pressed={musicOn} onClick={() => setMusicOn((on) => !on)}>
           {musicOn ? 'Musik: Hidup' : 'Musik: Mati'}
         </button>
