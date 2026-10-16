@@ -1,0 +1,389 @@
+/* Tema Visual Basic 6 klasik (Windows 98/2000): abu-abu, bevel 3D, sudut siku.
+   Dimuat paling akhir dari main.tsx agar menimpa gaya komponen; hapus
+   import-nya untuk kembali ke tampilan sebelumnya. */
+:root {
+  --vb-face: #d4d0c8;
+  --vb-light: #ffffff;
+  --vb-shadow: #808080;
+  --vb-dark: #404040;
+  --vb-title-a: #0a246a;
+  --vb-title-b: #a6caf0;
+  --vb-select: #0a246a;
+
+  --color-bg-page: var(--vb-face);
+  --color-bg-surface: var(--vb-face);
+  --color-primary: #000080;
+  --color-primary-soft: #e4e0d8;
+  --color-primary-hover: #000060;
+  --color-border: var(--vb-shadow);
+  --color-text-muted: #404040;
+  --radius-card: 0;
+  --radius-button: 0;
+  --shadow-card: none;
+  --shadow-header: none;
+
+  font-family: Tahoma, 'MS Sans Serif', 'Segoe UI', sans-serif;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+body {
+  background: var(--vb-face);
+  font-size: 12px;
+}
+
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  text-shadow: none !important;
+}
+
+/* Bevel 3D */
+.btn,
+.icon-btn,
+.link-btn,
+.filter-chip,
+.filter-pill,
+.filter-tab,
+.quickdate-btn,
+.pagination__page,
+.modal__close,
+.kalkulator__btn,
+.fatra-toolbar__btn {
+  background: var(--vb-face) !important;
+  color: #000 !important;
+  border: 2px solid !important;
+  border-color: var(--vb-light) var(--vb-dark) var(--vb-dark) var(--vb-light) !important;
+  box-shadow: inset -1px -1px 0 var(--vb-shadow), inset 1px 1px 0 #ece9d8 !important;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400 !important;
+  padding: 3px 12px;
+  cursor: default;
+  transform: none !important;
+}
+
+.btn:active,
+.icon-btn:active,
+.filter-chip:active,
+.filter-pill:active,
+.filter-tab:active,
+.quickdate-btn:active,
+.pagination__page:active,
+.kalkulator__btn:active,
+.filter-chip--active,
+.filter-pill--active,
+.filter-tab--active,
+.quickdate-btn--active {
+  border-color: var(--vb-dark) var(--vb-light) var(--vb-light) var(--vb-dark) !important;
+  box-shadow: inset 1px 1px 0 var(--vb-shadow) !important;
+}
+
+.btn:hover,
+.icon-btn:hover {
+  filter: none;
+  background: var(--vb-face) !important;
+}
+
+.btn:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -5px;
+}
+
+.btn:disabled {
+  color: var(--vb-shadow) !important;
+}
+
+.btn--primary {
+  font-weight: 700 !important;
+}
+
+.btn--danger {
+  color: #800000 !important;
+}
+
+/* Input ala textbox VB (sunken) */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+select,
+textarea,
+.form-field input,
+.form-field select,
+.form-field textarea,
+.filter-search__input {
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid !important;
+  border-color: var(--vb-shadow) var(--vb-light) var(--vb-light) var(--vb-shadow) !important;
+  box-shadow: inset 1px 1px 0 var(--vb-dark) !important;
+  font: inherit;
+  font-size: 12px;
+  padding: 2px 4px;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 1px dotted #000 !important;
+  outline-offset: -3px;
+}
+
+.form-field label,
+label {
+  font-weight: 400;
+  color: #000;
+}
+
+/* Panel / frame / groupbox */
+.data-card,
+.chart-card,
+.metric-card,
+.page-summary-card,
+.login-panel,
+.expertise-card,
+.expertise-form-card,
+.sharing-summary-box,
+.sharing-notes-box,
+.sharing-highlight-card,
+.page-frame,
+.tbscan-card,
+.filter-bar,
+.table-filter-bar {
+  background: var(--vb-face) !important;
+  color: #000;
+  border: 2px solid !important;
+  border-color: var(--vb-light) var(--vb-shadow) var(--vb-shadow) var(--vb-light) !important;
+  box-shadow: none !important;
+}
+
+.legacy-groupbox,
+.panel {
+  background: var(--vb-face) !important;
+  border: 1px solid var(--vb-shadow) !important;
+  box-shadow: 1px 1px 0 var(--vb-light) !important;
+}
+
+/* Tabel ala MSFlexGrid */
+.data-table-wrap,
+.data-card__table {
+  background: #fff;
+  border: 2px solid;
+  border-color: var(--vb-shadow) var(--vb-light) var(--vb-light) var(--vb-shadow);
+}
+
+.data-table,
+.page-frame .data-table {
+  background: #fff;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.page-frame .data-table th {
+  background: var(--vb-face) !important;
+  color: #000 !important;
+  font-weight: 400;
+  text-align: left;
+  border: 1px solid !important;
+  border-color: var(--vb-light) var(--vb-shadow) var(--vb-shadow) var(--vb-light) !important;
+  padding: 2px 6px;
+}
+
+.data-table td {
+  border: 1px solid #c0c0c0 !important;
+  padding: 2px 6px;
+  color: #000;
+}
+
+.data-table tbody tr:hover td {
+  background: var(--vb-select) !important;
+  color: #fff !important;
+}
+
+/* Title bar jendela (modal, header panel) */
+.modal {
+  background: var(--vb-face) !important;
+  border: 2px solid !important;
+  border-color: var(--vb-light) var(--vb-dark) var(--vb-dark) var(--vb-light) !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5) !important;
+}
+
+.modal__header,
+.modal__header--orange,
+.modal__header--sky-red,
+.expertise-modal__topbar,
+.aifoto-frame__titlebar {
+  background: linear-gradient(90deg, var(--vb-title-a), var(--vb-title-b)) !important;
+  color: #fff !important;
+  border: 0 !important;
+  padding: 2px 4px !important;
+  min-height: 0;
+}
+
+.modal__title,
+.modal__header .modal__title {
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.modal__close {
+  padding: 0 6px !important;
+  line-height: 14px;
+  min-width: 18px;
+}
+
+.modal__footer {
+  background: var(--vb-face) !important;
+  border-top: 0 !important;
+}
+
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Judul halaman */
+.list-page__title,
+.page-heading__title,
+.page-frame .list-page__title {
+  color: #000 !important;
+  font-size: 14px !important;
+  font-weight: 700;
+}
+
+.list-page__subtitle,
+.page-heading__subtitle,
+.page-frame .list-page__subtitle {
+  color: #404040 !important;
+  font-size: 12px !important;
+}
+
+/* Menu bar / navbar */
+.app-shell {
+  background: var(--vb-face);
+}
+
+.app-shell__accent-bar {
+  display: none;
+}
+
+.app-navbar {
+  --navbar-bg: var(--vb-face);
+  --navbar-fg: #000;
+  --navbar-fg-muted: #404040;
+  --navbar-icon-fg: #000080;
+  --navbar-border: var(--vb-shadow);
+  --navbar-hover-bg: var(--vb-select);
+  --navbar-active-bg: var(--vb-select);
+  background: var(--vb-face) !important;
+  color: #000 !important;
+  border-bottom: 2px solid var(--vb-shadow) !important;
+  box-shadow: 0 1px 0 var(--vb-light) !important;
+  padding: 2px 6px !important;
+}
+
+.app-navbar__title,
+.app-navbar__brand-text,
+.app-navbar__credit,
+.app-navbar__user,
+.app-navbar__user-credit,
+.app-navbar__link,
+.app-navbar__category {
+  color: #000 !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+}
+
+.app-navbar__link:hover,
+.app-navbar__link--open,
+.app-navbar__link--active,
+.app-navbar__dropdown-link:hover,
+.app-navbar__dropdown-link--active {
+  background: var(--vb-select) !important;
+  color: #fff !important;
+}
+
+.app-navbar__dropdown {
+  background: var(--vb-face) !important;
+  border: 2px solid !important;
+  border-color: var(--vb-light) var(--vb-dark) var(--vb-dark) var(--vb-light) !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+.app-navbar__dropdown-link {
+  color: #000 !important;
+  font-size: 12px !important;
+}
+
+/* Login sebagai dialog */
+.login-page {
+  background: #008080 !important;
+}
+
+.login-panel {
+  padding: 0 0 12px !important;
+  border-color: var(--vb-light) var(--vb-dark) var(--vb-dark) var(--vb-light) !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5) !important;
+}
+
+.login-panel > * {
+  margin-left: 12px;
+  margin-right: 12px;
+}
+
+.login-panel > .login-panel__brand {
+  margin: 0 0 8px;
+  padding: 3px 6px;
+  background: linear-gradient(90deg, var(--vb-title-a), var(--vb-title-b));
+}
+
+.login-panel__eyebrow {
+  color: #fff !important;
+  font-size: 12px !important;
+}
+
+.login-panel__logo {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.login-panel__divider {
+  display: none;
+}
+
+.login-panel__title {
+  font-size: 12px !important;
+  margin-bottom: 10px !important;
+}
+
+/* Badge & alert */
+.badge {
+  background: #fff !important;
+  color: #000 !important;
+  border: 1px solid var(--vb-shadow) !important;
+}
+
+.alert,
+.alert--error,
+.alert--success {
+  background: #ffffe1 !important;
+  color: #000 !important;
+  border: 1px solid #000 !important;
+}
+
+/* Scrollbar ala Windows klasik */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: repeating-conic-gradient(#fff 0% 25%, var(--vb-face) 0% 50%) 0 0 / 2px 2px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--vb-face);
+  border: 2px solid;
+  border-color: var(--vb-light) var(--vb-dark) var(--vb-dark) var(--vb-light);
+}
