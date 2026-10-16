@@ -1374,3 +1374,23 @@ model KodeAktivasi {
 
   @@index([tanggal])
 }
+
+/// Riwayat login (Mega Data > Tabel-login): siapa, kapan, berapa lama aplikasi
+/// dibuka, dan foto webcam yang diambil otomatis tepat setelah login.
+model LoginLog {
+  id            String    @id @default(cuid())
+  staffId       String?
+  nama          String
+  email         String    @default("")
+  loginAt       DateTime  @default(now())
+  /// Diperbarui berkala selama aplikasi terbuka; dipakai menghitung durasi
+  /// bila aplikasi ditutup tanpa logout.
+  terakhirAktif DateTime  @default(now())
+  logoutAt      DateTime?
+  /// Data URL JPEG; null bila kamera tidak tersedia atau ditolak.
+  foto          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([loginAt])
+}

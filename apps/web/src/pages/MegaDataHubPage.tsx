@@ -19,6 +19,7 @@ import { GaplekPage } from './GaplekPage.tsx';
 import { KoneksiPhPage } from './KoneksiPhPage.tsx';
 import { SimpanDataPage } from './SimpanDataPage.tsx';
 import { AktivasiAplikasiPanel } from '../components/AktivasiAplikasiPanel.tsx';
+import { TabelLoginPage } from './TabelLoginPage.tsx';
 
 const MEGA_DATA_TABS = [
   { id: 'fatra', label: 'Fatra' },
@@ -40,6 +41,7 @@ const MEGA_DATA_TABS = [
   { id: 'expertise', label: 'Expertise' },
   { id: 'simpan-data', label: 'Simpan Data' },
   { id: 'expired', label: 'Expired' },
+  { id: 'tabel-login', label: 'Tabel-login' },
 ] as const;
 
 type MegaDataTabId = (typeof MEGA_DATA_TABS)[number]['id'];
@@ -91,6 +93,8 @@ function renderTabContent(tabId: MegaDataTabId) {
       return <SimpanDataPage />;
     case 'expired':
       return <AktivasiAplikasiPanel tampilkanDaftarKode />;
+    case 'tabel-login':
+      return <TabelLoginPage />;
     default: {
       const exhaustiveCheck: never = tabId;
       return exhaustiveCheck;

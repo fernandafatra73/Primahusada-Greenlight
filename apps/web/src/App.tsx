@@ -115,6 +115,7 @@ import { HakAksesPage } from './pages/HakAksesPage.tsx';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { isActivationLocked } from './config/activation.ts';
 import { AktivasiAplikasiProvider, useAktivasiAplikasi } from './context/AktivasiAplikasiContext.tsx';
+import { akhiriSesiLogin, catatLogin, useTandaAktifLogin } from './lib/loginSession.ts';
 
 function AccessDenied({ viewId }: { readonly viewId: AppViewId }) {
   return (
@@ -523,9 +524,12 @@ export function App() {
     setExtrasActive(false);
     setAuthUser(user);
     setJustLoggedIn(true);
+    // Riwayat login + foto webcam untuk Mega Data > Tabel-login; berjalan di latar belakang.
+    void catatLogin(user);
   }
 
   function handleLogout(): void {
+    void akhiriSesiLogin();
     clearStoredAuthUser();
     setAuthUser(null);
     setJustLoggedIn(false);
@@ -540,6 +544,7 @@ export function App() {
   }
 
   useIdleLogout(authUser !== null, handleIdleLogout);
+  useTandaAktifLogin(authUser !== null);
 
   if (!authUser) {
     return <LoginPage onLogin={handleLogin} />;
