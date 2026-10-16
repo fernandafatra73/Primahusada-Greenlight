@@ -212,6 +212,10 @@ export function PendaftaranUmumPage() {
   const [kwitansiPreviewItem, setKwitansiPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   /** Kwitansi = format lama, Kwitansi2 = blangko A5 lanskap bergaya formulir. */
   const [kwitansiVersi, setKwitansiVersi] = useState<1 | 2>(1);
+  /** Nama admin/penerima di Kwitansi2; diketik manual, tidak disimpan. Draf dipisah
+   * supaya PDF hanya dirender ulang saat kolom ditinggalkan, bukan tiap ketikan. */
+  const [kwitansi2PenerimaDraft, setKwitansi2PenerimaDraft] = useState('');
+  const [kwitansi2Penerima, setKwitansi2Penerima] = useState('');
   /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
   const [kwitansiRincian, setKwitansiRincian] = useState<
     readonly { nama: string; harga: number; jumlah?: number }[] | null
@@ -579,7 +583,7 @@ export function PendaftaranUmumPage() {
       totalFormatted: formatRupiah(total),
       terbilang: terbilangRupiah(total),
       tanggalTtd: tanggalMasuk.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-      penerimaNama: item.petugasKasir || '',
+      penerimaNama: kwitansi2Penerima.trim(),
     };
   }
 
@@ -909,6 +913,8 @@ export function PendaftaranUmumPage() {
                         className="btn btn--xs btn--primary"
                         onClick={() => {
                           setKwitansiVersi(2);
+                          setKwitansi2PenerimaDraft(item.petugasKasir || '');
+                          setKwitansi2Penerima(item.petugasKasir || '');
                           setKwitansiPreviewItem(item);
                         }}
                         title="Pratinjau & cetak kwitansi bergaya blangko (A5 lanskap)"
@@ -1337,7 +1343,31 @@ export function PendaftaranUmumPage() {
             onChange={setKwitansiRincian}
             tampilkanJumlah={kwitansiVersi === 2}
           />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: '0.75rem',
+              marginBottom: '0.75rem',
+            }}
+          >
+            {kwitansiVersi === 2 && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginRight: 'auto' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>Admin / Penerima</span>
+                <input
+                  value={kwitansi2PenerimaDraft}
+                  onChange={(e) => setKwitansi2PenerimaDraft(e.target.value)}
+                  onBlur={() => setKwitansi2Penerima(kwitansi2PenerimaDraft)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') setKwitansi2Penerima(kwitansi2PenerimaDraft);
+                  }}
+                  placeholder="Ketik nama admin…"
+                  aria-label="Nama admin penerima"
+                  style={{ width: '16rem', padding: '0.25rem 0.5rem' }}
+                />
+              </label>
+            )}
             <button
               type="button"
               className="btn btn--primary"
