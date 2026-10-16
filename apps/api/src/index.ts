@@ -28,6 +28,7 @@ import { registerFotoPasienAnalisaRoutes, registerTabelAiRoutes } from './routes
 import { registerSimpanDataRoutes } from './routes/simpanData.js';
 import { registerStrukturOrganisasiRoutes } from './routes/strukturOrganisasi.js';
 import { registerTransferRoutes } from './routes/transfer.js';
+import { registerAktivasiAplikasiRoutes } from './routes/aktivasiAplikasi.js';
 import { startCandlePatternJob } from './lib/candlePatternJob.js';
 import { startDailyTradingPivotJob } from './lib/dailyTradingPivotJob.js';
 const port = Number(process.env.PORT ?? 3001);
@@ -76,6 +77,7 @@ await registerFotoPasienAnalisaRoutes(app);
 await registerSimpanDataRoutes(app);
 await registerStrukturOrganisasiRoutes(app);
 await registerTransferRoutes(app);
+await registerAktivasiAplikasiRoutes(app);
 
 if (hasWebDist) {
   await app.register(fastifyStatic, { root: webDistDir, decorateReply: false });

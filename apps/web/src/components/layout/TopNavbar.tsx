@@ -9,7 +9,10 @@ import {
   type Departemen,
   type StaffRole,
 } from '../../config/navigation.ts';
+import { useAktivasiAplikasi } from '../../context/AktivasiAplikasiContext.tsx';
 import { useMusicPlayer } from '../../context/MusicPlayerContext.tsx';
+import { AktivasiAplikasiPanel } from '../AktivasiAplikasiPanel.tsx';
+import { Modal } from '../ui/Modal.tsx';
 import {
   IconClipboard,
   IconCurrency,
@@ -92,6 +95,9 @@ export function TopNavbar({
   const [pendingAction, setPendingAction] = useState<ActivationAction | null>(null);
   const [activationPassword, setActivationPassword] = useState('');
   const [activationError, setActivationError] = useState<string | null>(null);
+  const [showPerpanjang, setShowPerpanjang] = useState(false);
+  // Masa aktivasi habis/belum diaktifkan: semua menu disembunyikan kecuali Aktivasi.
+  const { terkunci } = useAktivasiAplikasi();
 
   function closeActivation(): void {
     setPendingAction(null);
@@ -141,6 +147,7 @@ export function TopNavbar({
 
       <nav className="app-navbar__nav" ref={navRef} aria-label="Navigasi utama">
         {NAVBAR_SPECS.map((spec) => {
+          if (terkunci) return null;
           if (spec.type === 'link') {
             if (!isViewAllowed(spec.id, role, departemen)) return null;
             if (isActivationLocked(spec.id, extrasActive)) return null;
@@ -257,6 +264,17 @@ export function TopNavbar({
                   >
                     Matikan
                   </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="app-navbar__dropdown-link"
+                    onClick={() => {
+                      setShowPerpanjang(true);
+                      setOpenMenuId(null);
+                    }}
+                  >
+                    Perpanjang Aktivasi
+                  </button>
                 </>
               ) : (
                 <form className="app-navbar__activation-form" onSubmit={submitActivation}>
@@ -305,6 +323,12 @@ export function TopNavbar({
           <IconLogout />
         </button>
       </div>
+
+      {showPerpanjang && (
+        <Modal title="Perpanjang Aktivasi" open={true} onClose={() => setShowPerpanjang(false)} size="lg">
+          <AktivasiAplikasiPanel />
+        </Modal>
+      )}
     </header>
   );
 }

@@ -1350,3 +1350,27 @@ model HitunganKontrakan {
 
   @@index([tahun, bulan])
 }
+
+/// Masa aktivasi aplikasi (satu baris, id "default"). Tanpa baris ini atau
+/// setelah berakhir, frontend hanya menyalakan menu Aktivasi.
+model AktivasiAplikasi {
+  id              String   @id @default("default")
+  tanggalAktivasi DateTime
+  lamaBulan       Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/// Kode aktivasi sekali pakai, dibuat di Mega Data > Expired.
+/// Format: YYYYMMDD-urutan-acak (mis. 20261017-001-K7QF-9XMB).
+model KodeAktivasi {
+  id          String    @id @default(cuid())
+  kode        String    @unique
+  /// Tanggal dibuat (YYYYMMDD) dan urutan pada tanggal itu.
+  tanggal     String
+  urutan      Int
+  dipakaiPada DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([tanggal])
+}

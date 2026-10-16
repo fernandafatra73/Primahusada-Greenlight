@@ -112,8 +112,9 @@ import { AutotextPage } from './pages/AutotextPage.tsx';
 import { ComingSoonPage } from './pages/ComingSoonPage.tsx';
 import { DataTerbesarPage } from './pages/DataTerbesarPage.tsx';
 import { HakAksesPage } from './pages/HakAksesPage.tsx';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { isActivationLocked } from './config/activation.ts';
+import { AktivasiAplikasiProvider, useAktivasiAplikasi } from './context/AktivasiAplikasiContext.tsx';
 
 function AccessDenied({ viewId }: { readonly viewId: AppViewId }) {
   return (
@@ -147,6 +148,31 @@ function ActivationLocked({ viewId }: { readonly viewId: AppViewId }) {
       </p>
     </div>
   );
+}
+
+/** Saat masa aktivasi habis/belum diaktifkan semua halaman diganti pemberitahuan ini; hanya menu Aktivasi yang tersisa. */
+function AplikasiTerkunci() {
+  const { status } = useAktivasiAplikasi();
+  return (
+    <div style={{ padding: '4rem 2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+      <h2 style={{ margin: '0 0 0.5rem', color: '#b91c1c' }}>
+        {status.jenis === 'belum' ? 'Aplikasi belum diaktifkan' : 'Masa aktivasi telah berakhir'}
+      </h2>
+      <p style={{ margin: 0 }}>
+        Aplikasi tetap berjalan, tetapi hanya menu Aktivasi yang aktif. Buka menu{' '}
+        <strong>Aktivasi &gt; Perpanjang Aktivasi</strong> dan masukkan kode aktivasi untuk membuka kembali
+        semua menu.
+      </p>
+    </div>
+  );
+}
+
+function KontenAplikasi({ children }: { readonly children: ReactNode }) {
+  const { memuat, terkunci } = useAktivasiAplikasi();
+  if (memuat) {
+    return <p style={{ padding: '4rem 2rem', textAlign: 'center' }}>Memeriksa aktivasi…</p>;
+  }
+  return terkunci ? <AplikasiTerkunci /> : <>{children}</>;
 }
 
 function renderViewContent(
@@ -520,6 +546,7 @@ export function App() {
   }
 
   return (
+    <AktivasiAplikasiProvider>
     <ListRefreshProvider>
       <MusicPlayerProvider>
         <KaraokePlayerProvider>
@@ -530,7 +557,9 @@ export function App() {
                 extrasActive={extrasActive}
                 onExtrasChange={setExtrasActive}
               >
-                {renderViewContent(activeView, authUser.role, authUser.departemen, navigate, extrasActive)}
+                <KontenAplikasi>
+                  {renderViewContent(activeView, authUser.role, authUser.departemen, navigate, extrasActive)}
+                </KontenAplikasi>
               </AppShell>
               <ChatWidget authUser={authUser} />
             </PdfPreviewHost>
@@ -540,5 +569,6 @@ export function App() {
         </KaraokePlayerProvider>
       </MusicPlayerProvider>
     </ListRefreshProvider>
+    </AktivasiAplikasiProvider>
   );
 }
