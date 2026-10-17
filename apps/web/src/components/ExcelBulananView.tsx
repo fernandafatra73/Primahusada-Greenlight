@@ -1,16 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { ListPageShell } from './ui/ListPageShell.tsx';
-import { SheetGrid } from './SheetGrid.tsx';
+import { SheetEditor } from './SheetEditor.tsx';
 import { apiDelete, apiGet, apiPut } from '../lib/api.ts';
-import {
-  JUMLAH_BARIS_GRID,
-  JUMLAH_KOLOM_GRID,
-  bangunLembarDariBulanan,
-  type BulanUntukLembar,
-  type LabelGaji,
-} from '../lib/excelBulanan.ts';
-import { columnIndex, evaluateSheet, type SheetCells } from '../lib/sheetFormula.ts';
+import { bangunLembarDariBulanan, type BulanUntukLembar, type LabelGaji } from '../lib/excelBulanan.ts';
+import { evaluateWorkbook, parseCellKey } from '../lib/sheetFormula.ts';
+import { KODE_XLSX, bacaWorkbook, lebarKolom, tinggiBaris, type Sheet, type Workbook } from '../lib/sheetModel.ts';
 import './ui/ui.css';
 
 type Modul = 'RADIOLOGI' | 'LABORATORIUM';
@@ -19,48 +14,58 @@ interface ExcelBulananViewProps {
   readonly modul: Modul;
 }
 
-const PETA_ALAMAT = /^([A-Z]{1,3})(\d+)$/;
+const BATAS_RIWAYAT = 100;
 
 /** Menyusun worksheet .xlsx; sel berumus ditulis sebagai rumus beserta hasil hitungnya. */
-function buatWorksheet(cells: SheetCells): XLSX.WorkSheet {
-  const hasil = evaluateSheet(cells);
-  const sheet: XLSX.WorkSheet = {};
+function buatWorksheet(sheet: Sheet, nilai: ReadonlyMap<string, unknown>): XLSX.WorkSheet {
+  const ws: XLSX.WorkSheet = {};
   let maxCol = 0;
   let maxRow = 0;
-  for (const [key, raw] of Object.entries(cells)) {
-    const m = PETA_ALAMAT.exec(key);
-    if (!m) continue;
-    const col = columnIndex(m[1]!);
-    const row = Number(m[2]) - 1;
-    maxCol = Math.max(maxCol, col);
-    maxRow = Math.max(maxRow, row);
-    const nilai = hasil.get(key);
+  for (const [key, raw] of Object.entries(sheet.cells)) {
+    const pos = parseCellKey(key);
+    if (!pos) continue;
+    maxCol = Math.max(maxCol, pos.col);
+    maxRow = Math.max(maxRow, pos.row);
+    const hasil = nilai.get(key);
+    const z = sheet.styles[key]?.fmt;
+    const format = z && z !== 'umum' ? { z: KODE_XLSX[z] } : null;
     if (raw.startsWith('=')) {
-      sheet[key] =
-        typeof nilai === 'number' ? { t: 'n', f: raw.slice(1), v: nilai } : { t: 's', v: String(nilai ?? '') };
-    } else if (typeof nilai === 'number') {
-      sheet[key] = { t: 'n', v: nilai };
+      if (typeof hasil === 'number') ws[key] = { t: 'n', f: raw.slice(1), v: hasil, ...format };
+      else if (typeof hasil === 'boolean') ws[key] = { t: 'b', f: raw.slice(1), v: hasil };
+      else ws[key] = { t: 's', f: raw.slice(1), v: String(hasil ?? '') };
+    } else if (typeof hasil === 'number') {
+      ws[key] = { t: 'n', v: hasil, ...format };
     } else {
-      sheet[key] = { t: 's', v: raw };
+      ws[key] = { t: 's', v: raw };
     }
   }
-  sheet['!ref'] = XLSX.utils.encode_range({ s: { c: 0, r: 0 }, e: { c: maxCol, r: maxRow } });
-  sheet['!cols'] = Array.from({ length: maxCol + 1 }, (_, c) => ({ wch: c === 0 ? 30 : 16 }));
-  return sheet;
+  ws['!ref'] = XLSX.utils.encode_range({ s: { c: 0, r: 0 }, e: { c: maxCol, r: maxRow } });
+  ws['!cols'] = Array.from({ length: maxCol + 1 }, (_, c) => ({ wpx: lebarKolom(sheet, c) }));
+  ws['!rows'] = Array.from({ length: maxRow + 1 }, (_, r) => ({ hpx: tinggiBaris(sheet, r) }));
+  return ws;
 }
+
+interface Riwayat {
+  readonly lalu: readonly Workbook[];
+  readonly kini: Workbook | null;
+  readonly depan: readonly Workbook[];
+}
+
+const RIWAYAT_AWAL: Riwayat = { lalu: [], kini: null, depan: [] };
 
 export function ExcelBulananView({ modul }: ExcelBulananViewProps) {
   const moduleLabel = modul === 'RADIOLOGI' ? 'Radiologi' : 'Laboratorium';
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState<number>(currentYear);
-  const [cells, setCells] = useState<SheetCells>({});
+  const [riwayat, setRiwayat] = useState<Riwayat>(RIWAYAT_AWAL);
+  const workbook = riwayat.kini;
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [tersimpan, setTersimpan] = useState(false);
 
-  const bangunDariData = useCallback(async (): Promise<SheetCells> => {
+  const bangunDariData = useCallback(async (): Promise<Workbook> => {
     const [bulanan, label] = await Promise.all([
       apiGet<{ bulan: readonly BulanUntukLembar[] }>(`/api/laporan/pajak-bulanan?year=${year}&modul=${modul}`),
       apiGet<{ item: LabelGaji }>(`/api/laporan/gaji-label?modul=${modul}`),
@@ -72,13 +77,14 @@ export function ExcelBulananView({ modul }: ExcelBulananViewProps) {
     setLoading(true);
     setError(null);
     try {
-      const saved = await apiGet<{ cells: SheetCells | null }>(`/api/laporan/lembar-excel?year=${year}&modul=${modul}`);
-      if (saved.cells) {
-        setCells(saved.cells);
+      const saved = await apiGet<{ workbook: unknown }>(`/api/laporan/lembar-excel?year=${year}&modul=${modul}`);
+      const tersimpanWb = saved.workbook ? bacaWorkbook(saved.workbook) : null;
+      if (tersimpanWb) {
+        setRiwayat({ lalu: [], kini: tersimpanWb, depan: [] });
         setTersimpan(true);
         setDirty(false);
       } else {
-        setCells(await bangunDariData());
+        setRiwayat({ lalu: [], kini: await bangunDariData(), depan: [] });
         setTersimpan(false);
         // Lembar awal dari data belum ada di database sampai Simpan ditekan.
         setDirty(true);
@@ -98,7 +104,8 @@ export function ExcelBulananView({ modul }: ExcelBulananViewProps) {
     setSaving(true);
     setError(null);
     try {
-      await apiPut('/api/laporan/lembar-excel', { year, modul, cells });
+      if (!workbook) return;
+      await apiPut('/api/laporan/lembar-excel', { year, modul, workbook });
       setDirty(false);
       setTersimpan(true);
     } catch (err) {
@@ -125,10 +132,49 @@ export function ExcelBulananView({ modul }: ExcelBulananViewProps) {
   }
 
   function unduh() {
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, buatWorksheet(cells), `Hasil Perbulan ${year}`);
-    XLSX.writeFile(workbook, `Hasil_Perbulan_${moduleLabel}_${year}.xlsx`);
+    if (!workbook) return;
+    const nilai = evaluateWorkbook(workbook.sheets.map((s) => ({ name: s.name, cells: s.cells })));
+    const buku = XLSX.utils.book_new();
+    workbook.sheets.forEach((s, i) => XLSX.utils.book_append_sheet(buku, buatWorksheet(s, nilai[i]!), s.name));
+    XLSX.writeFile(buku, `Hasil_Perbulan_${moduleLabel}_${year}.xlsx`);
   }
+
+  const ubahWorkbook = useCallback((next: Workbook) => {
+    setRiwayat((h) => {
+      if (!h.kini || h.kini === next) return h;
+      return { lalu: [...h.lalu, h.kini].slice(-BATAS_RIWAYAT), kini: next, depan: [] };
+    });
+    setDirty(true);
+  }, []);
+
+  const urungkan = useCallback(() => {
+    setRiwayat((h) => {
+      const sebelum = h.lalu[h.lalu.length - 1];
+      if (!sebelum || !h.kini) return h;
+      return { lalu: h.lalu.slice(0, -1), kini: sebelum, depan: [h.kini, ...h.depan] };
+    });
+    setDirty(true);
+  }, []);
+
+  const ulangi = useCallback(() => {
+    setRiwayat((h) => {
+      const berikut = h.depan[0];
+      if (!berikut || !h.kini) return h;
+      return { lalu: [...h.lalu, h.kini], kini: berikut, depan: h.depan.slice(1) };
+    });
+    setDirty(true);
+  }, []);
+
+  // Peringatan sebelum menutup halaman bila ada perubahan yang belum disimpan.
+  const kotor = useRef(false);
+  kotor.current = dirty;
+  useEffect(() => {
+    const peringatan = (e: BeforeUnloadEvent) => {
+      if (kotor.current) e.preventDefault();
+    };
+    window.addEventListener('beforeunload', peringatan);
+    return () => window.removeEventListener('beforeunload', peringatan);
+  }, []);
 
   const yearOptions: number[] = [];
   for (let y = currentYear + 1; y >= currentYear - 5; y--) yearOptions.push(y);
@@ -136,7 +182,7 @@ export function ExcelBulananView({ modul }: ExcelBulananViewProps) {
   return (
     <ListPageShell
       title={`Excel Hasil Perbulan ${moduleLabel}`}
-      subtitle="Data 12 bulan dalam lembar seperti Excel — klik sel lalu ketik, F2 atau klik ganda untuk edit, rumus diawali = (SUM, AVERAGE, MIN, MAX, COUNT, ROUND, ABS)"
+      subtitle="Data 12 bulan dalam lembar seperti Excel — beberapa sheet, format sel, rumus (SUM, IF, SUMIF, VLOOKUP, dll.), seret untuk mengisi, Ctrl+Z/Y, cari & ganti"
       onRefresh={() => void muat()}
       error={error}
       loading={loading}
@@ -179,15 +225,16 @@ export function ExcelBulananView({ modul }: ExcelBulananViewProps) {
         </div>
       }
     >
-      <SheetGrid
-        cells={cells}
-        columns={JUMLAH_KOLOM_GRID}
-        rows={JUMLAH_BARIS_GRID}
-        onChange={(next) => {
-          setCells(next);
-          setDirty(true);
-        }}
-      />
+      {workbook && (
+        <SheetEditor
+          workbook={workbook}
+          onChange={ubahWorkbook}
+          onUndo={urungkan}
+          onRedo={ulangi}
+          canUndo={riwayat.lalu.length > 0}
+          canRedo={riwayat.depan.length > 0}
+        />
+      )}
     </ListPageShell>
   );
 }

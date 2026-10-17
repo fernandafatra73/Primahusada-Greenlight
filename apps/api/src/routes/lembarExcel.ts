@@ -1,7 +1,7 @@
 /** Lembar "Excel" Hasil Perbulan: sel (nilai/rumus) yang disimpan per tahun dan modul. */
 
 import type { FastifyInstance } from 'fastify';
-import { bacaLembarTersimpan, parseLembarCells } from '../lib/lembarExcel.js';
+import { bacaLembarTersimpan, parseLembarWorkbook } from '../lib/lembarExcel.js';
 import { prisma } from '../lib/prisma.js';
 
 type Modul = 'RADIOLOGI' | 'LABORATORIUM';
@@ -21,17 +21,17 @@ export async function registerLembarExcelRoutes(app: FastifyInstance): Promise<v
     if (year === null) return reply.status(400).send({ error: 'Tahun tidak valid' });
     const modul = bacaModul(req.query.modul);
     const row = await prisma.lembarExcelBulanan.findUnique({ where: { year_modul: { year, modul } } });
-    // cells null = belum pernah disimpan; klien membangun lembar awal dari data 12 bulan.
-    return { cells: row ? bacaLembarTersimpan(row.data) : null };
+    // workbook null = belum pernah disimpan; klien membangun lembar awal dari data 12 bulan.
+    return { workbook: row ? bacaLembarTersimpan(row.data) : null };
   });
 
-  app.put<{ Body: { year?: unknown; modul?: unknown; cells?: unknown } }>(
+  app.put<{ Body: { year?: unknown; modul?: unknown; workbook?: unknown } }>(
     '/api/laporan/lembar-excel',
     async (req, reply) => {
       const year = bacaTahun(req.body?.year);
       if (year === null) return reply.status(400).send({ error: 'Tahun tidak valid' });
       const modul = bacaModul(req.body?.modul);
-      const parsed = parseLembarCells(req.body?.cells);
+      const parsed = parseLembarWorkbook(req.body?.workbook);
       if (!parsed.ok) return reply.status(400).send({ error: parsed.error });
       const data = JSON.stringify(parsed.data);
       await prisma.lembarExcelBulanan.upsert({
