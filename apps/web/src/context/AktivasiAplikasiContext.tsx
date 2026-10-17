@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { apiGet } from '../lib/api.ts';
 import {
   isAplikasiTerkunci,
+  PENGUNCIAN_AKTIVASI_AKTIF,
   statusAktivasi,
   tanggalHariIni,
   type AktivasiAplikasi,
@@ -62,7 +63,7 @@ export function AktivasiAplikasiProvider({ children }: { readonly children: Reac
     return {
       aktivasi,
       status,
-      terkunci: !memuat && !gagal && isAplikasiTerkunci(status),
+      terkunci: PENGUNCIAN_AKTIVASI_AKTIF && !memuat && !gagal && isAplikasiTerkunci(status),
       memuat,
       setAktivasi,
     };

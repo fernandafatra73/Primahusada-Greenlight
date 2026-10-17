@@ -11,6 +11,7 @@ import {
 import {
   isAplikasiTerkunci,
   labelLamaAktivasi,
+  PENGUNCIAN_AKTIVASI_AKTIF,
   statusAktivasi,
   tanggalHariIni,
 } from '../../apps/web/src/lib/aktivasiAplikasi.ts';
@@ -133,5 +134,12 @@ describe('helpers', () => {
 
   test('formats the local date', () => {
     expect(tanggalHariIni(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05');
+  });
+});
+
+describe('PENGUNCIAN_AKTIVASI_AKTIF', () => {
+  // Penguncian sementara dihentikan: semua menu tetap tampil walau belum diaktifkan/berakhir.
+  test('activation lock is paused', () => {
+    expect(PENGUNCIAN_AKTIVASI_AKTIF).toBe(false);
   });
 });

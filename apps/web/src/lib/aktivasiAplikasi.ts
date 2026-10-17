@@ -46,6 +46,14 @@ export function statusAktivasi(aktivasi: AktivasiAplikasi | null, hariIni: strin
   return { jenis: 'aktif', sisaHari: hariSejakEpoch(aktivasi.berakhir) - hariSejakEpoch(hariIni) };
 }
 
+/**
+ * Saklar penguncian masa aktivasi. Sementara dihentikan atas permintaan klinik
+ * (17 Okt 2026): semua menu tampil seperti biasa walau belum diaktifkan atau
+ * masa aktivasinya berakhir. Kode aktivasi & Perpanjang Aktivasi tetap berfungsi;
+ * ubah ke `true` untuk mengunci lagi.
+ */
+export const PENGUNCIAN_AKTIVASI_AKTIF = false;
+
 export function isAplikasiTerkunci(status: StatusAktivasi): boolean {
   return status.jenis !== 'aktif';
 }
