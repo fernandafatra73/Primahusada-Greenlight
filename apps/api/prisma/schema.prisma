@@ -1394,3 +1394,16 @@ model LoginLog {
 
   @@index([loginAt])
 }
+
+/// Lembar "Excel" Hasil Perbulan: peta sel (nilai atau rumus) dalam JSON, satu
+/// lembar per tahun dan modul. Kosong = belum disimpan, dibangun dari data 12 bulan.
+model LembarExcelBulanan {
+  id        String    @id @default(cuid())
+  year      Int
+  modul     AsalModul @default(RADIOLOGI)
+  data      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([year, modul])
+}

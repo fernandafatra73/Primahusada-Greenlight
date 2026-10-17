@@ -30,6 +30,7 @@ import { registerStrukturOrganisasiRoutes } from './routes/strukturOrganisasi.js
 import { registerTransferRoutes } from './routes/transfer.js';
 import { registerAktivasiAplikasiRoutes } from './routes/aktivasiAplikasi.js';
 import { registerLoginLogRoutes } from './routes/loginLog.js';
+import { registerLembarExcelRoutes } from './routes/lembarExcel.js';
 import { startCandlePatternJob } from './lib/candlePatternJob.js';
 import { startDailyTradingPivotJob } from './lib/dailyTradingPivotJob.js';
 const port = Number(process.env.PORT ?? 3001);
@@ -80,6 +81,7 @@ await registerStrukturOrganisasiRoutes(app);
 await registerTransferRoutes(app);
 await registerAktivasiAplikasiRoutes(app);
 await registerLoginLogRoutes(app);
+await registerLembarExcelRoutes(app);
 
 if (hasWebDist) {
   await app.register(fastifyStatic, { root: webDistDir, decorateReply: false });
