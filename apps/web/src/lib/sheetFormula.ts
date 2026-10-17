@@ -4,7 +4,7 @@
  * Operator: + - * / ^ & % dan perbandingan (= <> < > <= >=), tanda kurung.
  * Operand: angka, "teks", TRUE/FALSE, sel (B2, $B$2), rentang (B2:M2) dan
  * referensi sheet lain (Sheet2!B2, 'Nama Sheet'!B2:C5).
- * Fungsi: SUM AVERAGE MIN MAX COUNT COUNTA ROUND ABS IF IFERROR AND OR NOT
+ * Fungsi: SUM TAMBAH KURANG KALI BAGI PRODUCT AVERAGE MIN MAX COUNT COUNTA ROUND ABS IF IFERROR AND OR NOT
  * SUMIF COUNTIF VLOOKUP CONCATENATE CONCAT TEXT LEN UPPER LOWER.
  */
 
@@ -561,7 +561,28 @@ export function evaluateWorkbook(sheets: readonly SheetInput[]): readonly Map<st
 
     switch (name) {
       case 'SUM':
+      case 'TAMBAH':
         return angkaDari(args).reduce((s, v) => s + v, 0);
+      case 'KURANG': {
+        const nums = angkaDari(args);
+        if (nums.length === 0) throw new FormulaError('#VALUE!');
+        return nums.slice(1).reduce((s, v) => s - v, nums[0]!);
+      }
+      case 'KALI':
+      case 'PRODUCT': {
+        const nums = angkaDari(args);
+        return nums.length === 0 ? 0 : nums.reduce((s, v) => s * v, 1);
+      }
+      case 'BAGI': {
+        const nums = angkaDari(args);
+        if (nums.length === 0) throw new FormulaError('#VALUE!');
+        let hasil = nums[0]!;
+        for (const v of nums.slice(1)) {
+          if (v === 0) throw new FormulaError('#DIV/0!');
+          hasil /= v;
+        }
+        return hasil;
+      }
       case 'AVERAGE': {
         const nums = angkaDari(args);
         if (nums.length === 0) throw new FormulaError('#DIV/0!');

@@ -11,6 +11,7 @@ import { rapikanRumus, type Sumbu } from '../lib/sheetRefs.ts';
 import {
   FORMAT_ANGKA,
   ambilBlok,
+  bangunRumusOperasi,
   gantiNamaSheet,
   hapusSheet,
   isiBlok,
@@ -27,6 +28,7 @@ import {
   type Blok,
   type CellStylePatch,
   type NumFmt,
+  type Operasi,
   type SalinanBlok,
   type Workbook,
 } from '../lib/sheetModel.ts';
@@ -278,6 +280,19 @@ export function SheetEditor({ workbook, onChange, onUndo, onRedo, canUndo, canRe
     } catch {
       // Izin clipboard ditolak; gunakan Ctrl+V di grid.
     }
+  }
+
+  /** Tombol + − × ÷: satu sel -> mulai rumus (klik sel untuk mengisi alamat); blok -> rumus otomatis. */
+  function rumusOperasi(op: Operasi) {
+    const rumus = bangunRumusOperasi(blok, op, { rows: sheet.rows, cols: sheet.cols });
+    if (rumus) {
+      onChange(tulisSel(workbook, idx, rumus));
+      const pertama = Object.keys(rumus)[0];
+      if (pertama) pilihKunci(pertama);
+      wrapRef.current?.focus();
+      return;
+    }
+    if (satuSel) setEditing('=');
   }
 
   function sisipBaris() {
@@ -551,6 +566,11 @@ export function SheetEditor({ workbook, onChange, onUndo, onRedo, canUndo, canRe
             <option key={f} value={f}>{FORMAT_ANGKA[f]}</option>
           ))}
         </select>
+        <span style={pemisah} />
+        {tombol('＋', 'Rumus tambah: pilih beberapa sel, hasil di sel setelahnya (atau ketik =A1+B1)', () => rumusOperasi('+'))}
+        {tombol('－', 'Rumus kurang: pilih beberapa sel, hasil di sel setelahnya (atau ketik =A1-B1)', () => rumusOperasi('-'))}
+        {tombol('×', 'Rumus kali: pilih beberapa sel, hasil di sel setelahnya (atau ketik =A1*B1)', () => rumusOperasi('*'))}
+        {tombol('÷', 'Rumus bagi: pilih beberapa sel, hasil di sel setelahnya (atau ketik =A1/B1)', () => rumusOperasi('/'))}
         <span style={pemisah} />
         {tombol('＋▤', 'Sisipkan baris di atas', sisipBaris)}
         {tombol('－▤', 'Hapus baris terpilih', hapusBaris)}

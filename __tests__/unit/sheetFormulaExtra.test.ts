@@ -97,3 +97,21 @@ describe('references to other sheets', () => {
     expect(hasil[2]!.get('A1')).toBe(24);
   });
 });
+
+describe('Indonesian arithmetic functions', () => {
+  test('TAMBAH, KURANG, KALI and BAGI work on values and ranges', () => {
+    const cells = {
+      A1: '10', A2: '4', A3: '2',
+      B1: '=TAMBAH(A1:A3)', B2: '=KURANG(A1:A3)', B3: '=KALI(A1:A3)', B4: '=BAGI(A1:A3)', B5: '=PRODUCT(A1,A2)',
+    };
+    expect(hitung(cells, 'B1')).toBe(16);
+    expect(hitung(cells, 'B2')).toBe(4);
+    expect(hitung(cells, 'B3')).toBe(80);
+    expect(hitung(cells, 'B4')).toBe(1.25);
+    expect(hitung(cells, 'B5')).toBe(40);
+  });
+
+  test('BAGI reports division by zero', () => {
+    expect(hitung({ A1: '=BAGI(5,0)' }, 'A1')).toBe('#DIV/0!');
+  });
+});

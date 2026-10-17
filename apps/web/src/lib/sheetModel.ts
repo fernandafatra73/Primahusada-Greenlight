@@ -299,6 +299,43 @@ export function hapusSheet(wb: Workbook, sheetIndex: number): Workbook {
   };
 }
 
+// ------------------------------------------------------------ rumus operasi
+
+export type Operasi = '+' | '-' | '*' | '/';
+
+const BATAS_RUMUS_PANJANG = 8;
+
+/**
+ * Rumus tambah/kurang/kali/bagi untuk blok terpilih, seperti AutoSum: satu baris ->
+ * hasil di sel kanan blok; selain itu -> hasil per kolom di baris tepat di bawah blok.
+ * Mengembalikan null bila blok satu sel atau hasilnya keluar dari grid.
+ */
+export function bangunRumusOperasi(
+  blok: Blok,
+  op: Operasi,
+  batas: { readonly rows: number; readonly cols: number },
+): Record<string, string> | null {
+  if (blok.c1 === blok.c2 && blok.r1 === blok.r2) return null;
+  const susun = (keys: readonly string[]): string => {
+    if (op === '+' && keys.length > BATAS_RUMUS_PANJANG) return `=SUM(${keys[0]}:${keys[keys.length - 1]})`;
+    return `=${keys.join(op)}`;
+  };
+  if (blok.r1 === blok.r2) {
+    if (blok.c2 + 1 >= batas.cols) return null;
+    const keys: string[] = [];
+    for (let c = blok.c1; c <= blok.c2; c++) keys.push(cellKey(c, blok.r1));
+    return { [cellKey(blok.c2 + 1, blok.r1)]: susun(keys) };
+  }
+  if (blok.r2 + 1 >= batas.rows) return null;
+  const hasil: Record<string, string> = {};
+  for (let c = blok.c1; c <= blok.c2; c++) {
+    const keys: string[] = [];
+    for (let r = blok.r1; r <= blok.r2; r++) keys.push(cellKey(c, r));
+    hasil[cellKey(c, blok.r2 + 1)] = susun(keys);
+  }
+  return hasil;
+}
+
 // -------------------------------------------------------------- salin / isi
 
 export interface Blok {

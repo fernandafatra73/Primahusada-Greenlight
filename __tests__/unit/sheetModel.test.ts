@@ -7,6 +7,7 @@ import {
 } from '../../apps/web/src/lib/sheetRefs.ts';
 import {
   bacaWorkbook,
+  bangunRumusOperasi,
   bikinSheet,
   bikinWorkbook,
   gantiNamaSheet,
@@ -237,5 +238,30 @@ describe('bacaWorkbook', () => {
   test('rejects non-objects and empty workbooks', () => {
     expect(bacaWorkbook(null)).toBeNull();
     expect(bacaWorkbook({ sheets: [] })).toBeNull();
+  });
+});
+
+describe('bangunRumusOperasi', () => {
+  const batas = { rows: 10, cols: 6 };
+
+  test('a column block gets the result in the row below, per column', () => {
+    const hasil = bangunRumusOperasi({ c1: 0, r1: 0, c2: 1, r2: 2 }, '+', batas);
+    expect(hasil).toEqual({ A4: '=A1+A2+A3', B4: '=B1+B2+B3' });
+  });
+
+  test('a single row block gets the result to the right', () => {
+    expect(bangunRumusOperasi({ c1: 0, r1: 1, c2: 2, r2: 1 }, '*', batas)).toEqual({ D2: '=A2*B2*C2' });
+  });
+
+  test('uses each operator and falls back to SUM for long additions', () => {
+    expect(bangunRumusOperasi({ c1: 0, r1: 0, c2: 0, r2: 1 }, '-', batas)).toEqual({ A3: '=A1-A2' });
+    expect(bangunRumusOperasi({ c1: 0, r1: 0, c2: 0, r2: 1 }, '/', batas)).toEqual({ A3: '=A1/A2' });
+    expect(bangunRumusOperasi({ c1: 0, r1: 0, c2: 0, r2: 9 }, '+', { rows: 20, cols: 6 })).toEqual({ A11: '=SUM(A1:A10)' });
+  });
+
+  test('returns null for a single cell or when the result would leave the grid', () => {
+    expect(bangunRumusOperasi({ c1: 0, r1: 0, c2: 0, r2: 0 }, '+', batas)).toBeNull();
+    expect(bangunRumusOperasi({ c1: 0, r1: 0, c2: 0, r2: 9 }, '+', batas)).toBeNull();
+    expect(bangunRumusOperasi({ c1: 4, r1: 0, c2: 5, r2: 0 }, '+', batas)).toBeNull();
   });
 });
