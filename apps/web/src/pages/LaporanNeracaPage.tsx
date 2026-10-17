@@ -5,6 +5,11 @@ import { apiGet, apiPut } from '../lib/api.ts';
 import type { PaginatedResponse } from '../lib/pagination.ts';
 import { formatRupiah } from '../lib/format.ts';
 import {
+  hitungNeracaDariBulanan,
+  type BulanUntukNeraca,
+  type NeracaOtomatis,
+} from '../lib/neracaDariBulanan.ts';
+import {
   LaporanNeracaReportDocument,
   type LaporanNeracaReportData,
 } from '../pdf/LaporanNeracaReportDocument.tsx';
@@ -65,6 +70,16 @@ const emptyForm = {
   logoPerusahaanId: '' as string,
 };
 
+/** Akun yang selalu diambil dari hasil 12 bulan (tidak diinput manual). */
+const AKUN_OTOMATIS: ReadonlySet<keyof NeracaOtomatis> = new Set<keyof NeracaOtomatis>([
+  'pendapatan', 'biayaGaji', 'biayaAtkBahan', 'biayaListrik', 'biayaSewa', 'biayaLainLain',
+  'kas', 'piutang', 'persediaan', 'peralatan', 'utangUsaha', 'modalUsaha',
+]);
+
+function isAkunOtomatis(key: string): key is keyof NeracaOtomatis {
+  return (AKUN_OTOMATIS as ReadonlySet<string>).has(key);
+}
+
 function n(v: string): number {
   return Number(v) || 0;
 }
@@ -101,17 +116,21 @@ export function LaporanNeracaPage({ modul = 'RADIOLOGI' }: LaporanNeracaPageProp
     setLoading(true);
     setError(null);
     try {
-      const res = await apiGet<{ item: NeracaData }>(`/api/laporan/neraca?year=${year}&modul=${modul}`);
+      const [res, bulanan] = await Promise.all([
+        apiGet<{ item: NeracaData }>(`/api/laporan/neraca?year=${year}&modul=${modul}`),
+        apiGet<{ bulan: readonly BulanUntukNeraca[] }>(`/api/laporan/pajak-bulanan?year=${year}&modul=${modul}`),
+      ]);
       const d = res.item;
+      const oto = hitungNeracaDariBulanan(bulanan.bulan);
       setForm({
         namaPerusahaan: d.namaPerusahaan,
-        kas: String(d.kas), bank: String(d.bank), piutang: String(d.piutang), persediaan: String(d.persediaan),
-        tanah: String(d.tanah), gedung: String(d.gedung), peralatan: String(d.peralatan), kendaraan: String(d.kendaraan),
-        utangUsaha: String(d.utangUsaha), utangPajak: String(d.utangPajak), utangLainnya: String(d.utangLainnya),
-        utangJangkaPanjang: String(d.utangJangkaPanjang), modalUsaha: String(d.modalUsaha),
-        pendapatan: String(d.pendapatan), biayaGaji: String(d.biayaGaji), biayaAtkBahan: String(d.biayaAtkBahan),
-        biayaListrik: String(d.biayaListrik), biayaTelpon: String(d.biayaTelpon),
-        biayaTransport: String(d.biayaTransport), biayaSewa: String(d.biayaSewa), biayaLainLain: String(d.biayaLainLain),
+        kas: String(oto.kas), bank: String(d.bank), piutang: String(oto.piutang), persediaan: String(oto.persediaan),
+        tanah: String(d.tanah), gedung: String(d.gedung), peralatan: String(oto.peralatan), kendaraan: String(d.kendaraan),
+        utangUsaha: String(oto.utangUsaha), utangPajak: String(d.utangPajak), utangLainnya: String(d.utangLainnya),
+        utangJangkaPanjang: String(d.utangJangkaPanjang), modalUsaha: String(oto.modalUsaha),
+        pendapatan: String(oto.pendapatan), biayaGaji: String(oto.biayaGaji), biayaAtkBahan: String(oto.biayaAtkBahan),
+        biayaListrik: String(oto.biayaListrik), biayaTelpon: String(d.biayaTelpon),
+        biayaTransport: String(d.biayaTransport), biayaSewa: String(oto.biayaSewa), biayaLainLain: String(oto.biayaLainLain),
         biayaPajakSewa: String(d.biayaPajakSewa),
         tempatTandaTangan: d.tempatTandaTangan,
         tanggalTandaTangan: d.tanggalTandaTangan,
@@ -295,10 +314,13 @@ export function LaporanNeracaPage({ modul = 'RADIOLOGI' }: LaporanNeracaPageProp
   }
 
   function field(key: keyof typeof form, label: string) {
-    if (!isEditing) {
+    if (!isEditing || isAkunOtomatis(key)) {
       return (
         <div className="form-field">
-          <span className="form-field__static-label">{label}</span>
+          <span className="form-field__static-label">
+            {label}
+            {isEditing ? ' (otomatis dari 12 bulan)' : ''}
+          </span>
           <p className="form-field__static-value">{formatRupiah(n(form[key]))}</p>
         </div>
       );
@@ -321,7 +343,7 @@ export function LaporanNeracaPage({ modul = 'RADIOLOGI' }: LaporanNeracaPageProp
     <>
       <ListPageShell
         title={`Laporan Neraca ${moduleLabel}`}
-        subtitle={`Neraca & Laporan Rugi Laba tahunan ${moduleLabel} — input manual per akun, Total Aktiva/Pasiva dan Laba(Rugi) dihitung otomatis`}
+        subtitle={`Neraca & Laporan Rugi Laba tahunan ${moduleLabel} — Pendapatan, Gaji, Listrik, ATK, Sewa, Biaya Lain-lain, Kas, Piutang, Persediaan, Peralatan, Utang Usaha & Modal Usaha diambil otomatis dari hasil 12 bulan; akun lain diinput manual. Total Aktiva/Pasiva dan Laba(Rugi) dihitung otomatis`}
         onRefresh={() => void fetchData()}
         error={error}
         loading={loading}
