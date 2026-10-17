@@ -38,6 +38,49 @@ function formatPersen(value: number): string {
   return `${Number(value.toFixed(3))}%`;
 }
 
+interface JumlahPasienCellProps {
+  readonly label: string;
+  readonly value: number;
+  readonly disabled: boolean;
+  readonly onCommit: (jumlah: number) => void;
+}
+
+/** Input angka di sel tabel; menyimpan saat Enter atau fokus keluar. */
+function JumlahPasienCell({ label, value, disabled, onCommit }: JumlahPasienCellProps) {
+  const [draft, setDraft] = useState(String(value));
+
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+
+  function commit() {
+    const parsed = Math.floor(Number(draft));
+    if (draft.trim() === '' || !Number.isFinite(parsed) || parsed < 0) {
+      setDraft(String(value));
+      return;
+    }
+    onCommit(parsed);
+  }
+
+  return (
+    <input
+      type="number"
+      min="0"
+      step="1"
+      aria-label={label}
+      value={draft}
+      disabled={disabled}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+        if (e.key === 'Escape') setDraft(String(value));
+      }}
+      style={{ width: '90px', textAlign: 'right' }}
+    />
+  );
+}
+
 interface LaporanPajakPageProps {
   readonly modul?: 'RADIOLOGI' | 'LABORATORIUM';
 }
@@ -60,6 +103,7 @@ export function LaporanPajakPage({ modul = 'RADIOLOGI' }: LaporanPajakPageProps)
   const [savingEdit, setSavingEdit] = useState(false);
   const [savingAll, setSavingAll] = useState(false);
   const [resettingBulan, setResettingBulan] = useState<number | null>(null);
+  const [savingCellBulan, setSavingCellBulan] = useState<number | null>(null);
   const [bulananJumlahPasien, setBulananJumlahPasien] = useState<Record<number, number>>({});
 
   const [tarifPajakInput, setTarifPajakInput] = useState('0.5');
@@ -156,6 +200,27 @@ export function LaporanPajakPage({ modul = 'RADIOLOGI' }: LaporanPajakPageProps)
       setError(err instanceof Error ? err.message : 'Gagal menyimpan koreksi pajak');
     } finally {
       setSavingEdit(false);
+    }
+  }
+
+  // Isi langsung di tabel: disimpan sebagai koreksi manual bulan itu (harga tetap).
+  async function handleSimpanJumlahPasien(item: BulanPajakItem, jumlahPasien: number) {
+    if (jumlahPasien === item.jumlahPasien) return;
+    setSavingCellBulan(item.no);
+    setError(null);
+    try {
+      await apiPatch('/api/laporan/pajak/override', {
+        year,
+        bulan: item.no,
+        modul,
+        jumlahPasien,
+        harga: item.harga,
+      });
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan jumlah pasien');
+    } finally {
+      setSavingCellBulan(null);
     }
   }
 
@@ -387,7 +452,14 @@ export function LaporanPajakPage({ modul = 'RADIOLOGI' }: LaporanPajakPageProps)
                         </span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'right' }}>{b.jumlahPasien}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <JumlahPasienCell
+                        label={`Jumlah Pasien ${b.bulan}`}
+                        value={b.jumlahPasien}
+                        disabled={savingAll || savingEdit || savingCellBulan === b.no}
+                        onCommit={(jumlah) => void handleSimpanJumlahPasien(b, jumlah)}
+                      />
+                    </td>
                     <td style={{ textAlign: 'right' }}>{formatRupiah(b.harga)}</td>
                     <td style={{ textAlign: 'right' }}>{formatRupiah(b.totalPenerimaan)}</td>
                     <td style={{ textAlign: 'right', color: '#b45309', fontWeight: 600 }}>
