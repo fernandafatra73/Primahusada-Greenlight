@@ -88,8 +88,7 @@ const emptyEditForm = {
   modalAwalTahun: '0', kasAwalTahun: '0', akumulasiPenyusutanAwalTahun: '0',
 };
 
-/** Nilai laporan keuangan acuan (Januari) yang diisikan tombol Otomatis. */
-const JUMLAH_PASIEN_OTOMATIS = '76';
+/** Nilai laporan keuangan acuan (Januari) yang diisikan tombol Otomatis. Jumlah Pasien tidak termasuk: selalu dari skema 12 bulan. */
 const nilaiOtomatis: EditForm = {
   harga: '110000',
   biayaSewaTempat: '1300000', biayaListrikAir: '400000',
@@ -161,7 +160,6 @@ export function HasilPerbulanPage({ modul = 'RADIOLOGI' }: HasilPerbulanPageProp
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>(emptyEditForm);
   const [editLabelForm, setEditLabelForm] = useState<GajiLabelItem>(emptyLabelForm);
-  const [editJumlahPasien, setEditJumlahPasien] = useState('0');
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -203,7 +201,6 @@ export function HasilPerbulanPage({ modul = 'RADIOLOGI' }: HasilPerbulanPageProp
     if (!item) return;
     setEditForm(formToItem(item));
     setEditLabelForm(labelData);
-    setEditJumlahPasien(String(item.jumlahPasien));
     setError(null);
     setIsEditing(true);
   }
@@ -221,7 +218,6 @@ export function HasilPerbulanPage({ modul = 'RADIOLOGI' }: HasilPerbulanPageProp
             akumulasiPenyusutanAwalTahun: f.akumulasiPenyusutanAwalTahun,
           },
     );
-    setEditJumlahPasien(JUMLAH_PASIEN_OTOMATIS);
   }
 
   async function handleSimpan() {
@@ -253,7 +249,7 @@ export function HasilPerbulanPage({ modul = 'RADIOLOGI' }: HasilPerbulanPageProp
           year,
           bulan: item.no,
           modul,
-          jumlahPasien: n(editJumlahPasien),
+          jumlahPasien: item.jumlahPasien,
           harga: n(editForm.harga),
         }),
       ]);
@@ -478,25 +474,12 @@ export function HasilPerbulanPage({ modul = 'RADIOLOGI' }: HasilPerbulanPageProp
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, borderBottom: '1px dashed var(--color-border)', paddingBottom: '0.3rem' }}>
               <span>Pendapatan Jasa Pelayanan</span>
             </div>
-            {!isEditing ? (
-              staticRow(`Jumlah Pasien`, item.jumlahPasien)
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0' }}>
-                <label htmlFor="hp-jumlahPasien" style={{ flex: 1 }}>Jumlah Pasien</label>
-                <input
-                  id="hp-jumlahPasien"
-                  type="number"
-                  step="1"
-                  value={editJumlahPasien}
-                  onChange={(e) => setEditJumlahPasien(e.target.value)}
-                  style={{ width: '150px', textAlign: 'right' }}
-                />
-              </div>
-            )}
+            {/* Selalu otomatis dari skema 12 bulan (Laporan Pajak), tidak diedit di sini. */}
+            {staticRow('Jumlah Pasien', item.jumlahPasien)}
             {field('harga', 'Harga per Pasien', item.harga)}
             {staticRow(
               'Total Pendapatan',
-              isEditing ? n(editForm.harga) * n(editJumlahPasien) : item.pendapatan,
+              isEditing ? n(editForm.harga) * item.jumlahPasien : item.pendapatan,
               { bold: true },
             )}
 
