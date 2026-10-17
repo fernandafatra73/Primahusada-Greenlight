@@ -34,6 +34,9 @@ function tampil(v: SheetValue | undefined): string {
 /** Grid mirip Excel: pilih sel, ketik atau F2/klik ganda untuk edit, rumus diawali "=". */
 export function SheetGrid({ cells, columns, rows, onChange }: SheetGridProps) {
   const [active, setActive] = useState<Pos>({ col: 0, row: 0 });
+  // Sudut lain dari blok terpilih; sama dengan active bila hanya satu sel.
+  const [anchor, setAnchor] = useState<Pos>({ col: 0, row: 0 });
+  const dragging = useRef(false);
   const [editing, setEditing] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -48,19 +51,92 @@ export function SheetGrid({ cells, columns, rows, onChange }: SheetGridProps) {
     if (editing !== null && document.activeElement !== barRef.current) inputRef.current?.focus();
   }, [editing]);
 
-  function pindah(dCol: number, dRow: number) {
-    setActive((p) => ({
-      col: Math.min(columns - 1, Math.max(0, p.col + dCol)),
-      row: Math.min(rows - 1, Math.max(0, p.row + dRow)),
-    }));
+  const blok = {
+    c1: Math.min(anchor.col, active.col),
+    c2: Math.max(anchor.col, active.col),
+    r1: Math.min(anchor.row, active.row),
+    r2: Math.max(anchor.row, active.row),
+  };
+
+  function dalamBlok(col: number, row: number): boolean {
+    return col >= blok.c1 && col <= blok.c2 && row >= blok.r1 && row <= blok.r2;
+  }
+
+  function pindah(dCol: number, dRow: number, perluas = false) {
+    const col = Math.min(columns - 1, Math.max(0, active.col + dCol));
+    const row = Math.min(rows - 1, Math.max(0, active.row + dRow));
+    setActive({ col, row });
+    if (!perluas) setAnchor({ col, row });
   }
 
   function tulis(key: string, raw: string) {
     if ((cells[key] ?? '') === raw) return;
-    const next: Record<string, string> = { ...cells };
-    if (raw === '') delete next[key];
-    else next[key] = raw;
-    onChange(next);
+    onChange(terapkan(cells, { [key]: raw }));
+  }
+
+  function terapkan(base: SheetCells, ubah: Readonly<Record<string, string>>): SheetCells {
+    const next: Record<string, string> = { ...base };
+    for (const [key, raw] of Object.entries(ubah)) {
+      if (raw === '') delete next[key];
+      else next[key] = raw;
+    }
+    return next;
+  }
+
+  /** Isi blok terpilih sebagai teks bertab (nilai hasil hitung), siap ditempel ke Excel. */
+  function blokSebagaiTeks(): string {
+    const baris: string[] = [];
+    for (let r = blok.r1; r <= blok.r2; r++) {
+      const kolom: string[] = [];
+      for (let c = blok.c1; c <= blok.c2; c++) kolom.push(formatSheetValue(values.get(cellKey(c, r))));
+      baris.push(kolom.join('\t'));
+    }
+    return baris.join('\n');
+  }
+
+  function kosongkanBlok() {
+    const ubah: Record<string, string> = {};
+    for (let r = blok.r1; r <= blok.r2; r++) {
+      for (let c = blok.c1; c <= blok.c2; c++) ubah[cellKey(c, r)] = '';
+    }
+    onChange(terapkan(cells, ubah));
+  }
+
+  function onCopy(e: React.ClipboardEvent) {
+    if (editing !== null) return;
+    e.clipboardData.setData('text/plain', blokSebagaiTeks());
+    e.preventDefault();
+  }
+
+  function onCut(e: React.ClipboardEvent) {
+    if (editing !== null) return;
+    onCopy(e);
+    kosongkanBlok();
+  }
+
+  function onPaste(e: React.ClipboardEvent) {
+    if (editing !== null) return;
+    const teks = e.clipboardData.getData('text/plain');
+    if (teks === '') return;
+    e.preventDefault();
+    const baris = teks.replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n');
+    const ubah: Record<string, string> = {};
+    baris.forEach((line, dr) => {
+      line.split('\t').forEach((nilai, dc) => {
+        const col = blok.c1 + dc;
+        const row = blok.r1 + dr;
+        if (col < columns && row < rows) ubah[cellKey(col, row)] = nilai;
+      });
+    });
+    onChange(terapkan(cells, ubah));
+  }
+
+  async function salinTombol() {
+    try {
+      await navigator.clipboard.writeText(blokSebagaiTeks());
+    } catch {
+      // Clipboard API bisa ditolak browser; Ctrl+C di grid tetap berfungsi.
+    }
   }
 
   function selesaiEdit(simpan: boolean, dCol: number, dRow: number) {
@@ -74,10 +150,10 @@ export function SheetGrid({ cells, columns, rows, onChange }: SheetGridProps) {
   function onGridKeyDown(e: React.KeyboardEvent) {
     if (editing !== null) return;
     switch (e.key) {
-      case 'ArrowUp': pindah(0, -1); break;
-      case 'ArrowDown': pindah(0, 1); break;
-      case 'ArrowLeft': pindah(-1, 0); break;
-      case 'ArrowRight': pindah(1, 0); break;
+      case 'ArrowUp': pindah(0, -1, e.shiftKey); break;
+      case 'ArrowDown': pindah(0, 1, e.shiftKey); break;
+      case 'ArrowLeft': pindah(-1, 0, e.shiftKey); break;
+      case 'ArrowRight': pindah(1, 0, e.shiftKey); break;
       case 'Tab': pindah(e.shiftKey ? -1 : 1, 0); break;
       case 'Enter':
       case 'F2':
@@ -85,7 +161,13 @@ export function SheetGrid({ cells, columns, rows, onChange }: SheetGridProps) {
         break;
       case 'Delete':
       case 'Backspace':
-        tulis(activeKey, '');
+        kosongkanBlok();
+        break;
+      case 'a':
+      case 'A':
+        if (!(e.ctrlKey || e.metaKey)) return;
+        setAnchor({ col: 0, row: 0 });
+        setActive({ col: columns - 1, row: rows - 1 });
         break;
       default:
         // Mengetik langsung menimpa isi sel, seperti di Excel.
@@ -121,8 +203,19 @@ export function SheetGrid({ cells, columns, rows, onChange }: SheetGridProps) {
         }}
       >
         <strong style={{ minWidth: '3.5rem', textAlign: 'center', borderRight: '1px solid var(--color-border)' }}>
-          {activeKey}
+          {blok.c1 === blok.c2 && blok.r1 === blok.r2
+            ? activeKey
+            : `${cellKey(blok.c1, blok.r1)}:${cellKey(blok.c2, blok.r2)}`}
         </strong>
+        <button
+          type="button"
+          className="btn btn--sm btn--ghost"
+          onClick={() => void salinTombol()}
+          title="Salin blok terpilih (bisa ditempel ke Excel). Pilih beberapa sel dengan seret mouse atau Shift+panah; Ctrl+A untuk semua."
+          style={{ border: '1px solid var(--color-border)' }}
+        >
+          📋 Salin
+        </button>
         <span style={{ fontStyle: 'italic', color: 'var(--color-text-muted)' }}>fx</span>
         <input
           ref={barRef}
@@ -141,6 +234,15 @@ export function SheetGrid({ cells, columns, rows, onChange }: SheetGridProps) {
         ref={wrapRef}
         tabIndex={0}
         onKeyDown={onGridKeyDown}
+        onCopy={onCopy}
+        onCut={onCut}
+        onPaste={onPaste}
+        onMouseUp={() => {
+          dragging.current = false;
+        }}
+        onMouseLeave={() => {
+          dragging.current = false;
+        }}
         style={{ overflow: 'auto', maxHeight: '65vh', border: '1px solid var(--color-border)', outline: 'none' }}
       >
         <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', fontSize: '0.85rem' }}>
@@ -176,11 +278,16 @@ export function SheetGrid({ cells, columns, rows, onChange }: SheetGridProps) {
                   return (
                     <td
                       key={c}
-                      onMouseDown={() => {
+                      onMouseDown={(e) => {
                         if (editing !== null) tulis(activeKey, editing);
                         setEditing(null);
                         setActive({ col: c, row: r });
+                        if (!e.shiftKey) setAnchor({ col: c, row: r });
+                        dragging.current = true;
                         wrapRef.current?.focus();
+                      }}
+                      onMouseEnter={() => {
+                        if (dragging.current) setActive({ col: c, row: r });
                       }}
                       onDoubleClick={() => setEditing(raw)}
                       style={{
@@ -188,6 +295,8 @@ export function SheetGrid({ cells, columns, rows, onChange }: SheetGridProps) {
                         textAlign: angka ? 'right' : 'left',
                         color: nilai !== undefined && isSheetError(nilai) ? '#b91c1c' : undefined,
                         fontWeight: r < 2 ? 700 : undefined,
+                        background: !isActive && dalamBlok(c, r) ? '#dbeafe' : undefined,
+                        userSelect: 'none',
                         outline: isActive ? '2px solid var(--color-primary, #2563eb)' : undefined,
                         outlineOffset: '-2px',
                       }}
