@@ -1,6 +1,6 @@
 import { pdf } from '@react-pdf/renderer';
 import { apiGet } from '../lib/api.ts';
-import { formatUmurTahun } from '../lib/format.ts';
+import { formatUmurDetail } from '../lib/format.ts';
 import { parseLabKesan } from '../pages/LaboratoriumPage.tsx';
 import { groupLabRowsForPdf } from '../lib/labKesan.ts';
 import { loadLogoDataUrl } from './loadLogoDataUrl.ts';
@@ -11,6 +11,7 @@ interface PasienDetailApi {
   readonly regCode: string;
   readonly nama: string;
   readonly umur: number;
+  readonly tanggalLahir: string;
   readonly jenisKelamin: 'L' | 'P';
   readonly alamat: string | null;
   readonly createdAt: string;
@@ -74,7 +75,7 @@ export async function generateLabReportBlob(
     dokterNama: pasien.pengirim?.nama || '—',
     tanggalPemeriksaan: formatDateDisplay(pasien.createdAt),
     namaPasien: pasien.nama,
-    umurLabel: `${formatUmurTahun(pasien.umur)} (${pasien.jenisKelamin})`,
+    umurLabel: `${formatUmurDetail(pasien.tanggalLahir, pasien.createdAt)} (${pasien.jenisKelamin})`,
     alamat: pasien.alamat || '—',
     labResultsText: undefined,
     rows,

@@ -86,30 +86,42 @@ export function formatUmurTahun(years: number): string {
   return `${years} tahun`;
 }
 
-/** Umur detail seperti "2 Thn 6 bln" untuk hasil bacaan. */
+function jumlahHariDalamBulan(tahun: number, bulan0: number): number {
+  return new Date(Date.UTC(tahun, bulan0 + 1, 0)).getUTCDate();
+}
+
+/**
+ * Umur lengkap seperti "2 Thn 6 bln 14 hr" untuk hasil bacaan; tahun, bulan dan hari
+ * selalu ditulis (juga bila 0). `refIso` = tanggal acuan (mis. tanggal registrasi), default hari ini.
+ */
 export function formatUmurDetail(tanggalLahir: string, refIso?: string): string {
   const birth = new Date(tanggalLahir);
   const ref = refIso ? new Date(refIso) : new Date();
-  if (Number.isNaN(birth.getTime())) {
+  if (Number.isNaN(birth.getTime()) || Number.isNaN(ref.getTime())) {
     return '—';
   }
-  let months =
-    (ref.getFullYear() - birth.getFullYear()) * 12 + (ref.getMonth() - birth.getMonth());
-  if (ref.getDate() < birth.getDate()) {
-    months -= 1;
-  }
+  // Tanggal lahir "YYYY-MM-DD" dibaca sebagai tanggal kalender; acuan memakai tanggal lokal.
+  const tanggalOnly = /^\d{4}-\d{2}-\d{2}$/.test(tanggalLahir);
+  const by = tanggalOnly ? birth.getUTCFullYear() : birth.getFullYear();
+  const bm = tanggalOnly ? birth.getUTCMonth() : birth.getMonth();
+  const bd = tanggalOnly ? birth.getUTCDate() : birth.getDate();
+  const ry = ref.getFullYear();
+  const rm = ref.getMonth();
+  const rd = ref.getDate();
+
+  let months = (ry - by) * 12 + (rm - bm);
+  if (rd < bd) months -= 1;
   if (months < 0) {
-    months = 0;
+    return '0 Thn 0 bln 0 hr';
   }
-  const years = Math.floor(months / 12);
-  const rem = months % 12;
-  if (years > 0 && rem > 0) {
-    return `${years} Thn ${rem} bln`;
-  }
-  if (years > 0) {
-    return `${years} Thn`;
-  }
-  return `${rem} bln`;
+
+  // Hari = selisih dari "ulang bulan" terakhir (tanggal lahir dijepit ke akhir bulan, mis. 31 → 30).
+  const anchorY = by + Math.floor((bm + months) / 12);
+  const anchorM = (bm + months) % 12;
+  const anchorD = Math.min(bd, jumlahHariDalamBulan(anchorY, anchorM));
+  const days = Math.round((Date.UTC(ry, rm, rd) - Date.UTC(anchorY, anchorM, anchorD)) / 86_400_000);
+
+  return `${Math.floor(months / 12)} Thn ${months % 12} bln ${days} hr`;
 }
 
 export function formatDateId(iso: string): string {

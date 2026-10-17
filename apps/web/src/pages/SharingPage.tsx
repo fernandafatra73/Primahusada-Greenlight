@@ -7,7 +7,7 @@ import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.t
 import { useMutationReload } from '../hooks/useMutationReload.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiGet, apiPatch } from '../lib/api.ts';
-import { formatRupiah, formatUmurTahun } from '../lib/format.ts';
+import { formatRupiah, formatUmurDetail } from '../lib/format.ts';
 import type { PaginatedResponse } from '../lib/pagination.ts';
 import { generateSharingReportBlob, printSharingReport } from '../pdf/printSharingReport.tsx';
 import '../components/ui/ui.css';
@@ -22,6 +22,7 @@ interface SharingPasienItem {
   readonly regCode: string;
   readonly nama: string;
   readonly umur: number;
+  readonly tanggalLahir: string;
   readonly createdAt: string;
   readonly alamat: string | null;
   readonly pengirim: { readonly id: string; readonly nama: string };
@@ -177,7 +178,7 @@ export function SharingPage() {
       no: (pagination.page - 1) * pagination.limit + idx + 1,
       nama: p.nama,
       regCode: p.regCode,
-      umurLabel: formatUmurTahun(p.umur),
+      umurLabel: formatUmurDetail(p.tanggalLahir, p.createdAt),
       tanggal: formatDateDisplay(p.createdAt),
       alamat: p.alamat || '—',
       pemeriksaan: p.pemeriksaan.map((x) => x.nama).join(', '),
@@ -413,7 +414,7 @@ export function SharingPage() {
                     {p.regCode} • {p.pengirim.nama}
                   </div>
                 </td>
-                <td>{formatUmurTahun(p.umur)}</td>
+                <td>{formatUmurDetail(p.tanggalLahir, p.createdAt)}</td>
                 <td>{formatDateDisplay(p.createdAt)}</td>
                 <td>{p.alamat || '—'}</td>
                 <td>{p.pemeriksaan.map((x) => x.nama).join(', ')}</td>

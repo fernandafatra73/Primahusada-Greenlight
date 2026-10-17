@@ -30,7 +30,7 @@ describe('buildLogbookRows', () => {
       {
         No: 1,
         Nama: 'Siti Aminah',
-        Usia: '35 tahun',
+        Usia: '35 Thn 11 bln 29 hr',
         Alamat: 'Parung Kuda',
         Pemeriksaan: 'Thorax PA',
         Pengirim: 'dr. Budi',

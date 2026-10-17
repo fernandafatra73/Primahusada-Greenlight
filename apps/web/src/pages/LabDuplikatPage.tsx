@@ -6,7 +6,7 @@ import { Modal } from '../components/ui/Modal.tsx';
 import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiDelete } from '../lib/api.ts';
-import { formatUmurTahun } from '../lib/format.ts';
+import { formatUmurDetail } from '../lib/format.ts';
 import { groupLabRowsForPdf, parseLabKesan } from '../lib/labKesan.ts';
 import { LabReportDocument, type LabReportData } from '../pdf/LabReportDocument.tsx';
 import { loadLogoDataUrl } from '../pdf/loadLogoDataUrl.ts';
@@ -17,6 +17,7 @@ interface PasienDuplikatItem {
   readonly regCode: string;
   readonly nama: string;
   readonly umur: number;
+  readonly tanggalLahir: string;
   readonly noTelepon: string | null;
   readonly alamat: string | null;
   readonly pengirimNama: string;
@@ -79,7 +80,7 @@ export function LabDuplikatPage() {
       dokterNama: item.pengirimNama || '—',
       tanggalPemeriksaan: formatDateDisplay(item.createdAt),
       namaPasien: item.nama,
-      umurLabel: formatUmurTahun(item.umur),
+      umurLabel: formatUmurDetail(item.tanggalLahir, item.createdAt),
       alamat: item.alamat || '—',
       rows: groupLabRowsForPdf(parsed.rows),
       petugasLabNama: parsed.analisNama || undefined,
@@ -194,7 +195,7 @@ export function LabDuplikatPage() {
                     {item.alamat || '—'}
                   </div>
                 </td>
-                <td>{formatUmurTahun(item.umur)}</td>
+                <td>{formatUmurDetail(item.tanggalLahir, item.createdAt)}</td>
                 <td>{item.pengirimNama}</td>
                 <td>{item.pemeriksaanNama || '—'}</td>
                 <td>

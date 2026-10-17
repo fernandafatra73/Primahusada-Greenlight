@@ -43,13 +43,22 @@ function normalizeNama(nama: string): string {
   return nama.trim().toLowerCase();
 }
 
-function umurTahun(tanggalLahir: Date, ref: Date): number {
-  let age = ref.getFullYear() - tanggalLahir.getFullYear();
-  const monthDiff = ref.getMonth() - tanggalLahir.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && ref.getDate() < tanggalLahir.getDate())) {
-    age -= 1;
-  }
-  return age < 0 ? 0 : age;
+/** Umur lengkap "X Thn Y bln Z hr" — format sama dengan formatUmurDetail di web. */
+function umurDetail(tanggalLahir: Date, ref: Date): string {
+  const by = tanggalLahir.getFullYear();
+  const bm = tanggalLahir.getMonth();
+  const bd = tanggalLahir.getDate();
+  let months = (ref.getFullYear() - by) * 12 + (ref.getMonth() - bm);
+  if (ref.getDate() < bd) months -= 1;
+  if (months < 0) return '0 Thn 0 bln 0 hr';
+  // Hari dihitung dari ulang bulan terakhir; tanggal lahir dijepit ke akhir bulan (mis. 31 -> 30).
+  const anchorY = by + Math.floor((bm + months) / 12);
+  const anchorM = (bm + months) % 12;
+  const anchorD = Math.min(bd, new Date(Date.UTC(anchorY, anchorM + 1, 0)).getUTCDate());
+  const days = Math.round(
+    (Date.UTC(ref.getFullYear(), ref.getMonth(), ref.getDate()) - Date.UTC(anchorY, anchorM, anchorD)) / 86_400_000,
+  );
+  return `${Math.floor(months / 12)} Thn ${months % 12} bln ${days} hr`;
 }
 
 function formatTanggal(d: Date): string {
@@ -79,7 +88,7 @@ export function buildLogbookRows(
     return {
       No: idx + 1,
       Nama: p.nama,
-      Usia: `${umurTahun(p.tanggalLahir, ref)} tahun`,
+      Usia: umurDetail(p.tanggalLahir, ref),
       Alamat: p.alamat || '—',
       Pemeriksaan: p.pemeriksaanNama || '—',
       Pengirim: p.pengirimNama || '—',

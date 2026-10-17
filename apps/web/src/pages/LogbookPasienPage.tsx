@@ -11,7 +11,7 @@ import {
 } from '../hooks/useListQueryParams.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.ts';
-import { formatRupiah, formatUmurTahun } from '../lib/format.ts';
+import { formatRupiah, formatUmurDetail } from '../lib/format.ts';
 import { loadLogoDataUrl } from '../pdf/loadLogoDataUrl.ts';
 import {
   LogbookPasienReportDocument,
@@ -24,6 +24,7 @@ interface DuplikatRadiologiItem {
   readonly regCode: string;
   readonly nama: string;
   readonly umur: number;
+  readonly tanggalLahir: string;
   readonly alamat: string | null;
   readonly pengirimNama: string;
   readonly pemeriksaanNama: string;
@@ -364,7 +365,7 @@ export function LogbookPasienPage() {
     return {
       no,
       nama: item.nama,
-      usia: formatUmurTahun(item.umur),
+      usia: formatUmurDetail(item.tanggalLahir),
       alamat: item.alamat || '—',
       pemeriksaan: item.pemeriksaanNama || '—',
       pengirim: item.pengirimNama || '—',
@@ -555,7 +556,7 @@ export function LogbookPasienPage() {
                         {(pagination.page - 1) * pagination.limit + idx + 1}
                       </td>
                       <td style={{ fontWeight: 600 }}>{item.nama}</td>
-                      <td>{formatUmurTahun(item.umur)}</td>
+                      <td>{formatUmurDetail(item.tanggalLahir)}</td>
                       <td>{item.alamat || '—'}</td>
                       <td>{item.pemeriksaanNama || '—'}</td>
                       <td>{item.pengirimNama || '—'}</td>

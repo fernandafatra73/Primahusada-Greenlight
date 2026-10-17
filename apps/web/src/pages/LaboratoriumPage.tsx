@@ -11,7 +11,7 @@ import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.t
 import { useMutationReload } from '../hooks/useMutationReload.ts';
 import { usePaginatedList } from '../hooks/usePaginatedList.ts';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../lib/api.ts';
-import { formatDateShort, formatRupiah, formatUmurDetail, formatUmurTahun, parseUmurManualToTanggalLahir } from '../lib/format.ts';
+import { formatDateShort, formatRupiah, formatUmurDetail, parseUmurManualToTanggalLahir } from '../lib/format.ts';
 import { terbilangRupiah } from '../lib/terbilang.ts';
 import type { PaginatedResponse } from '../lib/pagination.ts';
 import { LabReportDocument, type LabReportData } from '../pdf/LabReportDocument.tsx';
@@ -870,7 +870,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
           dokterNama: previewItem.pengirim?.nama || '—',
           tanggalPemeriksaan: formatDateDisplay(previewItem.createdAt),
           namaPasien: previewItem.nama,
-          umurLabel: `${formatUmurTahun(previewItem.umur)} (${previewItem.jenisKelamin})`,
+          umurLabel: `${formatUmurDetail(previewItem.tanggalLahir, previewItem.createdAt)} (${previewItem.jenisKelamin})`,
           alamat: previewItem.alamat || '—',
           labResultsText: undefined,
           rows: groupLabRowsForPdf(parsed.rows, previewItem.jenisKelamin),
