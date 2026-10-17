@@ -38,15 +38,16 @@ function formatPersen(value: number): string {
   return `${Number(value.toFixed(3))}%`;
 }
 
-interface JumlahPasienCellProps {
+interface AngkaCellProps {
   readonly label: string;
   readonly value: number;
+  readonly width?: string;
   readonly disabled: boolean;
   readonly onCommit: (jumlah: number) => void;
 }
 
 /** Input angka di sel tabel; menyimpan saat Enter atau fokus keluar. */
-function JumlahPasienCell({ label, value, disabled, onCommit }: JumlahPasienCellProps) {
+function AngkaCell({ label, value, width = '90px', disabled, onCommit }: AngkaCellProps) {
   const [draft, setDraft] = useState(String(value));
 
   useEffect(() => {
@@ -76,7 +77,7 @@ function JumlahPasienCell({ label, value, disabled, onCommit }: JumlahPasienCell
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setDraft(String(value));
       }}
-      style={{ width: '90px', textAlign: 'right' }}
+      style={{ width, textAlign: 'right' }}
     />
   );
 }
@@ -203,9 +204,18 @@ export function LaporanPajakPage({ modul = 'RADIOLOGI' }: LaporanPajakPageProps)
     }
   }
 
-  // Isi langsung di tabel: disimpan sebagai koreksi manual bulan itu (harga tetap).
+  // Isi langsung di tabel: disimpan sebagai koreksi manual bulan itu.
   async function handleSimpanJumlahPasien(item: BulanPajakItem, jumlahPasien: number) {
     if (jumlahPasien === item.jumlahPasien) return;
+    await simpanKoreksi(item, jumlahPasien, item.harga, 'Gagal menyimpan jumlah pasien');
+  }
+
+  async function handleSimpanHarga(item: BulanPajakItem, harga: number) {
+    if (harga === item.harga) return;
+    await simpanKoreksi(item, item.jumlahPasien, harga, 'Gagal menyimpan harga');
+  }
+
+  async function simpanKoreksi(item: BulanPajakItem, jumlahPasien: number, harga: number, pesanGagal: string) {
     setSavingCellBulan(item.no);
     setError(null);
     try {
@@ -214,11 +224,11 @@ export function LaporanPajakPage({ modul = 'RADIOLOGI' }: LaporanPajakPageProps)
         bulan: item.no,
         modul,
         jumlahPasien,
-        harga: item.harga,
+        harga,
       });
       await fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan jumlah pasien');
+      setError(err instanceof Error ? err.message : pesanGagal);
     } finally {
       setSavingCellBulan(null);
     }
@@ -453,14 +463,22 @@ export function LaporanPajakPage({ modul = 'RADIOLOGI' }: LaporanPajakPageProps)
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <JumlahPasienCell
+                      <AngkaCell
                         label={`Jumlah Pasien ${b.bulan}`}
                         value={b.jumlahPasien}
                         disabled={savingAll || savingEdit || savingCellBulan === b.no}
                         onCommit={(jumlah) => void handleSimpanJumlahPasien(b, jumlah)}
                       />
                     </td>
-                    <td style={{ textAlign: 'right' }}>{formatRupiah(b.harga)}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <AngkaCell
+                        label={`Harga ${b.bulan}`}
+                        value={b.harga}
+                        width="130px"
+                        disabled={savingAll || savingEdit || savingCellBulan === b.no}
+                        onCommit={(harga) => void handleSimpanHarga(b, harga)}
+                      />
+                    </td>
                     <td style={{ textAlign: 'right' }}>{formatRupiah(b.totalPenerimaan)}</td>
                     <td style={{ textAlign: 'right', color: '#b45309', fontWeight: 600 }}>
                       {formatRupiah(b.pajak)}
