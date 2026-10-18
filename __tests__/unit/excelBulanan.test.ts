@@ -17,7 +17,7 @@ function bulan(no: number, patch: Partial<BulanUntukLembar> = {}): BulanUntukLem
     gajiFernanda: 0, gajiChalimatusadiah: 0, gajiRiki: 0, gajiAgung: 0, gajiKaryawan1: 0, gajiKaryawan2: 0,
     bahanRoentgen: 0, peralatanRoentgen: 0, penyusutanManual: 0, perbaikanAlat: 0,
     kasAkhir: 0, piutangUsaha: 0, perlengkapan: 0, peralatanNet: 0, utangUsaha: 0,
-    hargaPeralatan: 0, tarifPenyusutanTahunanPersen: 10, labaBersih: 0,
+    akumulasiPenyusutanAkhir: 0, hargaPeralatan: 0, tarifPenyusutanTahunanPersen: 10, labaBersih: 0,
     ...patch,
   };
 }

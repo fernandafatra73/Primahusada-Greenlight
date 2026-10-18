@@ -24,6 +24,7 @@ export interface BulanUntukLembar {
   readonly perlengkapan: number;
   readonly peralatanNet: number;
   readonly utangUsaha: number;
+  readonly akumulasiPenyusutanAkhir: number;
   readonly hargaPeralatan: number;
   readonly tarifPenyusutanTahunanPersen: number;
   readonly labaBersih: number;

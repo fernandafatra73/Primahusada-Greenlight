@@ -3,7 +3,8 @@ import * as XLSX from 'xlsx';
 import { ListPageShell } from './ui/ListPageShell.tsx';
 import { SheetEditor } from './SheetEditor.tsx';
 import { apiDelete, apiGet, apiPut } from '../lib/api.ts';
-import { bangunLembarDariBulanan, type BulanUntukLembar, type LabelGaji } from '../lib/excelBulanan.ts';
+import type { BulanUntukLembar, LabelGaji } from '../lib/excelBulanan.ts';
+import { bangunWorkbookLaporan, type InfoLaporan } from '../lib/laporanSheets.ts';
 import { evaluateWorkbook, parseCellKey } from '../lib/sheetFormula.ts';
 import { KODE_XLSX, bacaWorkbook, lebarKolom, tinggiBaris, type Sheet, type Workbook } from '../lib/sheetModel.ts';
 import './ui/ui.css';
@@ -66,11 +67,17 @@ export function ExcelBulananView({ modul }: ExcelBulananViewProps) {
   const [tersimpan, setTersimpan] = useState(false);
 
   const bangunDariData = useCallback(async (): Promise<Workbook> => {
-    const [bulanan, label] = await Promise.all([
+    const [bulanan, label, neraca] = await Promise.all([
       apiGet<{ bulan: readonly BulanUntukLembar[] }>(`/api/laporan/pajak-bulanan?year=${year}&modul=${modul}`),
       apiGet<{ item: LabelGaji }>(`/api/laporan/gaji-label?modul=${modul}`),
+      apiGet<{ item: Omit<InfoLaporan, 'year'> }>(`/api/laporan/neraca?year=${year}&modul=${modul}`),
     ]);
-    return bangunLembarDariBulanan(bulanan.bulan, label.item, `Hasil Perbulan ${moduleLabel} ${year}`);
+    return bangunWorkbookLaporan(
+      bulanan.bulan,
+      label.item,
+      { ...neraca.item, year },
+      `Hasil Perbulan ${moduleLabel} ${year}`,
+    );
   }, [year, modul, moduleLabel]);
 
   const muat = useCallback(async () => {
