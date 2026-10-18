@@ -84,9 +84,12 @@ describe('bangunLembarDariBulanan', () => {
     expect(hasil.get(`B${cari(cells, 'Modal PH')}`)).toBe(84000000);
   });
 
-  test('has no Total for neraca rows or the harga row', () => {
-    expect(cells[`N${cari(cells, 'Kas')}`]).toBeUndefined();
-    expect(cells[`N${cari(cells, 'Harga per Pasien')}`]).toBeUndefined();
+  test('every data row has a Total that adds January through December', () => {
+    expect(cells[`N${cari(cells, 'Kas')}`]).toBe(`=SUM(B${cari(cells, 'Kas')}:C${cari(cells, 'Kas')})`);
+    expect(cells[`N${cari(cells, 'Harga per Pasien')}`]).toBeDefined();
+    const hasil = evaluateSheet(cells);
+    expect(hasil.get(`N${cari(cells, 'Kas')}`)).toBe(5000000);
+    expect(hasil.get(`N${cari(cells, 'Modal PH')}`)).toBe(84000000);
   });
 
   test('adds the equipment depreciation and modal block below the neraca', () => {

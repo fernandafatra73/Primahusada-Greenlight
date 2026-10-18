@@ -84,7 +84,7 @@ function barisRumus(
 function susunBaris(label: LabelGaji): readonly BarisLembar[] {
   return [
     baris('pasien', 'Jumlah Pasien', (b) => b.jumlahPasien, true, 'angka'),
-    baris('harga', 'Harga per Pasien', (b) => b.harga, false),
+    baris('harga', 'Harga per Pasien', (b) => b.harga),
     barisRumus('pendapatan', 'Pendapatan', (c, r) => `=${c}${r('pasien')}*${c}${r('harga')}`, true, true),
     baris('sewa', 'Beban Sewa Tempat', (b) => b.biayaSewaTempat),
     baris('listrik', 'Beban Listrik dan Air', (b) => b.biayaListrikAir),
@@ -101,13 +101,13 @@ function susunBaris(label: LabelGaji): readonly BarisLembar[] {
     barisRumus('beban', 'Total Beban Usaha', (c, r) => `=SUM(${c}${r('sewa')}:${c}${r('perbaikan')})`, true, true),
     barisRumus('laba', 'Laba Bersih', (c, r) => `=${c}${r('pendapatan')}-${c}${r('beban')}`, true, true),
     { id: 'judulNeraca', label: 'NERACA (akhir bulan)', isi: 'judul', total: false, tebal: true },
-    baris('kas', 'Kas', (b) => b.kasAkhir, false),
-    baris('piutang', 'Piutang Usaha', (b) => b.piutangUsaha, false),
-    baris('perlengkapan', 'Perlengkapan', (b) => b.perlengkapan, false),
-    baris('peralatan', 'Peralatan (Nilai Bersih)', (b) => b.peralatanNet, false),
-    barisRumus('aktiva', 'Jumlah Aktiva', (c, r) => `=SUM(${c}${r('kas')}:${c}${r('peralatan')})`, false, true),
-    baris('utang', 'Utang Usaha', (b) => b.utangUsaha, false),
-    barisRumus('modal', 'Modal PH', (c, r) => `=${c}${r('aktiva')}-${c}${r('utang')}`, false, true),
+    baris('kas', 'Kas', (b) => b.kasAkhir),
+    baris('piutang', 'Piutang Usaha', (b) => b.piutangUsaha),
+    baris('perlengkapan', 'Perlengkapan', (b) => b.perlengkapan),
+    baris('peralatan', 'Peralatan (Nilai Bersih)', (b) => b.peralatanNet),
+    barisRumus('aktiva', 'Jumlah Aktiva', (c, r) => `=SUM(${c}${r('kas')}:${c}${r('peralatan')})`, true, true),
+    baris('utang', 'Utang Usaha', (b) => b.utangUsaha),
+    barisRumus('modal', 'Modal PH', (c, r) => `=${c}${r('aktiva')}-${c}${r('utang')}`, true, true),
   ];
 }
 
