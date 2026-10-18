@@ -17,7 +17,7 @@ function bulan(no: number, patch: Partial<BulanUntukLembar> = {}): BulanUntukLem
     gajiFernanda: 0, gajiChalimatusadiah: 0, gajiRiki: 0, gajiAgung: 0, gajiKaryawan1: 0, gajiKaryawan2: 0,
     bahanRoentgen: 0, peralatanRoentgen: 0, penyusutanManual: 0, perbaikanAlat: 0,
     kasAkhir: 0, piutangUsaha: 0, perlengkapan: 0, peralatanNet: 0, utangUsaha: 0,
-    hargaPeralatan: 0, tarifPenyusutanTahunanPersen: 10, modalAwal: 0, labaBersih: 0,
+    hargaPeralatan: 0, tarifPenyusutanTahunanPersen: 10, labaBersih: 0,
     ...patch,
   };
 }
@@ -91,7 +91,7 @@ describe('bangunLembarDariBulanan', () => {
 
   test('adds the equipment depreciation and modal block below the neraca', () => {
     const wb = bangunLembarDariBulanan(
-      [bulan(1, { hargaPeralatan: 76500000, modalAwal: 114196962, jumlahPasien: 10, harga: 100000 })],
+      [bulan(1, { hargaPeralatan: 76500000, jumlahPasien: 10, harga: 100000 })],
       label,
       'Judul',
     );
@@ -101,13 +101,16 @@ describe('bangunLembarDariBulanan', () => {
     const modal = cari(sel, 'Modal');
     const hasil = evaluateSheet(sel);
     expect(sel[`D${harga}`]).toBe('76500000');
-    expect(sel[`D${cari(sel, 'Modal Januari')}`]).toBe('114196962');
     expect(hasil.get(`B${susut}`)).toBeCloseTo(0.1);
     expect(hasil.get(`C${susut}`)).toBeCloseTo(0.008333333, 8);
-    expect(hasil.get(`D${susut}`)).toBeCloseTo(637500, 4);
-    expect(hasil.get(`D${susut + 1}`)).toBeCloseTo(75862500, 4);
+    // Penyusutan = Harga Peralatan x (10% / 12) = 637.500.
+    const penyusutan = 637500;
+    expect(hasil.get(`D${susut}`)).toBeCloseTo(penyusutan, 4);
+    expect(hasil.get(`D${susut + 1}`)).toBeCloseTo(76500000 - penyusutan, 4);
     // Laba bersih diambil dari baris Laba Bersih Januari: pendapatan 1.000.000 tanpa beban.
     expect(hasil.get(`D${cari(sel, 'Laba bersih')}`)).toBe(1000000);
-    expect(hasil.get(`D${modal}`)).toBeCloseTo(75862500 + 1000000, 4);
+    // Modal Januari = Penyusutan - Laba bersih.
+    expect(hasil.get(`D${cari(sel, 'Modal Januari')}`)).toBeCloseTo(penyusutan - 1000000, 4);
+    expect(hasil.get(`D${modal}`)).toBeCloseTo(76500000 - penyusutan + 1000000, 4);
   });
 });

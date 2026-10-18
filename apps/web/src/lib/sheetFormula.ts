@@ -272,10 +272,50 @@ export interface SheetInput {
 
 const UKURAN_RENTANG_MAKS = 200_000;
 
+/**
+ * Angka dari teks sel. Selain format JS (0.5), menerima koma desimal Indonesia (0,0083)
+ * dan titik ribuan yang disertai koma desimal (1.234,50). "1.500" tanpa koma tetap 1,5
+ * karena nilai dari data disimpan dengan titik desimal.
+ */
 function parseNumberText(raw: string): number | null {
-  if (raw.trim() === '') return null;
-  const v = Number(raw);
+  const t = raw.trim();
+  if (t === '') return null;
+  let s = t;
+  if (/^[-+]?\d{1,3}(\.\d{3})+,\d+$/.test(t)) s = t.replace(/\./g, '').replace(',', '.');
+  else if (/^[-+]?\d+,\d+$/.test(t)) s = t.replace(',', '.');
+  const v = Number(s);
   return Number.isFinite(v) ? v : null;
+}
+
+/**
+ * Mengubah koma desimal di dalam rumus menjadi titik: =D30*0,0083. Koma antar digit dianggap
+ * desimal bila di luar pemanggilan fungsi, atau di mana saja bila rumus memakai ';' sebagai
+ * pemisah argumen (gaya Excel Indonesia).
+ */
+function normalisasiKoma(src: string): string {
+  const pemisahTitikKoma = src.includes(';');
+  const tumpukan: boolean[] = []; // true = kurung pemanggilan fungsi
+  let dalamTeks = false;
+  let out = '';
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i]!;
+    if (ch === '"') dalamTeks = !dalamTeks;
+    else if (!dalamTeks) {
+      if (ch === '(') tumpukan.push(/[A-Za-z0-9_.]/.test(src[i - 1] ?? ''));
+      else if (ch === ')') tumpukan.pop();
+      else if (
+        ch === ',' &&
+        /\d/.test(src[i - 1] ?? '') &&
+        /\d/.test(src[i + 1] ?? '') &&
+        (pemisahTitikKoma || !tumpukan.some(Boolean))
+      ) {
+        out += '.';
+        continue;
+      }
+    }
+    out += ch;
+  }
+  return out;
 }
 
 function toNumber(v: SheetValue): number {
@@ -399,7 +439,7 @@ export function evaluateWorkbook(sheets: readonly SheetInput[]): readonly Map<st
 
   function compute(raw: string, sheet: number): SheetValue {
     if (!raw.startsWith('=')) return parseNumberText(raw) ?? raw;
-    const tokens = tokenize(raw.slice(1));
+    const tokens = tokenize(normalisasiKoma(raw.slice(1)));
     if (!tokens || tokens.length === 0) return '#ERR!';
     try {
       const parser = new Parser(tokens);

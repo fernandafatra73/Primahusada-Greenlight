@@ -26,7 +26,6 @@ export interface BulanUntukLembar {
   readonly utangUsaha: number;
   readonly hargaPeralatan: number;
   readonly tarifPenyusutanTahunanPersen: number;
-  readonly modalAwal: number;
   readonly labaBersih: number;
 }
 
@@ -171,6 +170,8 @@ export function bangunLembarDariBulanan(
   });
 
   // Blok perhitungan modal setelah penyusutan (mengikuti catatan Excel klinik), memakai data Januari.
+  // Penyusutan = Harga Peralatan x tarif per bulan (kolom C = tarif tahunan / 12);
+  // Modal Januari = Penyusutan - Laba bersih (angka per bulan).
   const januari = urut[0];
   if (januari) {
     const awal = barisAwal + daftar.length + 1;
@@ -180,7 +181,7 @@ export function bangunLembarDariBulanan(
     const tebal: CellStyle = { border: true, fmt: 'rupiah', b: true, fill: WARNA_SUBTOTAL };
     const baris: readonly (readonly [string, string | null, string | null, string, CellStyle])[] = [
       ['Harga Peralatan', null, null, String(januari.hargaPeralatan), uang],
-      ['Modal Januari', null, null, String(januari.modalAwal), uang],
+      ['Modal Januari', null, null, `=D${r(2)}-D${r(4)}`, uang],
       ['Penyusutan peralatan', String(januari.tarifPenyusutanTahunanPersen / 100), `=B${r(2)}/12`, `=D${r(0)}*C${r(2)}`, uang],
       ['', null, null, `=D${r(0)}-D${r(2)}`, uang],
       ['Laba bersih', null, null, `=B${rowOf('laba')}`, uang],

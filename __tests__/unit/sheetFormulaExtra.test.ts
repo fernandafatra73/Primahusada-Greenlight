@@ -115,3 +115,31 @@ describe('Indonesian arithmetic functions', () => {
     expect(hitung({ A1: '=BAGI(5,0)' }, 'A1')).toBe('#DIV/0!');
   });
 });
+
+describe('Indonesian decimal comma', () => {
+  test('cells typed with a decimal comma are numbers', () => {
+    expect(hitung({ A1: '0,0083', B1: '=A1*1000' }, 'A1')).toBe(0.0083);
+    expect(hitung({ A1: '0,0083', B1: '=A1*1000' }, 'B1')).toBe(8.3);
+    expect(hitung({ A1: '1.234,50' }, 'A1')).toBe(1234.5);
+  });
+
+  test('keeps dot-decimal values from data, even with three decimals', () => {
+    expect(hitung({ A1: '1.500' }, 'A1')).toBe(1.5);
+    expect(hitung({ A1: '0.008333333' }, 'A1')).toBe(0.008333333);
+  });
+
+  test('formulas accept a decimal comma outside function calls', () => {
+    expect(hitung({ A1: '114196962', B1: '=A1*0,0083' }, 'B1')).toBeCloseTo(947834.7846, 3);
+    expect(hitung({ A1: '=(10*0,5)+1' }, 'A1')).toBe(6);
+  });
+
+  test('keeps comma as argument separator inside function calls', () => {
+    expect(hitung({ A1: '=SUM(1,2,3)' }, 'A1')).toBe(6);
+    expect(hitung({ A1: '=KALI(10;0,5)' }, 'A1')).toBe(5);
+    expect(hitung({ A1: '=TAMBAH(1,5;2,5)' }, 'A1')).toBe(4);
+  });
+
+  test('does not touch commas inside text', () => {
+    expect(hitung({ A1: '="1,5"&"x"' }, 'A1')).toBe('1,5x');
+  });
+});
