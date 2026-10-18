@@ -186,7 +186,7 @@ export function bangunLembarDariBulanan(
       ['Penyusutan peralatan', String(januari.tarifPenyusutanTahunanPersen / 100), `=B${r(2)}/12`, `=D${r(0)}*C${r(2)}`, uang],
       ['', null, null, `=D${r(0)}-D${r(2)}`, uang],
       ['Laba bersih', null, null, `=B${rowOf('laba')}`, uang],
-      ['Modal', null, null, `=D${r(3)}+D${r(4)}`, tebal],
+      ['Modal', null, null, `=D${r(1)}*D${r(2)}`, tebal],
     ];
     baris.forEach(([uraian, persen, bagi, nilai, gaya], i) => {
       const row = awal + i;

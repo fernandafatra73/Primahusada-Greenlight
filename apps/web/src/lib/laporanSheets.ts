@@ -119,7 +119,7 @@ function bangunSheetBulan(b: BulanUntukLembar, gaji: LabelGaji, namaPerusahaan: 
   p.tulis(`A${r0 + 4}`, 'Laba bersih', label);
   p.tulis(`E${r0 + 4}`, `=E${rLaba}`, uang);
   p.tulis(`A${r0 + 5}`, 'Modal', labelTebal);
-  p.tulis(`E${r0 + 5}`, `=E${r0 + 3}+E${r0 + 4}`, uangTebal);
+  p.tulis(`E${r0 + 5}`, `=E${r0 + 1}*E${r0 + 2}`, uangTebal);
 
   // Neraca bulan ini.
   const rn = r0 + 7; // 31

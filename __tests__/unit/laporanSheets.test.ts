@@ -54,7 +54,8 @@ describe('bangunWorkbookLaporan', () => {
     expect(v('Januari', 'E26')).toBeCloseTo(637500, 4);
     expect(v('Januari', 'E27')).toBeCloseTo(75862500, 4);
     expect(v('Januari', 'E28')).toBe(352000);
-    expect(v('Januari', 'E29')).toBeCloseTo(76214500, 4);
+    // Modal = Modal bulan x Penyusutan peralatan.
+    expect(v('Januari', 'E29')).toBeCloseTo((637500 - 352000) * 637500, 2);
     // Modal Januari = Penyusutan - Laba bersih.
     expect(v('Januari', 'E25')).toBeCloseTo(637500 - 352000, 4);
   });

@@ -114,6 +114,7 @@ describe('bangunLembarDariBulanan', () => {
     expect(hasil.get(`D${cari(sel, 'Laba bersih')}`)).toBe(1000000);
     // Modal Januari = Penyusutan - Laba bersih.
     expect(hasil.get(`D${cari(sel, 'Modal Januari')}`)).toBeCloseTo(penyusutan - 1000000, 4);
-    expect(hasil.get(`D${modal}`)).toBeCloseTo(76500000 - penyusutan + 1000000, 4);
+    // Modal = Modal Januari x Penyusutan peralatan.
+    expect(hasil.get(`D${modal}`)).toBeCloseTo((penyusutan - 1000000) * penyusutan, 2);
   });
 });
