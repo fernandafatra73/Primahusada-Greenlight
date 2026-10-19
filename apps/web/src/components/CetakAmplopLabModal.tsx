@@ -131,7 +131,7 @@ export function CetakAmplopLabIsi({ onClose, pasien }: CetakAmplopLabIsiProps) {
           <style>
             /* Kertas amplop lab 11 x 23 cm, tegak (isi juga tegak). Tanpa "size" ukuran &
                orientasi ikut pilihan terakhir di dialog print browser. */
-            @page { size: 11cm 23cm; margin: 2cm 0 0 1.5cm; }
+            @page { size: 11cm 23cm; margin: 2cm 0 0 1cm; }
             body {
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               color: #0f172a;
