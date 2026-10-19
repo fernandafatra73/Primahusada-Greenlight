@@ -422,6 +422,7 @@ export function UsgPage() {
       regCode: item.regCode || '',
       nama: item.namaPasien,
       umur: item.umur ? Number(item.umur) || 0 : 0,
+      umurLabel: item.umur ?? undefined,
       tanggalLahir: item.tanggal,
       createdAt: item.tanggal,
       alamat: item.alamat,

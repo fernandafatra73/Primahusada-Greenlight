@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Modal } from './ui/Modal.tsx';
-import { computeUmurYears, formatDateShort } from '../lib/format.ts';
+import { computeUmurYears, formatDateShort, formatUmurBebas } from '../lib/format.ts';
 import { loadLogoDataUrl } from '../pdf/loadLogoDataUrl.ts';
 import { apiGet } from '../lib/api.ts';
 import logoPrimahusada from '@src/image/logo-primahusada.png';
@@ -47,6 +47,8 @@ export interface CetakALPasien {
   readonly regCode: string;
   readonly nama: string;
   readonly umur?: number;
+  /** Umur berupa teks bebas (mis. USG: "65 Thn", "8 Bln"); bila ada, dipakai apa adanya. */
+  readonly umurLabel?: string;
   readonly tanggalLahir: string;
   readonly createdAt: string;
   readonly alamat?: string | null;
@@ -95,7 +97,7 @@ function AmplopV2TablePreview({
             {editing ? (
               <input value={form.umur} onChange={(e) => onChange('umur', e.target.value)} style={editInputStyle} />
             ) : (
-              `${form.umur} thn`
+              formatUmurBebas(form.umur, 'thn')
             )}
           </td>
         </tr>
@@ -196,7 +198,7 @@ export function CetakALModal({
     setForm({
       regCode: pasien.regCode,
       nama: pasien.nama,
-      umur: String(umurValue),
+      umur: pasien.umurLabel?.trim() || String(umurValue),
       alamat: pasien.alamat ?? '',
       tanggal: formatDateShort(pasien.createdAt),
       jenisNames: pasien.pemeriksaan.map((p) => p.nama).join(', ') || 'Pemeriksaan Radiologi',
@@ -214,7 +216,7 @@ export function CetakALModal({
   }
 
   function handleCopyLabel() {
-    const text = `[PRIMA HUSADA RADIOLOGI]\nRM/FOTO: ${form.regCode}\nNama: ${form.nama} (${form.umur} thn)\nPemeriksaan: ${form.jenisNames}\nTgl: ${form.tanggal} | Dr: ${form.pengirimNama}`;
+    const text = `[PRIMA HUSADA RADIOLOGI]\nRM/FOTO: ${form.regCode}\nNama: ${form.nama} (${formatUmurBebas(form.umur, 'thn')})\nPemeriksaan: ${form.jenisNames}\nTgl: ${form.tanggal} | Dr: ${form.pengirimNama}`;
     void navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -242,7 +244,7 @@ export function CetakALModal({
             <td class="amplopv2-value">${form.nama}</td>
             <td class="amplopv2-label">Umur</td>
             <td class="amplopv2-colon">:</td>
-            <td class="amplopv2-value">${form.umur} thn</td>
+            <td class="amplopv2-value">${formatUmurBebas(form.umur, 'thn')}</td>
           </tr>
           <tr>
             <td class="amplopv2-label">Alamat</td>
@@ -308,7 +310,7 @@ export function CetakALModal({
             </tr>
             <tr>
               <th>Nama Pasien</th>
-              <td><strong>${form.nama}</strong> (${form.umur} tahun)</td>
+              <td><strong>${form.nama}</strong> (${formatUmurBebas(form.umur, 'tahun')})</td>
             </tr>
             <tr>
               <th>Tanggal Foto</th>
@@ -338,7 +340,7 @@ export function CetakALModal({
           </div>
           <table class="label-table">
             <tr><th>No. Foto / RM</th><td>${form.regCode}</td></tr>
-            <tr><th>Nama Pasien</th><td>${form.nama} (${form.umur} thn)</td></tr>
+            <tr><th>Nama Pasien</th><td>${form.nama} (${formatUmurBebas(form.umur, 'thn')})</td></tr>
             <tr><th>Tanggal Foto</th><td>${form.tanggal}</td></tr>
             <tr><th>Jenis Pemeriksaan</th><td>${form.jenisNames}</td></tr>
             <tr><th>Dokter Pengirim</th><td>${form.pengirimNama}</td></tr>
@@ -809,7 +811,7 @@ export function CetakALModal({
                         </div>
                       ) : (
                         <>
-                          <strong>{form.nama}</strong> ({form.umur} tahun)
+                          <strong>{form.nama}</strong> ({formatUmurBebas(form.umur, 'tahun')})
                         </>
                       )}
                     </td>

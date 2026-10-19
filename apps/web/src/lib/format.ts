@@ -78,6 +78,16 @@ export function parseUmurManualToTanggalLahir(value: string): string | null {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+/**
+ * Umur yang diketik bebas (mis. USG: "65 Thn", "8 Bln"): angka saja diberi satuan
+ * ("45" -> "45 tahun"), teks yang sudah bersatuan ditampilkan apa adanya.
+ */
+export function formatUmurBebas(umur: string, satuan: string): string {
+  const teks = umur.trim();
+  if (!teks) return '-';
+  return /^\d+$/.test(teks) ? `${teks} ${satuan}` : teks;
+}
+
 /** Tampilan umur singkat di tabel/form, mis. "4 tahun". */
 export function formatUmurTahun(years: number): string {
   if (!Number.isFinite(years) || years < 0) {
