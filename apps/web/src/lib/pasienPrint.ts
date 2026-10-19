@@ -59,5 +59,16 @@ export async function printPasienReport(pasienId: string): Promise<void> {
       await apiPatch(`/api/pasien/${pasienId}`, { kesan, temuan });
       await printPasienReport(pasienId);
     },
+    amplopPasien: {
+      id: pasienId,
+      regCode: p.regCode,
+      nama: p.nama,
+      tanggalLahir: p.tanggalLahir,
+      createdAt: p.createdAt,
+      alamat: p.alamat,
+      pengirim: p.pengirim,
+      radiolog: p.radiolog,
+      pemeriksaan: p.pemeriksaan,
+    },
   });
 }

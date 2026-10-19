@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { clampClinicalInput } from '../../lib/clinicalText.ts';
+import { CetakALIsi, type CetakALPasien } from '../CetakALModal.tsx';
 import { Modal } from './Modal.tsx';
 
 type PdfVersion =
@@ -7,7 +8,8 @@ type PdfVersion =
   | 'without-signature'
   | 'with-signature-no-frame'
   | 'without-signature-no-frame'
-  | 'cetak-terbaru';
+  | 'cetak-terbaru'
+  | 'amplop';
 
 interface PdfPreviewModalProps {
   readonly open: boolean;
@@ -23,6 +25,8 @@ interface PdfPreviewModalProps {
   /** Hanya disediakan untuk pratinjau yang datanya bisa disimpan ulang (mis. dari Pasien) —
    * kalau kosong, panel edit Kesan/Temuan di tab "Cetak Terbaru" tidak ditampilkan. */
   readonly onSaveKesanTemuan?: (kesan: string, temuan: string) => Promise<void>;
+  /** Pasien untuk tab "Amplop" (dibuka di Amplop V3); tanpa ini tab Amplop tidak ditampilkan. */
+  readonly amplopPasien?: CetakALPasien;
   readonly onClose: () => void;
 }
 
@@ -37,6 +41,7 @@ export function PdfPreviewModal({
   initialKesan = '',
   initialTemuan = '',
   onSaveKesanTemuan,
+  amplopPasien,
   onClose,
 }: PdfPreviewModalProps) {
   const [version, setVersion] = useState<PdfVersion>('with-signature');
@@ -53,6 +58,7 @@ export function PdfPreviewModal({
     'with-signature-no-frame': withSignatureNoFrame,
     'without-signature-no-frame': withoutSignatureNoFrame,
     'cetak-terbaru': cetakTerbaru,
+    amplop: null,
   };
   const activeBlob = blobByVersion[version];
 
@@ -95,6 +101,7 @@ export function PdfPreviewModal({
       'with-signature-no-frame': '-tanpa-kerangka',
       'without-signature-no-frame': '-tanpa-ttd-tanpa-kerangka',
       'cetak-terbaru': '-cetak-terbaru',
+      amplop: '',
     };
     const suffix = suffixByVersion[version];
     const base = filename.replace(/\.pdf$/i, '');
@@ -168,7 +175,22 @@ export function PdfPreviewModal({
           >
             Cetak Terbaru
           </button>
+          {amplopPasien && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={version === 'amplop'}
+              className={`filter-tab${version === 'amplop' ? ' filter-tab--active' : ''}`}
+              onClick={() => setVersion('amplop')}
+            >
+              ✉️ Amplop
+            </button>
+          )}
         </div>
+        {version === 'amplop' && amplopPasien ? (
+          <CetakALIsi pasien={amplopPasien} onClose={onClose} initialMode="amplopv3" />
+        ) : (
+        <>
         <div className="pdf-preview__toolbar">
           <button type="button" className="btn btn--primary btn--sm" onClick={handlePrint}>
             Cetak
@@ -221,6 +243,8 @@ export function PdfPreviewModal({
           />
         ) : (
           <p className="loading-text">Menyiapkan PDF…</p>
+        )}
+        </>
         )}
       </div>
     </Modal>

@@ -34,6 +34,7 @@ export function PdfPreviewHost({ children }: { readonly children: ReactNode }) {
         initialKesan={input?.kesan ?? ''}
         initialTemuan={input?.temuan ?? ''}
         onSaveKesanTemuan={meta?.onSaveKesanTemuan}
+        amplopPasien={meta?.amplopPasien}
         onClose={() => {
           setPreview(null);
           setInput(null);

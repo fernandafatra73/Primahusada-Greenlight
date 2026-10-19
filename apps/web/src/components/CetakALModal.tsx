@@ -63,7 +63,7 @@ export interface CetakALPasien {
   }[];
 }
 
-type CetakALMode = 'amplop' | 'amplopv2' | 'amplopv3' | 'label' | 'both';
+export type CetakALMode = 'amplop' | 'amplopv2' | 'amplopv3' | 'label' | 'both';
 
 function AmplopV2TablePreview({
   form,
@@ -163,13 +163,28 @@ interface CetakALModalProps {
   readonly examLabel?: string;
 }
 
-export function CetakALModal({
-  open,
-  onClose,
-  pasien,
-  initialMode = 'both',
-  examLabel = 'RADIOLOGI',
-}: CetakALModalProps) {
+export function CetakALModal({ open, onClose, pasien, initialMode = 'both', examLabel = 'RADIOLOGI' }: CetakALModalProps) {
+  if (!pasien) {
+    return null;
+  }
+  return (
+    <Modal open={open} title={`Pratinjau Cetak A+L — ${pasien.regCode}`} onClose={onClose} size="lg">
+      <CetakALIsi pasien={pasien} onClose={onClose} initialMode={initialMode} examLabel={examLabel} />
+    </Modal>
+  );
+}
+
+interface CetakALIsiProps {
+  readonly onClose: () => void;
+  /** Harus referensi yang stabil: form diisi ulang setiap kali objek ini berganti. */
+  readonly pasien: CetakALPasien | null;
+  readonly initialMode?: CetakALMode;
+  /** Jenis pemeriksaan untuk subjudul mode "Amplop (A)", mis. "RADIOLOGI" atau "USG". */
+  readonly examLabel?: string;
+}
+
+/** Isi cetak amplop & label (A, V2, V3, Label, A+L) — di CetakALModal dan di tab Amplop pratinjau hasil radiologi. */
+export function CetakALIsi({ onClose, pasien, initialMode = 'both', examLabel = 'RADIOLOGI' }: CetakALIsiProps) {
   const [mode, setMode] = useState<CetakALMode>(initialMode);
   const [copied, setCopied] = useState(false);
   const [labelPosition, setLabelPosition] = useState(1);
@@ -652,12 +667,6 @@ export function CetakALModal({
   }
 
   return (
-    <Modal
-      open={open}
-      title={`Pratinjau Cetak A+L — ${pasien.regCode}`}
-      onClose={onClose}
-      size="lg"
-    >
       <div>
         <div
           style={{
@@ -1075,6 +1084,5 @@ export function CetakALModal({
           </div>
         </div>
       </div>
-    </Modal>
   );
 }

@@ -1,3 +1,4 @@
+import type { CetakALPasien } from '../components/CetakALModal.tsx';
 import { pdf } from '@react-pdf/renderer';
 import { loadLogoDataUrl } from './loadLogoDataUrl.ts';
 import { loadSignatureDataUrl } from './loadSignatureDataUrl.ts';
@@ -26,6 +27,8 @@ export interface RadiologyPdfPreview {
  * mengedit Kesan/Temuan lalu menyimpan & mencetak ulang, tanpa menutup modal. */
 export interface RadiologyPdfPreviewMeta {
   readonly onSaveKesanTemuan?: (kesan: string, temuan: string) => Promise<void>;
+  /** Bila diisi, pratinjau menampilkan tab "Amplop" (dibuka di Amplop V3) untuk pasien ini. */
+  readonly amplopPasien?: CetakALPasien;
 }
 
 type PdfPreviewOpenHandler = (
