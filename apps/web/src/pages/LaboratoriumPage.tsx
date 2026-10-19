@@ -1727,6 +1727,14 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
               >
                 {saving ? 'Menyimpan...' : '💾 Simpan Hasil Lab'}
               </button>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={handleAddRow}
+                title="Tambah baris pemeriksaan"
+              >
+                + Tambah
+              </button>
             </div>
           </form>
         </Modal>

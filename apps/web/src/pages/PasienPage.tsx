@@ -2457,6 +2457,14 @@ export function PasienPage() {
                 <button
                   type="button"
                   className="btn btn--ghost"
+                  onClick={openAddJenisModal}
+                  title="Tambah jenis pemeriksaan baru"
+                >
+                  Tambah
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
                   disabled={!savedPasien}
                   onClick={() => {
                     if (!savedPasien) return;
