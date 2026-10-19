@@ -82,6 +82,15 @@ button.icon-btn,
   padding: 4px 9px 2px 11px;
 }
 
+/* Efek "tombol masuk" pada tombol kecil harus menjaga total padding (1px 6px):
+   tanpa ini tombol melebar 8px saat ditekan, bisa terlempar ke baris berikutnya
+   di deretan tombol yang membungkus (mis. kartu USG), dan mouseup jatuh di
+   tombol lain sehingga klik tidak pernah terjadi. */
+.btn--sm:active:not(:disabled),
+.btn--xs:active:not(:disabled) {
+  padding: 2px 5px 0 7px;
+}
+
 .btn:focus-visible {
   outline: 1px dotted #000;
   outline-offset: -5px;
