@@ -129,8 +129,9 @@ export function CetakAmplopLabIsi({ onClose, pasien }: CetakAmplopLabIsiProps) {
         <head>
           <title>Klinik Prima Husada — Amplop Laboratorium</title>
           <style>
-            /* Selalu horizontal: tanpa "size" orientasi ikut pilihan terakhir di dialog print browser. */
-            @page { size: landscape; margin: 2cm 0 0 1.5cm; }
+            /* Kertas amplop lab 23 x 11 cm, horizontal. Tanpa "size" ukuran & orientasi ikut
+               pilihan terakhir di dialog print browser. */
+            @page { size: 23cm 11cm; margin: 2cm 0 0 1.5cm; }
             body {
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               color: #0f172a;
