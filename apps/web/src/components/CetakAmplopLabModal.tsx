@@ -34,6 +34,24 @@ interface CetakAmplopLabModalProps {
 }
 
 export function CetakAmplopLabModal({ open, onClose, pasien }: CetakAmplopLabModalProps) {
+  if (!pasien) {
+    return null;
+  }
+  return (
+    <Modal open={open} title={`Pratinjau Cetak Amplop — ${pasien.regCode}`} onClose={onClose} size="lg">
+      <CetakAmplopLabIsi pasien={pasien} onClose={onClose} />
+    </Modal>
+  );
+}
+
+interface CetakAmplopLabIsiProps {
+  readonly onClose: () => void;
+  /** Harus referensi yang stabil: form diisi ulang setiap kali objek ini berganti. */
+  readonly pasien: CetakAmplopLabPasien | null;
+}
+
+/** Isi cetak amplop hasil lab (pratinjau, edit, cetak) — dipakai di modal amplop dan di Preview & Cetak hasil lab. */
+export function CetakAmplopLabIsi({ onClose, pasien }: CetakAmplopLabIsiProps) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     regCode: '',
@@ -200,7 +218,6 @@ export function CetakAmplopLabModal({ open, onClose, pasien }: CetakAmplopLabMod
   }
 
   return (
-    <Modal open={open} title={`Pratinjau Cetak Amplop — ${pasien.regCode}`} onClose={onClose} size="lg">
       <div>
         <div
           style={{
@@ -364,6 +381,5 @@ export function CetakAmplopLabModal({ open, onClose, pasien }: CetakAmplopLabMod
           </div>
         </div>
       </div>
-    </Modal>
   );
 }

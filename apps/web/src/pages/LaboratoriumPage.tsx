@@ -4,7 +4,7 @@ import { PDFViewer, pdf } from '@react-pdf/renderer';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
-import { CetakAmplopLabModal, type CetakAmplopLabPasien } from '../components/CetakAmplopLabModal.tsx';
+import { CetakAmplopLabIsi, type CetakAmplopLabPasien } from '../components/CetakAmplopLabModal.tsx';
 import { PjLabModal } from '../components/PjLabModal.tsx';
 import type { AppViewId } from '../config/navigation.ts';
 import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.ts';
@@ -184,7 +184,8 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
 
   const [selected, setSelected] = useState<LabPasienItem | null>(null);
   const [previewItem, setPreviewItem] = useState<LabPasienItem | null>(null);
-  const [amplopItem, setAmplopItem] = useState<LabPasienItem | null>(null);
+  /** Tab di jendela Preview & Cetak: hasil lab (PDF) atau amplop hasil lab. */
+  const [previewTab, setPreviewTab] = useState<'hasil' | 'amplop'>('hasil');
   const [kwitansiItem, setKwitansiItem] = useState<LabPasienItem | null>(null);
   const [labRows, setLabRows] = useState<LabTableRow[]>([]);
   const [readingFotoHasil, setReadingFotoHasil] = useState(false);
@@ -1112,18 +1113,13 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
                     <button
                       type="button"
                       className="btn btn--primary btn--sm"
-                      onClick={() => setPreviewItem(item)}
-                      title="Preview & Cetak hasil lab"
+                      onClick={() => {
+                        setPreviewTab('hasil');
+                        setPreviewItem(item);
+                      }}
+                      title="Preview & Cetak hasil lab dan amplop"
                     >
                       🖨️ Preview & Cetak
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn--secondary btn--sm"
-                      onClick={() => setAmplopItem(item)}
-                      title="Cetak Amplop Hasil Laboratorium"
-                    >
-                      ✉️ Amplop
                     </button>
                     <button
                       type="button"
@@ -1692,6 +1688,31 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
           onClose={() => setPreviewItem(null)}
           size="xl"
         >
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <button
+              type="button"
+              className={`btn btn--sm ${previewTab === 'hasil' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => setPreviewTab('hasil')}
+            >
+              📄 Hasil Lab
+            </button>
+            <button
+              type="button"
+              className={`btn btn--sm ${previewTab === 'amplop' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => setPreviewTab('amplop')}
+              title="Cetak Amplop Hasil Laboratorium"
+            >
+              ✉️ Amplop
+            </button>
+          </div>
+
+          {previewTab === 'amplop' ? (
+            <CetakAmplopLabIsi
+              pasien={previewItem as CetakAmplopLabPasien}
+              onClose={() => setPreviewItem(null)}
+            />
+          ) : (
+          <>
           {/* Header: label + Cetak button */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <label style={{ fontWeight: 'bold', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: 0 }}>
@@ -1763,6 +1784,8 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
               <LabReportDocument data={previewData} />
             </PDFViewer>
           </div>
+          </>
+          )}
         </Modal>
       )}
 
@@ -2076,12 +2099,6 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
         loading={deleteLoading}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => void confirmDelete()}
-      />
-
-      <CetakAmplopLabModal
-        open={amplopItem !== null}
-        onClose={() => setAmplopItem(null)}
-        pasien={amplopItem as CetakAmplopLabPasien | null}
       />
 
       {kwitansiItem && (
