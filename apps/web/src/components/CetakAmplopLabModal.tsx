@@ -129,7 +129,8 @@ export function CetakAmplopLabIsi({ onClose, pasien }: CetakAmplopLabIsiProps) {
         <head>
           <title>Klinik Prima Husada — Amplop Laboratorium</title>
           <style>
-            @page { margin: 2cm 0 0 1.5cm; }
+            /* Selalu horizontal: tanpa "size" orientasi ikut pilihan terakhir di dialog print browser. */
+            @page { size: landscape; margin: 2cm 0 0 1.5cm; }
             body {
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               color: #0f172a;
