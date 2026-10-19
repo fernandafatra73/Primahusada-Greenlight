@@ -366,10 +366,17 @@ const DEFAULT_LAB_ROWS: readonly LabTestRow[] = [
   { name: 'GDS / GDP', result: '', reference: '70 - 126 mg/dl' },
 ];
 
+// Kapasitas diukur dari hasil render A4 (baris dipotong jadi satu baris, ~16,8pt
+// per baris): muat ~36 baris di lembar biasa dan ~29 di lembar terakhir yang
+// juga memuat blok tanda tangan. Diberi sisa aman 2 baris supaya lembar terisi
+// sampai bawah tanpa pernah meluber (F4 lebih panjang, jadi ikut aman).
+export const LAB_PDF_ROWS_PER_PAGE = 34;
+export const LAB_PDF_ROWS_LAST_PAGE = 27;
+
 export function chunkLabRowsForPdf(
   rows: readonly LabTestRow[],
-  pageSize = 32,
-  lastPageSize = 20,
+  pageSize = LAB_PDF_ROWS_PER_PAGE,
+  lastPageSize = LAB_PDF_ROWS_LAST_PAGE,
 ): readonly (readonly LabTestRow[])[] {
   if (rows.length === 0) return [[]];
   // The last page also carries the notes box and signature block, which

@@ -12,7 +12,11 @@ import {
   isLabResultAbnormal,
   formatAbnormalResult,
 } from '../../apps/web/src/lib/labKesan.ts';
-import { chunkLabRowsForPdf } from '../../apps/web/src/pdf/LabReportDocument.tsx';
+import {
+  chunkLabRowsForPdf,
+  LAB_PDF_ROWS_LAST_PAGE,
+  LAB_PDF_ROWS_PER_PAGE,
+} from '../../apps/web/src/pdf/LabReportDocument.tsx';
 
 describe('labKesan serialization and parsing', () => {
   test('serializes and parses lab rows with analisNama and analisId', () => {
@@ -254,6 +258,21 @@ describe('chunkLabRowsForPdf pagination', () => {
     const chunks = chunkLabRowsForPdf(rows, 32);
     expect(chunks.length).toBe(1);
     expect(chunks[0].length).toBe(20);
+  });
+
+  test('regression: 22 rows (3 groups + 19 results) print on one sheet instead of leaving 1 row on sheet 2', () => {
+    const rows = Array.from({ length: 22 }, (_, i) => ({ name: `Test ${i + 1}`, result: '10', reference: '5-15' }));
+    const chunks = chunkLabRowsForPdf(rows);
+    expect(chunks.length).toBe(1);
+    expect(chunks[0].length).toBe(22);
+  });
+
+  test('default budgets fill the sheet: full interior pages and a signature-sized last page', () => {
+    const rows = Array.from({ length: 70 }, (_, i) => ({ name: `Test ${i + 1}`, result: '10', reference: '5-15' }));
+    const chunks = chunkLabRowsForPdf(rows);
+    expect(chunks.map((c) => c.length)).toEqual([LAB_PDF_ROWS_PER_PAGE, LAB_PDF_ROWS_PER_PAGE, 2]);
+    expect(chunkLabRowsForPdf(rows.slice(0, LAB_PDF_ROWS_LAST_PAGE))).toHaveLength(1);
+    expect(chunkLabRowsForPdf(rows.slice(0, LAB_PDF_ROWS_LAST_PAGE + 1))).toHaveLength(2);
   });
 
   test('never lets the last page exceed lastPageSize, across a range of row counts', () => {
