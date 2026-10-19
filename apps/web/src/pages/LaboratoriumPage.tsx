@@ -5,6 +5,7 @@ import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { CetakAmplopLabIsi, type CetakAmplopLabPasien } from '../components/CetakAmplopLabModal.tsx';
+import { InlineMultiSelectCell, InlineSelectCell, InlineTextCell } from '../components/InlineEditCell.tsx';
 import { PjLabModal } from '../components/PjLabModal.tsx';
 import type { AppViewId } from '../config/navigation.ts';
 import { useListQueryParams, useListSearch } from '../hooks/useListQueryParams.ts';
@@ -26,6 +27,7 @@ import {
   lookupLabReference,
   groupLabRowsForPdf,
   parseLabKesan,
+  ringkasKlasifikasiLab,
   serializeLabKesan,
   isLabResultAbnormal,
   formatAbnormalResult,
@@ -442,6 +444,28 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
     } finally {
       setDeleteLoading(false);
     }
+  }
+
+  /** Simpan satu kolom yang diedit langsung di tabel (Nama, Umur, Pengirim, Pemeriksaan). */
+  async function simpanSelTabel(id: string, body: Record<string, unknown>): Promise<boolean> {
+    setError(null);
+    try {
+      await apiPatch(`/api/pasien/${id}`, body);
+      await reload();
+      return true;
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan perubahan');
+      return false;
+    }
+  }
+
+  function simpanUmurTabel(id: string, umur: string): Promise<boolean> {
+    const tanggalLahir = parseUmurManualToTanggalLahir(umur);
+    if (!tanggalLahir) {
+      setError('Umur tidak valid. Contoh: 36, 2 bulan, 1 tahun 3 bulan');
+      return Promise.resolve(false);
+    }
+    return simpanSelTabel(id, { tanggalLahir });
   }
 
   function handleRowChange(index: number, field: keyof LabTableRow, value: string) {
@@ -1044,6 +1068,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
             <th>Nama Pasien</th>
             <th>Umur / JK</th>
             <th>Dokter Pengirim</th>
+            <th>Pemeriksaan</th>
             <th>Status Hasil</th>
             <th>Aksi</th>
           </tr>
@@ -1051,7 +1076,7 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
+              <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
                 Belum ada data pendaftaran pasien laboratorium.
               </td>
             </tr>
@@ -1060,15 +1085,42 @@ export function LaboratoriumPage({ onNavigate }: LaboratoriumPageProps) {
               <tr key={item.id}>
                 <td>{(pagination.page - 1) * pagination.limit + idx + 1}</td>
                 <td>
-                  <strong>{item.nama}</strong>
+                  <strong>
+                    <InlineTextCell label="nama" value={item.nama} onSave={(nama) => simpanSelTabel(item.id, { nama })} />
+                  </strong>
                   <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                     {item.alamat || '—'}
                   </div>
                 </td>
                 <td>
-                  {formatUmurDetail(item.tanggalLahir)} ({item.jenisKelamin})
+                  <InlineTextCell
+                    label="umur"
+                    value={formatUmurDetail(item.tanggalLahir)}
+                    onSave={(umur) => simpanUmurTabel(item.id, umur)}
+                  />{' '}
+                  ({item.jenisKelamin})
                 </td>
-                <td>{item.pengirim.nama}</td>
+                <td>
+                  <InlineSelectCell
+                    label="dokter pengirim"
+                    value={item.pengirim.id}
+                    display={item.pengirim.nama}
+                    options={dokterList}
+                    onSave={(pengirimId) => simpanSelTabel(item.id, { pengirimId })}
+                  />
+                </td>
+                <td>
+                  <InlineMultiSelectCell
+                    label="pemeriksaan"
+                    value={item.pemeriksaan.map((x) => x.jenisPemeriksaanId)}
+                    display={
+                      item.pemeriksaan.map((x) => x.nama).join(', ') || ringkasKlasifikasiLab(item.kesan) || '—'
+                    }
+                    options={paketList}
+                    emptyHint="Belum ada paket di Master Paket Pemeriksaan Laboratorium. Tambahkan dulu lewat tombol ⚙️ Master Paket."
+                    onSave={(jenisPemeriksaanIds) => simpanSelTabel(item.id, { jenisPemeriksaanIds })}
+                  />
+                </td>
                 <td>
                   <span
                     className={`badge ${item.hasilStatus === 'SELESAI' ? 'badge--ok' : 'badge--pending'}`}

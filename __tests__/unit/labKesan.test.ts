@@ -8,6 +8,7 @@ import {
   isDefaultUntouchedRows,
   lookupLabReference,
   parseLabKesan,
+  ringkasKlasifikasiLab,
   serializeLabKesan,
   isLabResultAbnormal,
   formatAbnormalResult,
@@ -323,5 +324,26 @@ describe('addIndeksEritrositRows (+Hema)', () => {
     const once = addIndeksEritrositRows(rows, makeId);
     expect(once.map((r) => r.pemeriksaan)).toEqual(['mcv', 'MCH', 'MCHC']);
     expect(addIndeksEritrositRows(once, makeId)).toEqual(once);
+  });
+});
+
+describe('ringkasKlasifikasiLab', () => {
+  test('lists the filled result groups once, in order', () => {
+    const kesan = serializeLabKesan(
+      [
+        { id: '1', klasifikasi: 'Hematologi', pemeriksaan: 'Hemoglobin', hasil: '11', nilaiRujukan: '' },
+        { id: '2', klasifikasi: 'Hematologi', pemeriksaan: 'Leukosit', hasil: '7000', nilaiRujukan: '' },
+        { id: '3', klasifikasi: 'Widal', pemeriksaan: 'Salmonella Typhi O', hasil: '(-)', nilaiRujukan: '' },
+      ],
+      '',
+      '',
+      '',
+    );
+    expect(ringkasKlasifikasiLab(kesan)).toBe('Hematologi, Widal');
+  });
+
+  test('is empty when no result has been saved yet', () => {
+    expect(ringkasKlasifikasiLab(null)).toBe('');
+    expect(ringkasKlasifikasiLab('   ')).toBe('');
   });
 });

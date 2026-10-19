@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
 import { CetakALModal, type CetakALPasien } from '../components/CetakALModal.tsx';
+import { InlineMultiSelectCell, InlineSelectCell, InlineTextCell } from '../components/InlineEditCell.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
 import { ModalFormFooter } from '../components/ui/ModalFormFooter.tsx';
@@ -112,7 +113,7 @@ interface PasienRow {
   readonly alamat: string | null;
   readonly petugasKasir: string | null;
   readonly pengirim: { readonly id: string; readonly nama: string };
-  readonly pemeriksaan: readonly { readonly nama: string; readonly harga: string }[];
+  readonly pemeriksaan: readonly { readonly jenisPemeriksaanId: string; readonly nama: string; readonly harga: string }[];
   readonly totalHarga: string;
   readonly totalSharing: string;
   readonly hasilStatus: 'MENUNGGU_HASIL' | 'SELESAI';
@@ -1229,6 +1230,28 @@ export function PasienPage() {
     win.print();
   }
 
+  /** Simpan satu kolom yang diedit langsung di tabel (Nama, Umur, Pengirim, Pemeriksaan). */
+  async function simpanSelTabel(id: string, body: Record<string, unknown>): Promise<boolean> {
+    setError(null);
+    try {
+      await apiPatch(`/api/pasien/${id}`, body);
+      await reload();
+      return true;
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan perubahan');
+      return false;
+    }
+  }
+
+  function simpanUmurTabel(id: string, umur: string): Promise<boolean> {
+    const tanggalLahir = parseUmurManualToTanggalLahir(umur);
+    if (!tanggalLahir) {
+      setError('Umur tidak valid. Contoh: 36, 2 bulan, 1 tahun 3 bulan');
+      return Promise.resolve(false);
+    }
+    return simpanSelTabel(id, { tanggalLahir });
+  }
+
   async function handlePrint(id: string) {
     setPrintingId(id);
     setError(null);
@@ -2012,11 +2035,33 @@ export function PasienPage() {
                       '—'
                     )}
                   </td>
-                  <td>{p.nama}</td>
-                  <td>{formatUmurDetail(p.tanggalLahir)}</td>
-                  <td>{p.pengirim.nama}</td>
                   <td>
-                    <div>{p.pemeriksaan.map((x) => x.nama).join(', ')}</div>
+                    <InlineTextCell label="nama" value={p.nama} onSave={(nama) => simpanSelTabel(p.id, { nama })} />
+                  </td>
+                  <td>
+                    <InlineTextCell
+                      label="umur"
+                      value={formatUmurDetail(p.tanggalLahir)}
+                      onSave={(umur) => simpanUmurTabel(p.id, umur)}
+                    />
+                  </td>
+                  <td>
+                    <InlineSelectCell
+                      label="pengirim"
+                      value={p.pengirim.id}
+                      display={p.pengirim.nama}
+                      options={dokter}
+                      onSave={(pengirimId) => simpanSelTabel(p.id, { pengirimId })}
+                    />
+                  </td>
+                  <td>
+                    <InlineMultiSelectCell
+                      label="pemeriksaan"
+                      value={p.pemeriksaan.map((x) => x.jenisPemeriksaanId)}
+                      display={p.pemeriksaan.map((x) => x.nama).join(', ') || '—'}
+                      options={jenis}
+                      onSave={(jenisPemeriksaanIds) => simpanSelTabel(p.id, { jenisPemeriksaanIds })}
+                    />
                     {(() => {
                       const parsed = parseKlinisData(p.klinis);
                       const parts: string[] = [];

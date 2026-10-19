@@ -86,6 +86,20 @@ export function parseLabKesan(raw: string | null | undefined): ParsedLabData {
   };
 }
 
+/**
+ * Ringkasan kelompok hasil lab yang sudah diisi, mis. "Hematologi, Diffcount, Widal".
+ * Kosong bila hasil belum pernah disimpan (parseLabKesan mengembalikan baris bawaan untuk itu).
+ */
+export function ringkasKlasifikasiLab(kesan: string | null | undefined): string {
+  if (!kesan?.trim()) return '';
+  const urut: string[] = [];
+  for (const row of parseLabKesan(kesan).rows) {
+    const k = row.klasifikasi?.trim();
+    if (k && !urut.includes(k)) urut.push(k);
+  }
+  return urut.join(', ');
+}
+
 export function serializeLabKesan(
   rows: LabTableRow[],
   catatan: string,
