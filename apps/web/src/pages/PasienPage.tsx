@@ -326,6 +326,8 @@ export function PasienPage() {
   const [mastersError, setMastersError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  /** Ubah Data Pasien dibagi tab supaya jendelanya pendek: data pasien, hasil bacaan, pemeriksaan & biaya. */
+  const [editTab, setEditTab] = useState<'pasien' | 'hasil' | 'pemeriksaan'>('pasien');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -883,6 +885,7 @@ export function PasienPage() {
         setSharingMode('custom');
       }
       setSelectedJenis(p.pemeriksaan.map((x) => x.jenisPemeriksaanId));
+      setEditTab('pasien');
       setEditOpen(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal memuat detail pasien');
@@ -2722,11 +2725,33 @@ export function PasienPage() {
 
       <Modal open={editOpen} title="Ubah Data Pasien" onClose={() => setEditOpen(false)} size="xl">
         <form onSubmit={(e) => void onSubmitEdit(e)} className="form-grid form-grid--wide">
-          {patientFields}
-          {klinisField}
-          {temuanField}
-          {kesanField}
-          {jenisPemeriksaanField}
+          <div className="form-grid--span-3" style={{ display: 'flex', gap: '0.5rem' }}>
+            {(
+              [
+                ['pasien', '👤 Data Pasien'],
+                ['hasil', '📝 Hasil (Klinis, Temuan, Kesan)'],
+                ['pemeriksaan', '🧾 Pemeriksaan & Biaya'],
+              ] as const
+            ).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                className={`btn btn--sm ${editTab === tab ? 'btn--primary' : 'btn--secondary'}`}
+                onClick={() => setEditTab(tab)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {editTab === 'pasien' && patientFields}
+          {editTab === 'hasil' && (
+            <>
+              {klinisField}
+              {temuanField}
+              {kesanField}
+            </>
+          )}
+          {editTab === 'pemeriksaan' && jenisPemeriksaanField}
           {formError && <div className="alert alert--error form-grid--full">{formError}</div>}
           <div
             className="form-grid--span-3"
