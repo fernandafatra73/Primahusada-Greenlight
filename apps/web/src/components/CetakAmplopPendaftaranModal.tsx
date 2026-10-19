@@ -17,7 +17,8 @@ export interface CetakAmplopPendaftaranPasien {
 /** v1 = amplop pendaftaran asli; v2 = desain "Amplop V2" Radiologi (kop berlogo, tabel 2 kolom, 14 x 7 cm). */
 type VersiAmplop = 'v1' | 'v2';
 
-const FOOTER_AMPLOP = '* Simpan amplop ini sebagai bukti pendaftaran pasien.';
+// Sama dengan catatan bawah Amplop V2 Radiologi.
+const FOOTER_AMPLOP_V2 = 'HARAP FOTO LAMA DI BAWA LAGI SEWAKTU KONTROL !!!';
 
 /** Cetak "Amplop V2": ukuran, kop dan gaya sama dengan Amplop V2 di cetak amplop Radiologi. */
 async function tulisAmplopV2(win: Window, pasien: CetakAmplopPendaftaranPasien, tanggal: string): Promise<void> {
@@ -121,7 +122,7 @@ async function tulisAmplopV2(win: Window, pasien: CetakAmplopPendaftaranPasien, 
               <td class="amplopv2-value">${pasien.dokterPengirim || '-'}</td>
             </tr>
           </table>
-          <div class="amplopv2-footer">${FOOTER_AMPLOP}</div>
+          <div class="amplopv2-footer">${FOOTER_AMPLOP_V2}</div>
         </div>
         <script>
           window.onload = function() {
@@ -462,7 +463,7 @@ function AmplopV2Preview({ pasien, tanggal }: { readonly pasien: CetakAmplopPend
         </tbody>
       </table>
       <div style={{ textAlign: 'center', fontSize: '0.85rem', fontWeight: 700, fontStyle: 'italic', color: '#1d4ed8' }}>
-        {FOOTER_AMPLOP}
+        {FOOTER_AMPLOP_V2}
       </div>
     </div>
   );
