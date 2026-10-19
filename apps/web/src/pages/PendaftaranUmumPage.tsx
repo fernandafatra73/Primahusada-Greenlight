@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
 import { CetakAmplopPendaftaranModal } from '../components/CetakAmplopPendaftaranModal.tsx';
-import { CetakLabelPendaftaranModal } from '../components/CetakLabelPendaftaranModal.tsx';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
@@ -211,7 +210,6 @@ export function PendaftaranUmumPage() {
   /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
   const [kwitansiRincian, setKwitansiRincian] = useState<readonly { nama: string; harga: number }[] | null>(null);
   const [amplopPreviewItem, setAmplopPreviewItem] = useState<PendaftaranUmumItem | null>(null);
-  const [labelPreviewItem, setLabelPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [logoSrc, setLogoSrc] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
@@ -848,19 +846,10 @@ export function PendaftaranUmumPage() {
                         type="button"
                         className="btn btn--xs btn--ghost"
                         onClick={() => setAmplopPreviewItem(item)}
-                        title="Cetak amplop pendaftaran"
+                        title="Cetak amplop (Amplop, Amplop V2) dan label stiker"
                         style={{ border: '1px solid var(--color-border)' }}
                       >
                         ✉️ Amplop
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--xs btn--ghost"
-                        onClick={() => setLabelPreviewItem(item)}
-                        title="Cetak label stiker identitas"
-                        style={{ border: '1px solid var(--color-border)' }}
-                      >
-                        🏷️ Label
                       </button>
                       <button
                         type="button"
@@ -1369,22 +1358,6 @@ export function PendaftaranUmumPage() {
                 alamat: amplopPreviewItem.alamat,
                 tanggalMasuk: amplopPreviewItem.tanggalMasuk,
                 dokterPengirim: amplopPreviewItem.dokterPengirim,
-              }
-            : null
-        }
-      />
-
-      <CetakLabelPendaftaranModal
-        open={!!labelPreviewItem}
-        onClose={() => setLabelPreviewItem(null)}
-        pasien={
-          labelPreviewItem
-            ? {
-                noRegistrasi: labelPreviewItem.noRegistrasi,
-                namaPasien: labelPreviewItem.namaPasien,
-                umur: labelPreviewItem.umur,
-                tanggalMasuk: labelPreviewItem.tanggalMasuk,
-                dokterPengirim: labelPreviewItem.dokterPengirim,
               }
             : null
         }

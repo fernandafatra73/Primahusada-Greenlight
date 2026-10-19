@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import logoPrimahusada from '@src/image/logo-primahusada.png';
 import { formatUmurBebas } from '../lib/format.ts';
 import { loadLogoDataUrl } from '../pdf/loadLogoDataUrl.ts';
+import { CetakLabelPendaftaranIsi } from './CetakLabelPendaftaranModal.tsx';
 import { Modal } from './ui/Modal.tsx';
 import './ui/ui.css';
 
@@ -14,8 +15,11 @@ export interface CetakAmplopPendaftaranPasien {
   readonly dokterPengirim: string | null;
 }
 
-/** v1 = amplop pendaftaran asli; v2 = desain "Amplop V2" Radiologi (kop berlogo, tabel 2 kolom, 14 x 7 cm). */
-type VersiAmplop = 'v1' | 'v2';
+/**
+ * v1 = amplop pendaftaran asli; v2 = desain "Amplop V2" Radiologi (kop berlogo, tabel 2 kolom, 14 x 7 cm);
+ * label = label stiker identitas (dulu tombol "Label" tersendiri di baris pendaftaran).
+ */
+type VersiAmplop = 'v1' | 'v2' | 'label';
 
 // Sama dengan catatan bawah Amplop V2 Radiologi.
 const FOOTER_AMPLOP_V2 = 'HARAP FOTO LAMA DI BAWA LAGI SEWAKTU KONTROL !!!';
@@ -296,7 +300,12 @@ export function CetakAmplopPendaftaranModal({ open, onClose, pasien }: CetakAmpl
   }
 
   return (
-    <Modal open={open} title={`Pratinjau Cetak Amplop — ${pasien.noRegistrasi}`} onClose={onClose} size="lg">
+    <Modal
+      open={open}
+      title={`Pratinjau Cetak ${versi === 'label' ? 'Label' : 'Amplop'} — ${pasien.noRegistrasi}`}
+      onClose={onClose}
+      size="lg"
+    >
       <div>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
           <button
@@ -313,7 +322,19 @@ export function CetakAmplopPendaftaranModal({ open, onClose, pasien }: CetakAmpl
           >
             🧾 Amplop V2
           </button>
+          <button
+            type="button"
+            className={`btn btn--sm ${versi === 'label' ? 'btn--primary' : 'btn--secondary'}`}
+            onClick={() => setVersi('label')}
+            title="Cetak label stiker identitas"
+          >
+            🏷️ Label
+          </button>
         </div>
+        {versi === 'label' ? (
+          <CetakLabelPendaftaranIsi pasien={pasien} onClose={onClose} />
+        ) : (
+        <>
         <div
           style={{
             background: '#f8fafc',
@@ -413,6 +434,8 @@ export function CetakAmplopPendaftaranModal({ open, onClose, pasien }: CetakAmpl
             🖨️ Cetak {versi === 'v2' ? 'Amplop V2' : 'Amplop'} Sekarang
           </button>
         </div>
+        </>
+        )}
       </div>
     </Modal>
   );

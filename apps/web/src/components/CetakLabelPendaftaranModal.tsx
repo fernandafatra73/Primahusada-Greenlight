@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Modal } from './ui/Modal.tsx';
 import './ui/ui.css';
 
 export interface CetakLabelPendaftaranPasien {
@@ -10,15 +9,15 @@ export interface CetakLabelPendaftaranPasien {
   readonly dokterPengirim: string | null;
 }
 
-interface CetakLabelPendaftaranModalProps {
-  readonly open: boolean;
+interface CetakLabelPendaftaranIsiProps {
   readonly onClose: () => void;
   readonly pasien: CetakLabelPendaftaranPasien | null;
 }
 
 const LABEL_POSITIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 
-export function CetakLabelPendaftaranModal({ open, onClose, pasien }: CetakLabelPendaftaranModalProps) {
+/** Isi cetak label pendaftaran (pilih posisi stiker, salin teks, cetak) — tampil sebagai pilihan "Label" di jendela Cetak Amplop. */
+export function CetakLabelPendaftaranIsi({ onClose, pasien }: CetakLabelPendaftaranIsiProps) {
   const [copied, setCopied] = useState(false);
   const [labelPosition, setLabelPosition] = useState(1);
 
@@ -183,7 +182,6 @@ export function CetakLabelPendaftaranModal({ open, onClose, pasien }: CetakLabel
   }
 
   return (
-    <Modal open={open} title={`Pratinjau Cetak Label — ${pasien.noRegistrasi}`} onClose={onClose} size="lg">
       <div>
         <div
           style={{
@@ -329,6 +327,5 @@ export function CetakLabelPendaftaranModal({ open, onClose, pasien }: CetakLabel
           </div>
         </div>
       </div>
-    </Modal>
   );
 }
