@@ -206,8 +206,8 @@ export function PendaftaranUmumPage() {
   const [previewItem, setPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [kopSuratPreviewItem, setKopSuratPreviewItem] = useState<PendaftaranUmumItem | null>(null);
   const [kwitansiPreviewItem, setKwitansiPreviewItem] = useState<PendaftaranUmumItem | null>(null);
-  /** Kwitansi2: blangko A5 lanskap yang diketik langsung di atas kwitansinya. */
-  const [kwitansi2Item, setKwitansi2Item] = useState<PendaftaranUmumItem | null>(null);
+  /** Kwitansi & Kwitansi2 (blangko A5 lanskap yang diketik langsung) digabung dalam satu jendela. */
+  const [kwitansiTab, setKwitansiTab] = useState<'kwitansi' | 'kwitansi2'>('kwitansi');
   /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
   const [kwitansiRincian, setKwitansiRincian] = useState<readonly { nama: string; harga: number }[] | null>(null);
   const [amplopPreviewItem, setAmplopPreviewItem] = useState<PendaftaranUmumItem | null>(null);
@@ -865,18 +865,13 @@ export function PendaftaranUmumPage() {
                       <button
                         type="button"
                         className="btn btn--xs btn--primary"
-                        onClick={() => setKwitansiPreviewItem(item)}
-                        title="Pratinjau & cetak kwitansi biaya pendaftaran"
+                        onClick={() => {
+                          setKwitansiTab('kwitansi');
+                          setKwitansiPreviewItem(item);
+                        }}
+                        title="Kwitansi & Kwitansi2: pratinjau, ketik dan cetak kwitansi pendaftaran"
                       >
                         🧾 Kwitansi
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--xs btn--primary"
-                        onClick={() => setKwitansi2Item(item)}
-                        title="Kwitansi blangko (A5 lanskap) yang bisa diketik langsung"
-                      >
-                        🧾 Kwitansi2
                       </button>
                       <TableRowActions
                         onEdit={() => openEdit(item)}
@@ -1285,7 +1280,7 @@ export function PendaftaranUmumPage() {
 
       {kwitansiPreviewItem && (
         <Modal
-          title={`Pratinjau Kwitansi — ${kwitansiPreviewItem.noRegistrasi}`}
+          title={`Kwitansi — ${kwitansiPreviewItem.noRegistrasi}`}
           open={true}
           onClose={() => {
             setKwitansiPreviewItem(null);
@@ -1293,55 +1288,72 @@ export function PendaftaranUmumPage() {
           }}
           size="xl"
         >
-          <KwitansiRincianEditor
-            jenis="PENDAFTARAN_UMUM"
-            nomor={kwitansiPreviewItem.noRegistrasi}
-            bawaan={rincianBawaan(kwitansiPreviewItem)}
-            onChange={setKwitansiRincian}
-          />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button
               type="button"
-              className="btn btn--primary"
-              onClick={() => void handleDownloadKwitansi(kwitansiPreviewItem)}
-              style={{ fontWeight: 600 }}
+              className={`btn btn--sm ${kwitansiTab === 'kwitansi' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => setKwitansiTab('kwitansi')}
             >
-              ⬇️ Unduh / Cetak Kwitansi
+              🧾 Kwitansi
+            </button>
+            <button
+              type="button"
+              className={`btn btn--sm ${kwitansiTab === 'kwitansi2' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => setKwitansiTab('kwitansi2')}
+              title="Kwitansi blangko (A5 lanskap) yang bisa diketik langsung"
+            >
+              🧾 Kwitansi2
             </button>
           </div>
-          <div style={{ width: '100%', height: 'calc(100vh - 14rem)', minHeight: '600px' }}>
-            <PDFViewer width="100%" height="100%" className="pdf-viewer">
-              <KwitansiReportDocument data={buildKwitansiData(kwitansiPreviewItem)} />
-            </PDFViewer>
-          </div>
-        </Modal>
-      )}
 
-      {kwitansi2Item && (
-        <Modal
-          title={`Kwitansi2 — ${kwitansi2Item.noRegistrasi}`}
-          open={true}
-          onClose={() => setKwitansi2Item(null)}
-          size="xl"
-        >
-          <Kwitansi2Editor
-            logoSrc={logoSrc}
-            nomor={kwitansi2Item.noRegistrasi}
-            bawaan={rincianBawaan(kwitansi2Item)}
-            awal={{
-              noKwitansi: kwitansi2Item.noRegistrasi,
-              sudahTerimaDari: kwitansi2Item.umur
-                ? `${kwitansi2Item.namaPasien}, ${kwitansi2Item.umur}`
-                : kwitansi2Item.namaPasien,
-              tanggal: new Date(kwitansi2Item.tanggalMasuk).toLocaleDateString('id-ID'),
-              tanggalTtd: new Date(kwitansi2Item.tanggalMasuk).toLocaleDateString('id-ID', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              }),
-              penerima: kwitansi2Item.petugasKasir || '',
-            }}
-          />
+          {/* Hanya satu yang dipasang: keduanya memakai rincian kwitansi yang sama di server,
+              jadi tiap pindah tab dimuat ulang (dan inisialisasi rincian tidak jalan bersamaan). */}
+          {kwitansiTab === 'kwitansi' ? (
+          <div>
+            <KwitansiRincianEditor
+              jenis="PENDAFTARAN_UMUM"
+              nomor={kwitansiPreviewItem.noRegistrasi}
+              bawaan={rincianBawaan(kwitansiPreviewItem)}
+              onChange={setKwitansiRincian}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => void handleDownloadKwitansi(kwitansiPreviewItem)}
+                style={{ fontWeight: 600 }}
+              >
+                ⬇️ Unduh / Cetak Kwitansi
+              </button>
+            </div>
+            <div style={{ width: '100%', height: 'calc(100vh - 14rem)', minHeight: '600px' }}>
+              <PDFViewer width="100%" height="100%" className="pdf-viewer">
+                <KwitansiReportDocument data={buildKwitansiData(kwitansiPreviewItem)} />
+              </PDFViewer>
+            </div>
+          </div>
+          ) : (
+          <div>
+            <Kwitansi2Editor
+              logoSrc={logoSrc}
+              nomor={kwitansiPreviewItem.noRegistrasi}
+              bawaan={rincianBawaan(kwitansiPreviewItem)}
+              awal={{
+                noKwitansi: kwitansiPreviewItem.noRegistrasi,
+                sudahTerimaDari: kwitansiPreviewItem.umur
+                  ? `${kwitansiPreviewItem.namaPasien}, ${kwitansiPreviewItem.umur}`
+                  : kwitansiPreviewItem.namaPasien,
+                tanggal: new Date(kwitansiPreviewItem.tanggalMasuk).toLocaleDateString('id-ID'),
+                tanggalTtd: new Date(kwitansiPreviewItem.tanggalMasuk).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                }),
+                penerima: kwitansiPreviewItem.petugasKasir || '',
+              }}
+            />
+          </div>
+          )}
         </Modal>
       )}
 
