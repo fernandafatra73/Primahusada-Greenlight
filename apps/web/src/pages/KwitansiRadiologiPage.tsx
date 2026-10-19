@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
 import { ConfirmModal } from '../components/ui/ConfirmModal.tsx';
+import { Kwitansi2Editor } from '../components/Kwitansi2Editor.tsx';
 import { KwitansiRincianEditor } from '../components/KwitansiRincianEditor.tsx';
 import { ListPageShell } from '../components/ui/ListPageShell.tsx';
 import { Modal } from '../components/ui/Modal.tsx';
@@ -51,6 +52,8 @@ export function KwitansiRadiologiPage() {
 
   const [logoSrc, setLogoSrc] = useState('');
   const [previewItem, setPreviewItem] = useState<KwitansiPasienItem | null>(null);
+  /** Kwitansi (PDF) dan Kwitansi2 (blangko A5 lanskap yang diketik langsung) dalam satu jendela. */
+  const [kwitansiTab, setKwitansiTab] = useState<'kwitansi' | 'kwitansi2'>('kwitansi');
   /** Rincian kwitansi hasil suntingan; null berarti pakai rincian bawaan. */
   const [rincianKwitansi, setRincianKwitansi] = useState<readonly { nama: string; harga: number }[] | null>(null);
 
@@ -260,7 +263,10 @@ export function KwitansiRadiologiPage() {
                       <button
                         type="button"
                         className="btn btn--xs btn--primary"
-                        onClick={() => setPreviewItem(p)}
+                        onClick={() => {
+                          setKwitansiTab('kwitansi');
+                          setPreviewItem(p);
+                        }}
                         title="Pratinjau & Cetak Kwitansi"
                         style={{ padding: '0.35rem 0.65rem', fontWeight: 600 }}
                       >
@@ -285,7 +291,7 @@ export function KwitansiRadiologiPage() {
 
       {previewItem && (
         <Modal
-          title={`Pratinjau Kwitansi — ${previewItem.regCode}`}
+          title={`Kwitansi — ${previewItem.regCode}`}
           open={true}
           onClose={() => {
             setPreviewItem(null);
@@ -293,27 +299,68 @@ export function KwitansiRadiologiPage() {
           }}
           size="xl"
         >
-          <KwitansiRincianEditor
-            jenis="RADIOLOGI"
-            nomor={previewItem.regCode}
-            bawaan={rincianBawaan(previewItem)}
-            onChange={setRincianKwitansi}
-          />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button
               type="button"
-              className="btn btn--primary"
-              onClick={() => void handleDownload(previewItem)}
-              style={{ fontWeight: 600 }}
+              className={`btn btn--sm ${kwitansiTab === 'kwitansi' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => setKwitansiTab('kwitansi')}
             >
-              ⬇️ Unduh / Cetak Kwitansi
+              🧾 Kwitansi
+            </button>
+            <button
+              type="button"
+              className={`btn btn--sm ${kwitansiTab === 'kwitansi2' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => setKwitansiTab('kwitansi2')}
+              title="Kwitansi blangko (A5 lanskap) yang bisa diketik langsung"
+            >
+              🧾 Kwitansi2
             </button>
           </div>
-          <div style={{ width: '100%', height: 'calc(100vh - 14rem)', minHeight: '600px' }}>
-            <PDFViewer width="100%" height="100%" className="pdf-viewer">
-              <KwitansiReportDocument data={buildKwitansiData(previewItem)} />
-            </PDFViewer>
-          </div>
+
+          {/* Hanya satu yang dipasang: keduanya memakai rincian kwitansi yang sama di server. */}
+          {kwitansiTab === 'kwitansi' ? (
+            <div>
+              <KwitansiRincianEditor
+                jenis="RADIOLOGI"
+                nomor={previewItem.regCode}
+                bawaan={rincianBawaan(previewItem)}
+                onChange={setRincianKwitansi}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  onClick={() => void handleDownload(previewItem)}
+                  style={{ fontWeight: 600 }}
+                >
+                  ⬇️ Unduh / Cetak Kwitansi
+                </button>
+              </div>
+              <div style={{ width: '100%', height: 'calc(100vh - 14rem)', minHeight: '600px' }}>
+                <PDFViewer width="100%" height="100%" className="pdf-viewer">
+                  <KwitansiReportDocument data={buildKwitansiData(previewItem)} />
+                </PDFViewer>
+              </div>
+            </div>
+          ) : (
+            <Kwitansi2Editor
+              logoSrc={logoSrc}
+              jenis="RADIOLOGI"
+              nomor={previewItem.regCode}
+              bawaan={rincianBawaan(previewItem)}
+              awal={{
+                noKwitansi: previewItem.regCode,
+                sudahTerimaDari: `${previewItem.nama}, ${formatUmurDetail(previewItem.tanggalLahir)}`,
+                tanggal: new Date(previewItem.createdAt).toLocaleDateString('id-ID'),
+                tanggalTtd: new Date(previewItem.createdAt).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                }),
+                penerima: previewItem.petugasKasir || '',
+              }}
+            />
+          )}
         </Modal>
       )}
 

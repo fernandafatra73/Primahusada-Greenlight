@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { apiPost } from '../lib/api.ts';
 import { formatRupiah } from '../lib/format.ts';
+import type { KwitansiJenis } from './KwitansiRincianEditor.tsx';
 import { normalisasiJumlah } from '../lib/kwitansiRows.ts';
 import {
   BARIS_KOSONG,
@@ -19,6 +20,8 @@ import './kwitansi2Editor.css';
 
 interface Kwitansi2EditorProps {
   readonly logoSrc: string;
+  /** Rincian kwitansi mana yang dipakai (sama dengan tab Kwitansi di halaman yang sama). */
+  readonly jenis?: KwitansiJenis;
   readonly nomor: string;
   /** Rincian bawaan bila nomor ini belum punya rincian tersimpan. */
   readonly bawaan: readonly { readonly nama: string; readonly harga: number }[];
@@ -30,7 +33,7 @@ interface Kwitansi2EditorProps {
  * Blangko Kwitansi2 yang diketik langsung di tempat. Isian hanya berlaku untuk
  * cetakan ini (tidak disimpan); baris awal diambil dari rincian kwitansi tersimpan.
  */
-export function Kwitansi2Editor({ logoSrc, nomor, bawaan, awal }: Kwitansi2EditorProps) {
+export function Kwitansi2Editor({ logoSrc, jenis = 'PENDAFTARAN_UMUM', nomor, bawaan, awal }: Kwitansi2EditorProps) {
   const [form, setForm] = useState<Kwitansi2Form>({ ...awal, untukPembayaran: null, baris: barisAwalKwitansi2(bawaan) });
   const [memuat, setMemuat] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export function Kwitansi2Editor({ logoSrc, nomor, bawaan, awal }: Kwitansi2Edito
     void (async () => {
       try {
         const res = await apiPost<{ items: { nama: string; harga: string }[] }>('/api/kwitansi-rincian/inisialisasi', {
-          jenis: 'PENDAFTARAN_UMUM',
+          jenis,
           nomor,
           bawaan: bawaanRef.current,
         });
@@ -58,7 +61,7 @@ export function Kwitansi2Editor({ logoSrc, nomor, bawaan, awal }: Kwitansi2Edito
     return () => {
       batal = true;
     };
-  }, [nomor]);
+  }, [jenis, nomor]);
 
   function ubah<K extends keyof Kwitansi2Form>(kunci: K, nilai: Kwitansi2Form[K]) {
     setForm((f) => ({ ...f, [kunci]: nilai }));
