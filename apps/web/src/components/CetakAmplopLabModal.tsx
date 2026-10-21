@@ -130,14 +130,17 @@ export function CetakAmplopLabIsi({ onClose, pasien }: CetakAmplopLabIsiProps) {
           <title>Klinik Prima Husada — Amplop Laboratorium</title>
           <style>
             /* Kertas amplop lab 11 x 23 cm, tegak (isi juga tegak). Tanpa "size" ukuran &
-               orientasi ikut pilihan terakhir di dialog print browser. */
-            @page { size: 11cm 23cm; margin: 2cm 0 0 1cm; }
+               orientasi ikut pilihan terakhir di dialog print browser.
+               Jarak 1 cm kiri / 2 cm atas dibuat lewat padding body, bukan margin @page:
+               margin @page diabaikan bila dialog print diatur "Margins: None", sehingga
+               bingkai amplop menempel ke tepi kertas. */
+            @page { size: 11cm 23cm; margin: 0; }
             body {
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               color: #0f172a;
               background: #fff;
               margin: 0;
-              padding: 0;
+              padding: 2cm 0 0 1cm;
             }
             .amplop-sheet {
               width: 8cm;
