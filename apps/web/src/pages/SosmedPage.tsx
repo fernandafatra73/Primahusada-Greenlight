@@ -39,7 +39,7 @@ const SOSMED_LINKS: readonly SosmedLink[] = [
   {
     id: 'tradewill',
     label: 'Tradewill',
-    url: 'https://www.tradewill.com/',
+    url: 'https://www.tradewill-global.com/',
     icon: '📈',
   },
 ];
